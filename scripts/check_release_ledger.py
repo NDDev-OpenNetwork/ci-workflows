@@ -40,24 +40,7 @@ ANY_VERSION_HEADING = re.compile(r"^## \[(?!Unreleased\])(.*?)\]")
 # actionable instead of permanently red, and puts the anomaly somewhere a
 # reader will actually meet it. Creating the missing tag needs tag-write
 # authority, which is deliberately outside what this repository's validators do.
-KNOWN_UNTAGGED = {
-    "0.14.0": (
-        "Cut but never tagged. `1cf5681` bumped VERSION to 0.14.0 and wrote this "
-        "heading on 2026-08-14, but the tag needs a release, and the release "
-        "path cannot presently reach its own promotion gate: `release.yml` runs "
-        "every tier in a job with no GH_TOKEN, no tags and an egress allow-list "
-        "that omits both SDK hosts, so it fails on capability grounds before "
-        "the missing promotion evidence manifest (#157) is even reached. Tag "
-        "`1cf5681` once the path runs -- VERSION reads 0.14.0 at that commit, so "
-        "release.yml will agree -- and note that everything merged after the cut "
-        "belongs to the next number, not to this one."
-    ),
-    "0.11.0": (
-        "Never tagged. The ledger jumps 0.10.0 -> 0.11.1 in the tag list while "
-        "the heading claims 0.11.0 shipped on 2026-07-20. Resolve by cutting the "
-        "tag at the right commit or by folding the entry into 0.11.1."
-    ),
-}
+KNOWN_UNTAGGED: dict[str, str] = {}
 
 
 def _headings() -> tuple[list[tuple[int, str, str | None]], list[str]]:
