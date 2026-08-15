@@ -1,0 +1,64 @@
+name: Workflow request
+description: Propose a new reusable workflow or a new capability for an existing one.
+title: "workflow: <capability>"
+labels: ["enhancement", "workflow-request", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose a new reusable workflow or capability. Agreeing on scope and
+        tier **before** code avoids wasted work. Every workflow here ships with
+        full-SHA pins, least-privilege permissions, concurrency, and timeouts.
+  - type: textarea
+    id: capability
+    attributes:
+      label: Capability
+      description: What should the workflow do? Describe the desired inputs and outputs.
+    validations:
+      required: true
+  - type: dropdown
+    id: tiers
+    attributes:
+      label: Tier(s) it applies to
+      description: Select every tier this capability should serve.
+      multiple: true
+      options:
+        - Public (free OSS suite)
+        - Private free tier (zero-cost only)
+        - Private paid tier (GHAS / harden-runner)
+    validations:
+      required: true
+  - type: textarea
+    id: tools
+    attributes:
+      label: Which tools / actions
+      description: The underlying tools, actions, or CLIs this would wrap (with links if known).
+      placeholder: "e.g. anchore/syft for SBOM, gitleaks for secret scanning"
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Motivation
+      description: Why is this needed? What gap or repeated pattern across the estate does it close?
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Security considerations
+      description: >-
+        Token scopes / permissions required, whether it handles untrusted input
+        (`pull_request_target`, PR titles, tags), egress needs, and whether it
+        touches release-signing or attestations.
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Design constraints acknowledged
+      options:
+        - label: Paid public/GHAS capabilities must be separated from private-free workflows at the file boundary.
+          required: true
+        - label: I searched existing issues and workflows for overlap.
+          required: true

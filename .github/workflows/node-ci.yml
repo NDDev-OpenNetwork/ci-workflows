@@ -1,0 +1,77 @@
+name: node-ci
+
+# Reusable JavaScript/TypeScript CI for BOTH tiers: pinned oven-sh/setup-bun
+# with its built-in dependency cache, and caller-provided install/test commands
+# passed via env.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      bun_version:
+        description: 'Exact oven-sh/bun version to pin.'
+        type: string
+        default: '1.3.14'
+      working_directory:
+        type: string
+        default: '.'
+      install_command:
+        description: 'Dependency install command (bash).'
+        type: string
+        default: 'bun install --frozen-lockfile'
+      test_command:
+        description: 'Test/verify command (bash).'
+        type: string
+        required: true
+      timeout_minutes:
+        type: number
+        default: 20
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  node:
+    name: node (bun ${{ inputs.bun_version }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2.2.0
+        with:
+          bun-version: ${{ inputs.bun_version }}
+
+      - name: Install dependencies
+        if: ${{ inputs.install_command != '' }}
+        env:
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+
+      - name: Run tests
+        env:
+          TEST_COMMAND: ${{ inputs.test_command }}
+          BUN_VER: ${{ inputs.bun_version }}
+        run: |
+          bash -euo pipefail -c "$TEST_COMMAND"
+          echo "Bun ${BUN_VER} tests passed." >> "$GITHUB_STEP_SUMMARY"

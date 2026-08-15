@@ -1,0 +1,86 @@
+name: docs-quality
+
+# Reusable docs quality gate for BOTH tiers: link checking
+# (lychee), spell checking (typos), and Markdown linting (markdownlint-cli2).
+# Every tool is free on every tier.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      # SCOPE, and it is not obvious. working_directory governs `run:` steps
+      # only; all three lanes below are `uses:` steps, and an action resolves
+      # its path arguments against the workspace root regardless of the job's
+      # default working-directory. So the three path inputs are
+      # REPO-ROOT-RELATIVE.
+      #
+      # Setting working_directory to a subdirectory and leaving the paths at
+      # their defaults therefore scans the whole repository. A fixture run
+      # found exactly that: pointed at one small tree, it reported spelling
+      # errors from docs/ instead.
+      working_directory:
+        description: 'Directory for `run:` steps. Does NOT scope the lanes below.'
+        type: string
+        default: '.'
+      lychee:
+        type: boolean
+        default: true
+      lychee_args:
+        description: 'Arguments passed to lychee. Any path is repo-root-relative.'
+        type: string
+        default: '--no-progress --max-concurrency 8 "**/*.md"'
+      typos:
+        type: boolean
+        default: true
+      typos_files:
+        description: 'Path typos scans. Repo-root-relative, not under working_directory.'
+        type: string
+        default: '.'
+      markdownlint:
+        type: boolean
+        default: true
+      markdownlint_globs:
+        description: 'Globs markdownlint checks. Repo-root-relative, not under working_directory.'
+        type: string
+        default: '**/*.md'
+      timeout_minutes:
+        type: number
+        default: 15
+
+permissions: {}
+
+jobs:
+  docs-quality:
+    name: docs-quality
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Link check (lychee)
+        if: ${{ inputs.lychee }}
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2.9.0
+        with:
+          args: ${{ inputs.lychee_args }}
+          fail: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          workingDirectory: ${{ inputs.working_directory }}
+
+      - name: Spell check (typos)
+        if: ${{ inputs.typos }}
+        uses: crate-ci/typos@8a48f81b6c64dcfea44b3633223084c4be58ac5f  # v1.49.0
+        with:
+          files: ${{ inputs.typos_files }}
+
+      - name: Markdown lint
+        if: ${{ inputs.markdownlint }}
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff  # v24.2.0
+        with:
+          globs: ${{ inputs.markdownlint_globs }}

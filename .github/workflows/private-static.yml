@@ -1,0 +1,131 @@
+name: private-static
+
+# Reusable lightweight static validation for PRIVATE repositories.
+# Deliberately zero-cost: a single Ubuntu job, no paid GitHub Advanced Security
+# features, no matrix, no caching. Runs a caller-provided validation command.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      python_version:
+        type: string
+        default: '3.13'
+      setup_python:
+        type: boolean
+        default: true
+      setup_uv:
+        description: >-
+          Provision the pinned uv before install_command runs. This lane sets up
+          Python and then hands you install_command with no installer in scope:
+          pip and pipx are forbidden by estate policy, so a caller following that
+          policy had nothing to install with. Default false keeps every existing
+          caller byte-identical.
+        type: boolean
+        default: false
+      uv_version:
+        description: 'Exact astral-sh/uv version to pin when setup_uv is true.'
+        type: string
+        default: '0.11.30'
+      checkout_ref:
+        description: 'Optional ref/SHA to checkout (needed by pull_request wrappers).'
+        type: string
+        default: ''
+      fetch_depth:
+        description: 'actions/checkout fetch-depth.'
+        type: number
+        default: 1
+      submodules:
+        description: 'actions/checkout submodules input: false, true, or recursive.'
+        type: string
+        default: 'false'
+      install_command:
+        description: 'Optional setup command to run before validation.'
+        type: string
+        default: ''
+      command:
+        description: 'Validation command to run (bash shell).'
+        type: string
+        required: true
+      timeout_minutes:
+        type: number
+        default: 15
+
+permissions: {}
+
+jobs:
+  static:
+    name: static validation
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: Reject caller-supplied ref on a privileged event
+        shell: bash
+        env:
+          CALLER_EVENT: ${{ github.event_name }}
+          CHECKOUT_REF: ${{ inputs.checkout_ref }}
+        run: |
+          set -euo pipefail
+          # A reusable workflow inherits the caller's github context, so
+          # CALLER_EVENT is the event that triggered the calling run. On a
+          # privileged event the job holds the caller's write token and
+          # secrets, and checking out a caller-supplied ref would execute
+          # untrusted code with them. Fail closed instead.
+          case "$CALLER_EVENT" in
+            pull_request_target|workflow_run|issue_comment|issues|discussion|discussion_comment)
+              if [ -n "$CHECKOUT_REF" ]; then
+                echo "::error::private-static refuses checkout_ref='${CHECKOUT_REF}' on privileged event '${CALLER_EVENT}'; call it from pull_request instead" >&2
+                exit 1
+              fi
+              ;;
+          esac
+          echo "caller event '${CALLER_EVENT}' accepted for checkout_ref='${CHECKOUT_REF:-<default>}'"
+
+      - name: Isolate global Git config
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          isolated_config="$RUNNER_TEMP/nddev-ci-global.gitconfig"
+          : > "$isolated_config"
+          printf 'GIT_CONFIG_GLOBAL=%s\n' "$isolated_config" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ inputs.checkout_ref }}
+          fetch-depth: ${{ inputs.fetch_depth }}
+          submodules: ${{ inputs.submodules }}
+          persist-credentials: false
+
+      - name: Set up Python
+        if: ${{ inputs.setup_python }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Set up uv
+        if: ${{ inputs.setup_uv }}
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: ${{ inputs.uv_version }}
+          # uv provisions our pinned tooling here, not the caller's
+          # dependencies; a restored entry would be unreviewed input to a scan.
+          enable-cache: false
+
+      - name: Run install command
+        if: ${{ inputs.install_command != '' }}
+        shell: bash
+        env:
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+
+      - name: Run validation
+        shell: bash
+        env:
+          VALIDATION_COMMAND: ${{ inputs.command }}
+        run: bash -euo pipefail -c "$VALIDATION_COMMAND"

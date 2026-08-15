@@ -1,0 +1,17 @@
+# R CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: r
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: r-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  r:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/r-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      lint: true
+      test_command: "Rscript -e 'testthat::test_local()'"

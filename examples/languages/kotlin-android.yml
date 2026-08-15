@@ -1,0 +1,17 @@
+# Kotlin/Android CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: kotlin-android
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: kotlin-android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  kotlin-android:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/kotlin-android-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      # The checked wrapper drives the default `./gradlew build` contract.
+      java_version: '21'

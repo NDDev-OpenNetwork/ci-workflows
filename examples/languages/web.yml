@@ -1,0 +1,15 @@
+# HTML/CSS/web CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: web
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: web-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  web:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/web-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest

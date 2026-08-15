@@ -1,0 +1,228 @@
+name: release
+
+# Release graph — every write capability sits behind two gates:
+#
+#   resolve      validate the version against VERSION + CHANGELOG (read-only)
+#     └─ promotion   verify the tag carries a control-plane promotion record
+#          └─ authorize   protected environment; a human release operator approves
+#               └─ publish   the only job holding contents/id-token/attestations
+#
+# `publish` calls a reusable workflow, and GitHub does not allow `environment:`
+# on a `uses:` job (actionlint: "when a reusable workflow is called with
+# 'uses', 'environment' is not available"). The approval therefore lives in its
+# own `authorize` job. `publish` declares its write scopes but can never start
+# until authorize succeeds, so the token is never minted for an unauthorized
+# candidate.
+#
+# workflow_dispatch must be run **from the tag ref**: the promotion gate
+# requires github.ref_type == 'tag' and ref_name == version, so dispatching from
+# a branch fails closed rather than bypassing the gate.
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release. Run this from the tag ref; must equal VERSION and the tag.'
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920  # v2.20.0
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            agent.api.stepsecurity.io:443
+            github.com:443
+            api.github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            raw.githubusercontent.com:443
+            astral.sh:443
+            pypi.org:443
+            files.pythonhosted.org:443
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # The preflight reconciles CHANGELOG headings against SemVer tags, and
+          # that check fails closed when it can see none -- a shallow checkout
+          # cannot tell "no tags" from "no tags fetched". A release of all things
+          # must not be the run that cannot see its own ledger.
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+          update-environment: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: 0.11.30
+          # setup-uv caches by default. On a publishing workflow that turns the
+          # Actions cache into an input to a release build, and a cache entry
+          # written from a lower-trust ref would be restored here
+          # (zizmor: cache-poisoning, high). The preflight installs one
+          # hash-pinned wheel; a cache saves nothing worth that exposure.
+          enable-cache: false
+
+      - name: Install validator dependencies
+        env:
+          PYTHON_PATH: ${{ steps.python.outputs.python-path }}
+        run: |
+          "$PYTHON_PATH" -I -B -m venv --copies .venv
+          uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
+
+      # An immutable artifact must not ship carrying an expired external fact or
+      # a runtime-coverage waiver already past due, so the release keeps the
+      # calendar checks. What it cannot keep is the rest of the advisory tier:
+      # `transitive-action-pins` and `anchor-contexts` fail closed without a
+      # GitHub token, and `flutter-pin` and `qt-pin` need two hosts this job's
+      # egress policy blocks. Running `validate_all.py --` here meant every
+      # release stopped in preflight on four capability failures -- before the
+      # promotion gate, and long before the missing evidence manifest (#157) that
+      # is the *known* blocker. The graph had never been exercised: at 0.13.3
+      # `resolve` did not run validate_all at all.
+      #
+      # `--tier release` is core plus the calendar checks, and reaches no further
+      # than this checkout. `catalog/validation-tiers.yml` records why, and
+      # `check_validation_tier_contract.py` fails if this job ever invokes a tier
+      # it does not grant the capabilities for.
+      - name: Release validation preflight
+        run: |
+          .venv/bin/python -I -B scripts/check_python_syntax.py
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch validate_all.py -- --tier release
+
+      - name: Resolve and validate version
+        id: v
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          python3 -I <<'PY'
+          import os
+          import pathlib
+          import re
+          import sys
+
+          numeric_semver = re.compile(
+              r"(?:0|[1-9][0-9]*)\."
+              r"(?:0|[1-9][0-9]*)\."
+              r"(?:0|[1-9][0-9]*)"
+          )
+
+          def fail(message):
+              print(f"release contract: {message}", file=sys.stderr)
+              raise SystemExit(1)
+
+          version = (
+              os.environ["INPUT_VERSION"]
+              if os.environ["EVENT_NAME"] == "workflow_dispatch"
+              else os.environ["REF_NAME"]
+          )
+          if numeric_semver.fullmatch(version) is None:
+              fail("version must be numeric SemVer X.Y.Z without leading zeros")
+          expected_version_file = f"{version}\n".encode("ascii")
+          try:
+              actual_version_file = pathlib.Path("VERSION").read_bytes()
+          except OSError as exc:
+              fail(f"cannot read VERSION: {exc}")
+          if actual_version_file != expected_version_file:
+              fail("VERSION must contain the exact release version on one LF-terminated line")
+          changelog_heading = re.compile(rf"## \[{re.escape(version)}\](?: - .+)?")
+          try:
+              changelog_lines = pathlib.Path("CHANGELOG.md").read_text(
+                  encoding="utf-8"
+              ).splitlines()
+          except OSError as exc:
+              fail(f"cannot read CHANGELOG.md: {exc}")
+          if (
+              sum(
+                  changelog_heading.fullmatch(line) is not None
+                  for line in changelog_lines
+              )
+              != 1
+          ):
+              fail("CHANGELOG.md must have exactly one release heading")
+          with pathlib.Path(os.environ["GITHUB_OUTPUT"]).open(
+              "a", encoding="utf-8"
+          ) as output:
+              output.write(f"version={version}\n")
+          print(f"release contract validated for {version}")
+          PY
+
+  promotion:
+    name: Verify release promotion
+    needs: resolve
+    permissions:
+      contents: read
+    uses: ./.github/workflows/release-promotion-gate.yml
+    with:
+      runner: ubuntu-latest
+      version: ${{ needs.resolve.outputs.version }}
+
+  authorize:
+    name: Authorize release
+    needs: [resolve, promotion]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # The protected environment is the release authority. A GitHub-verified
+    # signature proves who signed, never that the signer may ship — this job is
+    # where that second question is answered, by a required reviewer on the
+    # `release` environment.
+    environment: release
+    permissions: {}
+    steps:
+      - name: Record the authorized candidate
+        env:
+          RELEASE_VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Release authorized"
+            echo
+            echo "- version: \`${RELEASE_VERSION}\`"
+            echo "- promotion record: verified"
+            echo "- approver: recorded by the \`release\` environment"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: [resolve, promotion, authorize]
+    permissions:
+      contents: write         # create the GitHub Release and upload assets
+      id-token: write         # OIDC identity for SLSA build provenance
+      attestations: write     # attest the SBOM and the release archive
+      artifact-metadata: write   # actions/attest artifact storage record (required at v4.1.1)
+    uses: ./.github/workflows/release-supply-chain.yml
+    with:
+      runner: ubuntu-latest
+      version: ${{ needs.resolve.outputs.version }}
+      package_name: ci-workflows
+      archive_paths: >-
+        README.md LICENSE NOTICE SECURITY.md SUPPORT.md CODE_OF_CONDUCT.md
+        CONTRIBUTING.md AGENTS.md VERSION CHANGELOG.md .gitignore .github
+        .agents .claude catalog docs examples scripts requirements-ci.in
+        requirements-ci.txt

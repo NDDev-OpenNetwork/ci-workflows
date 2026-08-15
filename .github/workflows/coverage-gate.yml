@@ -1,0 +1,127 @@
+name: coverage-gate
+
+# Reusable coverage upload for BOTH tiers: a caller-provided
+# coverage command, and a Codecov upload (free on public; token-gated on
+# private) with an optional Coveralls upload. Coverage thresholds are enforced by
+# the caller's codecov.yml, not here.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      working_directory:
+        type: string
+        default: '.'
+      coverage_command:
+        description: 'Command (bash) that produces a coverage report. Empty to skip.'
+        type: string
+        default: ''
+      install_command:
+        description: 'Command (bash) that installs the coverage tool, e.g. `cargo install cargo-llvm-cov`. Empty to skip; runs before the coverage command.'
+        type: string
+        default: ''
+      files:
+        description: 'Coverage file(s) to upload (comma-separated). Empty lets Codecov search.'
+        type: string
+        default: ''
+      flags:
+        type: string
+        default: ''
+      fail_ci_if_error:
+        type: boolean
+        default: true
+      use_codecov:
+        type: boolean
+        default: true
+      use_coveralls:
+        type: boolean
+        default: false
+      coveralls_file:
+        description: 'Coverage file for Coveralls, e.g. coverage/lcov.info.'
+        type: string
+        default: ''
+      timeout_minutes:
+        type: number
+        default: 20
+      upload_artifact:
+        description: 'When true, uploads the coverage report file as a workflow artifact.'
+        type: boolean
+        default: false
+      artifact_name:
+        description: 'Name of the workflow artifact to upload.'
+        type: string
+        default: 'coverage-report'
+      artifact_path:
+        description: 'Path (file or directory) of the report to upload. Required when upload_artifact is true.'
+        type: string
+        default: ''
+    secrets:
+      codecov_token:
+        required: false
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  coverage:
+    name: coverage
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run install command
+        if: ${{ inputs.install_command != '' }}
+        env:
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+
+      - name: Produce coverage
+        if: ${{ inputs.coverage_command != '' }}
+        env:
+          COVERAGE_COMMAND: ${{ inputs.coverage_command }}
+        run: bash -euo pipefail -c "$COVERAGE_COMMAND"
+
+      - name: Upload to Codecov
+        if: ${{ inputs.use_codecov }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
+        with:
+          token: ${{ secrets.codecov_token }}
+          files: ${{ inputs.files }}
+          flags: ${{ inputs.flags }}
+          fail_ci_if_error: ${{ inputs.fail_ci_if_error }}
+
+      - name: Upload to Coveralls
+        if: ${{ inputs.use_coveralls }}
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329  # v2.3.8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ inputs.coveralls_file }}
+
+      - name: Upload coverage report artifact
+        if: ${{ inputs.upload_artifact }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.artifact_path }}
+          if-no-files-found: error
+          retention-days: 14

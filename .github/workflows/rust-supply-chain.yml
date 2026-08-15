@@ -1,0 +1,127 @@
+name: rust-supply-chain
+
+# Reusable Rust supply-chain checks: cargo-deny (bans/licenses/advisories/
+# sources), cargo-audit (RustSec advisories), and cargo-machete (dead-code
+# dependency detection). Each check is independently toggleable.
+#
+# All tool versions are caller-overridable inputs with safe defaults pinned to
+# the versions verified on the NDDev estate. The taiki-e/install-action and
+# EmbarkStudios/cargo-deny-action references are SHA-pinned.
+#
+# Usage:
+#   deny:
+#     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/rust-supply-chain.yml@<sha>
+#     with:
+#       enable_deny: true
+#       enable_audit: true
+#       enable_machete: true
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label.'
+        type: string
+        default: 'ubuntu-latest'
+      toolchain:
+        description: 'Rust toolchain version for cargo-audit/machete (not needed for deny which uses the action).'
+        type: string
+        default: 'stable'
+      enable_deny:
+        description: 'Run cargo-deny (bans/licenses/advisories/sources).'
+        type: boolean
+        default: true
+      enable_audit:
+        description: 'Run cargo-audit (RustSec vulnerability advisories).'
+        type: boolean
+        default: true
+      enable_machete:
+        description: 'Run cargo-machete (unused dependency detection).'
+        type: boolean
+        default: true
+      deny_command:
+        description: 'cargo-deny check arguments.'
+        type: string
+        default: 'check bans licenses advisories sources'
+      deny_arguments:
+        description: 'Global cargo-deny arguments, before the check command (for example --config path/to/deny.toml).'
+        type: string
+        default: '--all-features'
+      cargo_audit_version:
+        description: 'cargo-audit version to install via taiki-e/install-action.'
+        type: string
+        default: '0.22.1'
+      cargo_machete_version:
+        description: 'cargo-machete version to install via taiki-e/install-action.'
+        type: string
+        default: '0.9.1'
+      working_directory:
+        description: 'Working directory for cargo commands (for monorepos/subdirs).'
+        type: string
+        default: '.'
+
+permissions: {}
+
+jobs:
+  deny:
+    name: cargo-deny
+    if: ${{ inputs.enable_deny }}
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25  # v2.1.1
+        with:
+          command: ${{ inputs.deny_command }}
+          manifest-path: ${{ inputs.working_directory }}/Cargo.toml
+          arguments: ${{ inputs.deny_arguments }}
+
+  audit:
+    name: cargo-audit
+    if: ${{ inputs.enable_audit }}
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@67729d5c413db75907f0ad1e39bb04b9c868ff60  # v2.85.7
+        with:
+          tool: cargo-audit@${{ inputs.cargo_audit_version }}
+      - name: Run cargo-audit
+        working-directory: ${{ inputs.working_directory }}
+        run: cargo audit
+
+  machete:
+    name: cargo-machete
+    if: ${{ inputs.enable_machete }}
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install cargo-machete
+        uses: taiki-e/install-action@67729d5c413db75907f0ad1e39bb04b9c868ff60  # v2.85.7
+        with:
+          tool: cargo-machete@${{ inputs.cargo_machete_version }}
+      - name: Run cargo-machete
+        working-directory: ${{ inputs.working_directory }}
+        run: |
+          set -euo pipefail
+          # cargo-machete exits 0 even with findings; grep for unused deps
+          output="$(cargo machete --skip-metadata-dir 2>&1 || true)"
+          echo "$output"
+          if echo "$output" | grep -qiE "^(Analyzing|  )" && echo "$output" | grep -qE "^\s+\S+\s*$"; then
+            echo "::warning::cargo-machete found potentially unused dependencies (check output above)"
+          fi

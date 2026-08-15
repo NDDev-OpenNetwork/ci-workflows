@@ -1,0 +1,80 @@
+# NDDev estate tier — PRIVATE repository variant.
+#
+# Identical coverage to examples/nddev/security.yml; the only difference is that
+# every job is routed to the estate's self-hosted fleet so that the metered
+# private-repository minutes never reach the bill.
+#
+# Do NOT copy this file into a public repository. A forked pull request against
+# a public repo executes attacker-controlled code, so pointing a public repo at a
+# self-hosted runner is a remote-code-execution path into your own hardware. The
+# estate's runner group also sets allows_public_repositories: false, but treat
+# that as a backstop rather than the control.
+#
+# Two scans are NOT configured by this file and must be set per repository, or
+# they keep consuming metered minutes regardless of what is written here:
+#   * CodeQL default setup  -> PATCH /repos/{owner}/{repo}/code-scanning/default-setup
+#                              with runner_type=labeled, runner_label=nddev-linux-standard
+#   * Code Quality          -> repository Settings -> Code quality -> Labeled runner
+# See docs/05-runners.md#visibility-routing.
+#
+# Replace @<sha> with a pinned full commit SHA of ci-workflows. The runner
+# labels below are the estate's real scale-set classes, documented in
+# `github-actions/docs/architecture.md`:
+#
+#   nddev-linux-fast         format, lint, typecheck, short unit tests
+#                            (no job credential, no Docker)          [no host yet]
+#   nddev-linux-standard     normal builds and tests, repo-scoped credentials
+#   nddev-linux-integration  Docker, Compose, databases, browsers
+#   nddev-linux-release      signing, publish, deploy (isolated)     [no host yet]
+#
+# DECLARED IS NOT DEPLOYED. As of 2026-08-11 the fleet's GARM holds one
+# repository entity and serves `NDDev-OpenNetwork/github-actions` alone, so none of
+# these labels can take a job from another repository until the organization
+# entity and its scale sets are rolled out. Until then this file documents the
+# intended routing; a caller that needs to run today names a hosted runner.
+#
+# The class is not cosmetic. `secret-scan` runs gitleaks as a digest-pinned
+# container, so it needs the class that has a Docker daemon; on
+# `nddev-linux-standard` it fails at `docker run`. Everything else here is a
+# scanner that uploads SARIF, so it needs repository-scoped credentials and
+# belongs on `nddev-linux-standard` rather than the credential-free fast class.
+name: security
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  codeql:
+    permissions: { actions: read, contents: read, security-events: write }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-codeql.yml@<sha>
+    with:
+      languages: '["python","actions"]'
+      runner: nddev-linux-standard
+  secret-scan:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@<sha>
+    with:
+      runner: nddev-linux-integration  # gitleaks runs as a container
+  actionlint:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/actionlint.yml@<sha>
+    with:
+      runner: nddev-linux-standard
+  zizmor:
+    permissions: { actions: read, contents: read, security-events: write }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/zizmor-sarif.yml@<sha>
+    with:
+      runner: nddev-linux-standard
+  dependency-review:
+    permissions: { contents: read, pull-requests: write }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-dependency-review.yml@<sha>
+    with:
+      runner: nddev-linux-standard
+  osv-scan:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/osv-scan.yml@<sha>
+    with:
+      runner: nddev-linux-standard

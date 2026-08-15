@@ -1,0 +1,75 @@
+name: java-ci
+
+# Reusable Java CI for BOTH tiers: pinned setup-java (Temurin by
+# default, built-in build-tool cache), and caller-provided build/test command.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      java_version:
+        type: string
+        default: '21'
+      distribution:
+        type: string
+        default: 'temurin'
+      cache:
+        description: 'setup-java cache: maven, gradle, sbt, or empty to disable.'
+        type: string
+        default: 'maven'
+      working_directory:
+        type: string
+        default: '.'
+      test_command:
+        description: 'Build/test command (bash).'
+        type: string
+        default: 'mvn -B verify'
+      timeout_minutes:
+        type: number
+        default: 30
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  java:
+    name: java (${{ inputs.java_version }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961  # v5.7.0
+        with:
+          java-version: ${{ inputs.java_version }}
+          distribution: ${{ inputs.distribution }}
+          cache: ${{ inputs.cache }}
+
+      - name: Build and test
+        env:
+          TEST_COMMAND: ${{ inputs.test_command }}
+          JAVA_VER: ${{ inputs.java_version }}
+          JAVA_DIST: ${{ inputs.distribution }}
+        run: |
+          bash -euo pipefail -c "$TEST_COMMAND"
+          echo "Java ${JAVA_VER} (${JAVA_DIST}) build + tests passed." >> "$GITHUB_STEP_SUMMARY"

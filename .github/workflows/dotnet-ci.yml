@@ -1,0 +1,82 @@
+name: dotnet-ci
+
+# Reusable .NET CI for BOTH tiers: pinned setup-dotnet, and
+# caller-provided restore/build/test commands passed via env.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      dotnet_version:
+        type: string
+        default: '9.0.x'
+      working_directory:
+        type: string
+        default: '.'
+      restore_command:
+        type: string
+        default: 'dotnet restore'
+      build_command:
+        type: string
+        default: 'dotnet build --no-restore --configuration Release'
+      test_command:
+        type: string
+        default: 'dotnet test --no-build --configuration Release'
+      timeout_minutes:
+        type: number
+        default: 30
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  dotnet:
+    name: dotnet (${{ inputs.dotnet_version }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
+        with:
+          dotnet-version: ${{ inputs.dotnet_version }}
+
+      - name: Restore
+        if: ${{ inputs.restore_command != '' }}
+        env:
+          RESTORE_COMMAND: ${{ inputs.restore_command }}
+        run: bash -euo pipefail -c "$RESTORE_COMMAND"
+
+      - name: Build
+        if: ${{ inputs.build_command != '' }}
+        env:
+          BUILD_COMMAND: ${{ inputs.build_command }}
+        run: bash -euo pipefail -c "$BUILD_COMMAND"
+
+      - name: Test
+        env:
+          TEST_COMMAND: ${{ inputs.test_command }}
+          DOTNET_VER: ${{ inputs.dotnet_version }}
+        run: |
+          bash -euo pipefail -c "$TEST_COMMAND"
+          echo ".NET ${DOTNET_VER} build + tests passed." >> "$GITHUB_STEP_SUMMARY"

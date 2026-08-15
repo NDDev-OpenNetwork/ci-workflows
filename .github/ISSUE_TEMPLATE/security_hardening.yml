@@ -1,0 +1,58 @@
+name: Security hardening proposal
+description: Propose a defense-in-depth improvement. NOT for vulnerability reports.
+title: "harden: <area>: <short summary>"
+labels: ["security", "hardening", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Not a vulnerability report
+        If you have found an exploitable weakness, **stop** and report it
+        privately via a
+        [GitHub Security Advisory](https://github.com/NDDev-OpenNetwork/ci-workflows/security/advisories/new)
+        (see SECURITY.md). This form is for **public, non-sensitive**
+        defense-in-depth ideas — tightening permissions, egress policies, pin
+        hygiene, attestation coverage, and similar.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Token permissions / least privilege
+        - Action / tool pinning (SHA / digest / checksum)
+        - Runner egress hardening (harden-runner)
+        - Template-injection / untrusted input handling
+        - Release supply chain (SBOM / attestations / provenance)
+        - Secret scanning
+        - Branch protection / repository policy
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+      description: What does the workflow / repo do today? Link the relevant file or lines.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed hardening
+      description: The concrete change you propose and the risk it reduces.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Links to advisories, OSSF/SLSA guidance, action docs, or prior art.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: This is a public hardening idea, not an exploitable vulnerability report.
+          required: true

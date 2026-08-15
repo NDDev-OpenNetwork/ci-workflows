@@ -1,0 +1,171 @@
+name: actionlint
+
+# Reusable actionlint (checksum-verified binary) for BOTH tiers.
+# Lints workflow YAML for syntax errors, expression typos, and deprecated usage.
+#
+# Runner contract: Linux X64 only. The workflow downloads the upstream
+# linux_amd64 tarball, verifies it with sha256sum, and installs into
+# /usr/local/bin, so any other OS/architecture is rejected by an explicit
+# guard before the download instead of failing half-way through.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Linux X64 runner label; other platforms are rejected by the runner-contract guard.'
+        type: string
+        default: 'ubuntu-latest'
+      actionlint_version:
+        type: string
+        default: '1.7.12'
+      actionlint_sha256:
+        description: 'SHA256 of actionlint_<ver>_linux_amd64.tar.gz from upstream checksums.txt.'
+        type: string
+        default: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8'
+      post_command:
+        description: 'Optional extra static check after actionlint, e.g. a repository-local pin validator.'
+        type: string
+        default: ''
+      enable_shellcheck:
+        description: 'When true, also downloads (checksum-verified) and runs shellcheck on shell scripts after actionlint.'
+        type: boolean
+        default: false
+      shellcheck_version:
+        description: 'shellcheck release version to download (without a leading v).'
+        type: string
+        default: '0.11.0'
+      shellcheck_sha256:
+        description: 'SHA256 of shellcheck-v<shellcheck_version>.linux.x86_64.tar.xz from the upstream checksums. Required when enable_shellcheck is true.'
+        type: string
+        default: ''
+
+permissions: {}
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Validate runner contract
+        shell: bash
+        env:
+          ACTIONLINT_RUNNER_OS: ${{ runner.os }}
+          ACTIONLINT_RUNNER_ARCH: ${{ runner.arch }}
+        run: |
+          set -euo pipefail
+          python3 -I <<'PY'
+          import os
+          import sys
+
+          def fail(message):
+              print(f"actionlint runner contract: {message}", file=sys.stderr)
+              raise SystemExit(1)
+
+          if os.environ["ACTIONLINT_RUNNER_OS"] != "Linux":
+              fail(
+                  "this workflow downloads the linux_amd64 actionlint binary; "
+                  "the runner must be Linux X64"
+              )
+          if os.environ["ACTIONLINT_RUNNER_ARCH"] != "X64":
+              fail(
+                  "the pinned actionlint_sha256 covers the linux_amd64 tarball "
+                  "only; the runner must be Linux X64"
+              )
+          print("runner contract validated: Linux X64")
+          PY
+
+      - name: Isolate global Git config
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          isolated_config="$RUNNER_TEMP/nddev-ci-global.gitconfig"
+          : > "$isolated_config"
+          printf 'GIT_CONFIG_GLOBAL=%s\n' "$isolated_config" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download actionlint (pinned + checksum-verified)
+        env:
+          ACTIONLINT_VERSION: ${{ inputs.actionlint_version }}
+          ACTIONLINT_SHA256: ${{ inputs.actionlint_sha256 }}
+        run: |
+          set -euo pipefail
+          # --retry covers only the transient case: 5xx, connection failures and
+          # timeouts. It does not retry a 404 and it cannot weaken what follows,
+          # because the checksum below is verified either way. Without it a GitHub
+          # Releases 503 fails a required gate outright, which happened on 2026-08-12.
+          #
+          # No --retry-delay on purpose. Setting it makes every attempt wait the same
+          # fixed interval and DISABLES curl's exponential backoff; the first version
+          # here used `--retry 3 --retry-delay 2` and burned all four attempts inside
+          # six seconds, which a Releases outage outlasts easily. Left unset, curl backs
+          # off 1s, 2s, 4s, 8s..., and --retry-max-time bounds the whole thing so a
+          # genuinely dead endpoint still fails the job rather than hanging it.
+          curl -fsSL --retry 5 --retry-max-time 120 -o /tmp/actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  /tmp/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+          # Install into a runner-writable directory rather than /usr/local/bin:
+          # GitHub-hosted runners let the job user write there, self-hosted ones
+          # normally do not, and a correctly isolated self-hosted runner must not.
+          mkdir -p "${RUNNER_TEMP}/bin"
+          install -m 0755 /tmp/actionlint "${RUNNER_TEMP}/bin/actionlint"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+          "${RUNNER_TEMP}/bin/actionlint" --version
+
+      - name: Run actionlint
+        run: actionlint -color
+
+      - name: Download shellcheck (pinned + checksum-verified)
+        if: ${{ inputs.enable_shellcheck }}
+        env:
+          SHELLCHECK_VERSION: ${{ inputs.shellcheck_version }}
+          SHELLCHECK_SHA256: ${{ inputs.shellcheck_sha256 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SHELLCHECK_SHA256" ]; then
+            echo "enable_shellcheck is true but shellcheck_sha256 is empty; a SHA256 of shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz is required" >&2
+            exit 1
+          fi
+          curl -fsSL --retry 5 --retry-max-time 120 -o /tmp/shellcheck.tar.xz \
+            "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  /tmp/shellcheck.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/shellcheck.tar.xz -C /tmp "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
+          # Install into a runner-writable directory (consistent with the
+          # actionlint binary above): GitHub-hosted runners let the job user
+          # write there, correctly isolated self-hosted runners must not need to.
+          mkdir -p "${RUNNER_TEMP}/bin"
+          install -m 0755 "/tmp/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" "${RUNNER_TEMP}/bin/shellcheck"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+          "${RUNNER_TEMP}/bin/shellcheck" --version
+
+      - name: Run shellcheck
+        if: ${{ inputs.enable_shellcheck }}
+        run: |
+          set -euo pipefail
+          # Recursive: glob every shell script under the checkout. `mapfile`
+          # tolerates spaces/quotes in paths; `git grep` scopes to tracked
+          # files only, which avoids scanning vendored/ignored noise.
+          if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            mapfile -t scripts < <(git grep -Il '' -- '*.sh')
+          else
+            mapfile -t scripts < <(find . -type f -name '*.sh')
+          fi
+          if [ "${#scripts[@]}" -eq 0 ]; then
+            echo "no shell scripts found; nothing to check"
+            exit 0
+          fi
+          shellcheck --check-sourced --external-sources "${scripts[@]}"
+
+      - name: Run post-actionlint command
+        if: ${{ inputs.post_command != '' }}
+        env:
+          POST_COMMAND: ${{ inputs.post_command }}
+        run: bash -euo pipefail -c "$POST_COMMAND"

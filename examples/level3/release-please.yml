@@ -1,0 +1,24 @@
+# Automated releases with release-please (opt-in). Self-contained caller; replace
+# @<sha> with a pinned full commit SHA. This complements - does not replace - the
+# tag-driven release-supply-chain workflow: release-please opens a release PR that
+# bumps VERSION/CHANGELOG, and merging it can push the tag that triggers the
+# attested release. Monorepo alternative: changesets (uses: changesets/action@<sha>).
+name: release-please
+on:
+  push:
+    branches: [main]
+permissions: {}
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7  # v5.0.0
+        with:
+          release-type: simple

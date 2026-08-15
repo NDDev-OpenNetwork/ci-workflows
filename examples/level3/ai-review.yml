@@ -1,0 +1,30 @@
+# AI code review (Level 3, opt-in). Self-contained caller; replace @<sha> with
+# pinned full commit SHAs. This example uses the Claude Code Action. Same-shape
+# alternatives:
+#   - CodeRabbit: install the GitHub App (free for public OSS); no workflow needed.
+#   - Qodo Merge / PR-Agent: uses: qodo-ai/pr-agent@<sha> with your model key.
+# AI review is advisory - keep human review as the merge gate. Store the model
+# key as a secret; never inline it.
+name: ai-review
+on:
+  pull_request:
+    branches: [main]
+permissions: {}
+concurrency:
+  group: ai-review-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: anthropics/claude-code-action@239e3a730883eeb5c53db12b0fc9573b3024b126  # v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # See the action docs for the current review-mode inputs (prompt / claude_args).

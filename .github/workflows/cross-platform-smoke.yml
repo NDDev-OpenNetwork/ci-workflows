@@ -1,0 +1,140 @@
+name: cross-platform-smoke
+
+# Reusable cross-platform smoke test for BOTH tiers.
+# Runs a caller-provided command across an OS matrix (ubuntu/macos/windows).
+
+on:
+  workflow_call:
+    inputs:
+      os_list:
+        description: 'JSON array of runner labels.'
+        type: string
+        default: '["ubuntu-latest","macos-latest","windows-latest"]'
+      python_version:
+        type: string
+        default: '3.13'
+      setup_python:
+        type: boolean
+        default: true
+      checkout_ref:
+        description: 'Optional ref/SHA to checkout.'
+        type: string
+        default: ''
+      fetch_depth:
+        description: 'actions/checkout fetch-depth.'
+        type: number
+        default: 1
+      submodules:
+        description: 'actions/checkout submodules input: false, true, or recursive.'
+        type: string
+        default: 'false'
+      install_command:
+        description: >-
+          Optional dependency install command, run before the smoke command on
+          every OS in the matrix. Kept separate from `command` so a caller does
+          not have to prefix its install step onto each per-OS override, and so
+          a failed install is reported as an install failure rather than as a
+          smoke failure. Empty skips the step. Matches `private-static.yml`.
+        type: string
+        default: ''
+      command:
+        description: 'Shell command to run on each OS (bash shell).'
+        type: string
+        default: 'python -c "import sys; print(sys.platform)"'
+      linux_command:
+        description: 'Optional Linux-only command override. Empty uses command.'
+        type: string
+        default: ''
+      macos_command:
+        description: 'Optional macOS-only command override. Empty uses command.'
+        type: string
+        default: ''
+      windows_command:
+        description: 'Optional Windows-only command override. Empty uses command.'
+        type: string
+        default: ''
+      timeout_minutes:
+        type: number
+        default: 15
+
+permissions: {}
+
+jobs:
+  smoke:
+    name: smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.os_list) }}
+    steps:
+      - name: Reject caller-supplied ref on a privileged event
+        shell: bash
+        env:
+          CALLER_EVENT: ${{ github.event_name }}
+          CHECKOUT_REF: ${{ inputs.checkout_ref }}
+        run: |
+          set -euo pipefail
+          # A reusable workflow inherits the caller's github context, so
+          # CALLER_EVENT is the event that triggered the calling run. On a
+          # privileged event the job holds the caller's write token and
+          # secrets, and checking out a caller-supplied ref would execute
+          # untrusted code with them. Fail closed instead.
+          case "$CALLER_EVENT" in
+            pull_request_target|workflow_run|issue_comment|issues|discussion|discussion_comment)
+              if [ -n "$CHECKOUT_REF" ]; then
+                echo "::error::cross-platform-smoke refuses checkout_ref='${CHECKOUT_REF}' on privileged event '${CALLER_EVENT}'; call it from pull_request instead" >&2
+                exit 1
+              fi
+              ;;
+          esac
+          echo "caller event '${CALLER_EVENT}' accepted for checkout_ref='${CHECKOUT_REF:-<default>}'"
+
+      - name: Isolate global Git config
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          isolated_config="$RUNNER_TEMP/nddev-ci-global.gitconfig"
+          : > "$isolated_config"
+          printf 'GIT_CONFIG_GLOBAL=%s\n' "$isolated_config" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ inputs.checkout_ref }}
+          fetch-depth: ${{ inputs.fetch_depth }}
+          submodules: ${{ inputs.submodules }}
+          persist-credentials: false
+
+      - name: Set up Python
+        if: ${{ inputs.setup_python }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Install dependencies
+        if: ${{ inputs.install_command != '' }}
+        shell: bash
+        env:
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+
+      - name: Run smoke command
+        shell: bash
+        env:
+          SMOKE_COMMAND: ${{ inputs.command }}
+          LINUX_COMMAND: ${{ inputs.linux_command }}
+          MACOS_COMMAND: ${{ inputs.macos_command }}
+          WINDOWS_COMMAND: ${{ inputs.windows_command }}
+        run: |
+          case "$RUNNER_OS" in
+            Linux) selected="${LINUX_COMMAND:-$SMOKE_COMMAND}" ;;
+            macOS) selected="${MACOS_COMMAND:-$SMOKE_COMMAND}" ;;
+            Windows) selected="${WINDOWS_COMMAND:-$SMOKE_COMMAND}" ;;
+            *) selected="$SMOKE_COMMAND" ;;
+          esac
+          bash -euo pipefail -c "$selected"

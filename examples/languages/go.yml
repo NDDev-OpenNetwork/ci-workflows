@@ -1,0 +1,21 @@
+# Go CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: go
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: go-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  go:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/go-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      # Required when validation inspects commit ancestry or pull-request merge parents.
+      fetch_depth: 0
+      # Keep true on hosted runners. Set false only when a warm self-hosted
+      # runner owns its Go caches outside actions/setup-go cache restore/save.
+      cache: true
+      test_command: 'go test -race ./...'

@@ -1,0 +1,93 @@
+name: osv-scan
+
+# Reusable OSV-Scanner SCA for BOTH tiers. Free on private-free repos, where
+# GitHub dependency review is a paid GHAS feature. Pinned, checksum-verified
+# binary; gate-only: known vulnerabilities fail the job (no SARIF upload).
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      working_directory:
+        type: string
+        default: '.'
+      scan_args:
+        description: 'Arguments after "osv-scanner scan source", e.g. "--recursive ." or "--lockfile=path".'
+        type: string
+        default: '--recursive .'
+      osv_scanner_version:
+        type: string
+        default: '2.5.0'
+      osv_scanner_sha256:
+        description: 'SHA256 of osv-scanner_linux_amd64 from the release SHA256SUMS.'
+        type: string
+        default: 'edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c'
+      timeout_minutes:
+        type: number
+        default: 15
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  osv-scan:
+    name: osv-scan
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install OSV-Scanner (pinned + checksum-verified)
+        env:
+          OSV_VERSION: ${{ inputs.osv_scanner_version }}
+          OSV_SHA256: ${{ inputs.osv_scanner_sha256 }}
+        run: |
+          set -euo pipefail
+          # --retry covers only the transient case: 5xx, connection failures and
+          # timeouts. It does not retry a 404 and it cannot weaken what follows,
+          # because the checksum below is verified either way. Without it a GitHub
+          # Releases 503 fails a required gate outright, which happened on 2026-08-12.
+          #
+          # No --retry-delay on purpose. Setting it makes every attempt wait the same
+          # fixed interval and DISABLES curl's exponential backoff; the first version
+          # here used `--retry 3 --retry-delay 2` and burned all four attempts inside
+          # six seconds, which a Releases outage outlasts easily. Left unset, curl backs
+          # off 1s, 2s, 4s, 8s..., and --retry-max-time bounds the whole thing so a
+          # genuinely dead endpoint still fails the job rather than hanging it.
+          curl -fsSL --retry 5 --retry-max-time 120 -o /tmp/osv-scanner \
+            "https://github.com/google/osv-scanner/releases/download/v${OSV_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SHA256}  /tmp/osv-scanner" | sha256sum -c -
+          # Install into a runner-writable directory rather than /usr/local/bin:
+          # GitHub-hosted runners let the job user write there, self-hosted ones
+          # normally do not, and a correctly isolated self-hosted runner must not.
+          mkdir -p "${RUNNER_TEMP}/bin"
+          install -m 0755 /tmp/osv-scanner "${RUNNER_TEMP}/bin/osv-scanner"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+          "${RUNNER_TEMP}/bin/osv-scanner" --version
+
+      - name: OSV scan
+        env:
+          OSV_SCAN_ARGS: ${{ inputs.scan_args }}
+        run: |
+          # shellcheck disable=SC2086
+          osv-scanner scan source $OSV_SCAN_ARGS
+          echo "OSV-Scanner SCA passed." >> "$GITHUB_STEP_SUMMARY"

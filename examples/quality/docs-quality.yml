@@ -1,0 +1,15 @@
+# Docs quality caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: docs-quality
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: docs-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  docs-quality:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/docs-quality.yml@<sha>
+    with:
+      runner: ubuntu-latest

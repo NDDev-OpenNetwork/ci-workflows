@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""Aggregate static validator for ci-workflows.
+
+Runs the repository self-checks and exits non-zero if any fails. Invoked by
+`ci.yml` and by contributors locally.
+
+Checks are grouped into three tiers, because coupling them was itself a defect:
+one required job mixed product invariants with calendar-driven external facts,
+so a third party's pricing page going stale made an unrelated workflow bugfix
+unmergeable. A green check should mean "this change is sound", not "nobody's
+tariff expired today".
+
+  core       Blocking on every pull request. Parse integrity, action pins,
+             permission/event/ref/runner trust, reusable API contracts,
+             release-graph authorization, generated-doc drift, and the
+             executable behaviour fixtures. All of these are properties of the
+             tree in hand, so they can only fail because of the change.
+
+  touched    Blocking, but scoped to what the change actually reaches. Product
+             facts are checked for expiry only when the changed capability
+             only when its workflow was touched. Structural rules from both
+             ledgers always run in `core`.
+
+  scheduled  Advisory, on a timer, never blocking a pull request. The full
+             calendar sweep of external facts and waivers, and the broad
+             documentation link audit. Their failures are real work, but they
+             are maintenance debt rather than a defect in someone's change.
+
+Usage:
+    .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch \
+      validate_all.py --                               # everything (default)
+    .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch \
+      validate_all.py -- --tier core                   # blocking gate
+"""
+
+from __future__ import annotations
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+from ci_workflows_tools import (
+    _strict_yaml,
+    check_actionlint_config,
+    check_actionlint_contract,
+    check_anchor_contexts,
+    check_benchmark_contract,
+    check_cache_contract,
+    check_cache_upstream_defaults,
+    check_ci_tier_selection,
+    check_consumer_skill_contract,
+    check_maintenance_report_contract,
+    check_validation_tier_contract,
+    check_docs_links,
+    check_flutter_pin,
+    check_documented_commands,
+    check_examples,
+    check_gate_contract,
+    check_harden_runner_contract,
+    check_merge_group,
+    check_monorepo_routing,
+    check_permissions,
+    check_pinned_actions,
+    check_pr_hygiene_contract,
+    check_privileged_ref_guard,
+    check_public_docs,
+    check_python_execution_contract,
+    check_python_syntax,
+    check_qt_pin,
+    check_qt_toolchain_lock,
+    check_release_graph,
+    check_release_ledger,
+    check_release_promotion_gate,
+    check_release_supply_chain,
+    check_rulesets,
+    check_runner_routing,
+    check_runtime_requirements,
+    check_scorecard_evidence_contract,
+    check_secret_scan_contract,
+    check_sdk_runtime_fixtures,
+    check_side_effect_fixture_contract,
+    check_skills,
+    check_transitive_action_pins,
+    check_tool_pinning,
+    check_tool_registry,
+    check_workflow_contracts,
+    compile_evidence_plan,
+    generate_docs,
+    render_runtime_evidence,
+    resolve_profile,
+    validate_catalog,
+    validate_product_facts,
+    validate_profiles,
+)
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Blocking. Every one of these is a property of the tree, so it can only fail
+# because of the change in hand.
+CORE = [
+    # Parse integrity first: every later check reads these files.
+    ("python-syntax", check_python_syntax.check),
+    ("strict-yaml", _strict_yaml.check),
+    ("python-execution-contract", check_python_execution_contract.check),
+    ("pinned-actions", check_pinned_actions.check),
+    ("tool-pinning", check_tool_pinning.check),
+    ("tool-registry", check_tool_registry.check),
+    ("permissions", check_permissions.check),
+    ("workflow-contracts", check_workflow_contracts.check),
+    ("harden-runner-contract", check_harden_runner_contract.check),
+    ("privileged-ref-guard", check_privileged_ref_guard.check),
+    ("pr-hygiene-contract", check_pr_hygiene_contract.check),
+    ("release-supply-chain", check_release_supply_chain.check),
+    ("release-promotion-gate", check_release_promotion_gate.check),
+    ("release-graph", check_release_graph.check),
+    ("release-ledger", check_release_ledger.check),
+    ("gate-contract", check_gate_contract.check),
+    ("monorepo-routing", check_monorepo_routing.check),
+    ("benchmark-contract", check_benchmark_contract.check),
+    ("cache-contract", check_cache_contract.check),
+    ("ci-tier-selection", check_ci_tier_selection.check),
+    ("consumer-skill", check_consumer_skill_contract.check),
+    ("maintenance-report", check_maintenance_report_contract.check),
+    ("validation-tiers", check_validation_tier_contract.check),
+    ("actionlint-contract", check_actionlint_contract.check),
+    ("actionlint-config", check_actionlint_config.check),
+    ("documented-commands", check_documented_commands.check),
+    ("examples", check_examples.check),
+    ("public-docs", check_public_docs.check),
+    ("runtime-requirements", check_runtime_requirements.check),
+    ("runner-routing", check_runner_routing.check),
+    ("qt-toolchain-lock", check_qt_toolchain_lock.check),
+    ("secret-scan-contract", check_secret_scan_contract.check),
+    ("sdk-runtime-fixtures", check_sdk_runtime_fixtures.check),
+    ("scorecard-evidence-contract", check_scorecard_evidence_contract.check),
+    ("evidence-orchestration", compile_evidence_plan.check),
+    ("side-effect-fixture", check_side_effect_fixture_contract.check),
+    ("merge-group", check_merge_group.check),
+    ("rulesets", check_rulesets.check),
+    ("catalog", validate_catalog.check),
+    ("profiles", validate_profiles.check),
+    ("profile-resolution", resolve_profile.check),
+    ("skills", check_skills.check),
+    ("runtime-evidence-summary", render_runtime_evidence.check),
+    ("generated-docs", generate_docs.check),
+    # Ledger structure without the calendar: a malformed record is a defect in
+    # the change; a waiver coming due is not.
+    ("product-facts-structure", validate_product_facts.check_structural),
+]
+
+# Blocking, scoped to the changed paths.
+TOUCHED = [
+    ("product-facts-touched", validate_product_facts.check_for_paths),
+]
+
+# Advisory, and reaching no further than the checkout. A release runs these:
+# an immutable artifact must not ship carrying an expired external fact, and
+# nothing here needs a credential or a third party to say so. `release-ledger-tags`
+# needs the tag refs, which a release has by construction.
+CALENDAR = [
+    ("product-facts-calendar", validate_product_facts.check),
+    ("release-ledger-tags", check_release_ledger.check_tags),
+    ("consumer-skill-release", check_consumer_skill_contract.check_release_claim),
+    ("docs-links", check_docs_links.check),
+]
+
+# Advisory, and needing a GitHub token or a named external host. This is the
+# split that matters: these fail closed when their capability is absent, so a
+# caller that cannot grant them gets a report about its own environment rather
+# than about the tree. `catalog/validation-tiers.yml` records what each needs and
+# `check_validation_tier_contract.py` holds every caller to it.
+EXTERNAL = [
+    ("cache-upstream-defaults", check_cache_upstream_defaults.check),
+    ("flutter-pin", check_flutter_pin.check),
+    ("qt-pin", check_qt_pin.check),
+    ("transitive-action-pins", check_transitive_action_pins.check),
+    ("anchor-contexts", check_anchor_contexts.check),
+]
+
+SCHEDULED = CALENDAR + EXTERNAL
+
+# What a release preflight runs. Deterministic properties of the tree, plus the
+# freshness the release itself is answerable for -- and nothing that reaches the
+# network from a publishing graph.
+RELEASE = CORE + CALENDAR
+
+
+def changed_paths(base: str | None, explicit: list[str]) -> set[str]:
+    """Repository-relative paths this change touches."""
+    if explicit:
+        return set(explicit)
+    if not base:
+        return set()
+    merge_base = subprocess.run(
+        ["git", "merge-base", "HEAD", base],
+        cwd=REPO_ROOT, env=check_python_execution_contract.clean_environment(),
+        capture_output=True, text=True, check=False,
+    )
+    ref = merge_base.stdout.strip() if merge_base.returncode == 0 else base
+    diff = subprocess.run(
+        ["git", "diff", "--name-only", f"{ref}...HEAD"],
+        cwd=REPO_ROOT, env=check_python_execution_contract.clean_environment(),
+        capture_output=True, text=True, check=False,
+    )
+    if diff.returncode != 0:
+        # Fail closed. An unresolvable base means the change cannot be scoped,
+        # so treat the whole tree as touched rather than checking nothing —
+        # the same conservative rule the monorepo router uses.
+        print(
+            f"validate_all: cannot resolve changed paths against {base!r}; "
+            "treating the whole tree as touched",
+            file=sys.stderr,
+        )
+        return {
+            str(path.relative_to(REPO_ROOT))
+            for path in REPO_ROOT.rglob("*.yml")
+            if ".git/" not in str(path)
+        }
+    return {line.strip() for line in diff.stdout.splitlines() if line.strip()}
+
+
+def run(label: str, problems: list[str]) -> bool:
+    if problems:
+        print(f"[FAIL] {label}")
+        for problem in problems:
+            print(f"    - {problem}")
+        return False
+    print(f"[ OK ] {label}")
+    return True
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser.add_argument(
+        "--tier", choices=["all", "core", "touched", "scheduled", "release"], default="all",
+        help="which group to run (default: all)",
+    )
+    parser.add_argument(
+        "--changed-from", metavar="REF",
+        help="resolve changed paths against this ref (for --tier touched)",
+    )
+    parser.add_argument(
+        "--changed", nargs="*", default=[], metavar="PATH",
+        help="explicit changed paths, bypassing git",
+    )
+    args = parser.parse_args()
+
+    ok = True
+    if args.tier == "release":
+        for label, fn in RELEASE:
+            ok &= run(label, fn())
+        if not ok:
+            print(f"\nvalidate_all ({args.tier}): FAIL", file=sys.stderr)
+            return 1
+        print(f"validate_all ({args.tier}): OK")
+        return 0
+
+    if args.tier in ("all", "core"):
+        for label, fn in CORE:
+            ok &= run(label, fn())
+
+    if args.tier in ("all", "touched"):
+        paths = changed_paths(args.changed_from, args.changed)
+        if args.tier == "touched" and not paths:
+            print("[ -- ] touched: no changed paths resolved; nothing to scope")
+        for label, fn in TOUCHED:
+            ok &= run(label, fn(paths))
+
+    if args.tier in ("all", "scheduled"):
+        for label, fn in SCHEDULED:
+            ok &= run(label, fn())
+
+    if not ok:
+        print(f"\nvalidate_all ({args.tier}): FAIL", file=sys.stderr)
+        return 1
+    print(f"\nvalidate_all ({args.tier}): OK")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

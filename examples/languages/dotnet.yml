@@ -1,0 +1,16 @@
+# .NET CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: dotnet
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: dotnet-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  dotnet:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/dotnet-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      test_command: 'dotnet test'

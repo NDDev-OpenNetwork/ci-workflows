@@ -1,0 +1,1686 @@
+# ci-workflows capability catalog
+# Machine-readable source of truth. Mirrored by docs/. Enforced by scripts/validate_catalog.py.
+# Schema and enums are documented in catalog/README.md.
+# Last verified: 2026-07-04
+#
+# workflow: paths use the FINAL canonical inventory. Capabilities whose delivering
+# workflow file is not yet present on disk (or whose platform feature is not yet GA)
+# carry status: planned or status: preview. See catalog/README.md for the naming note
+# on the zizmor SARIF/no-SARIF split.
+
+capabilities:
+  - id: codeql-code-scanning
+    name: CodeQL code scanning
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: unavailable
+    private_paid: available
+    workflow: .github/workflows/public-codeql.yml
+    example: null
+    required_permissions:
+      - "actions: read"
+      - "contents: read"
+      - "security-events: write"
+    required_settings:
+      - "Code scanning enabled"
+      - "GitHub Advanced Security enabled (required on private repos)"
+    risks:
+      - "Paid via GHAS on private repositories; keep upload disabled there"
+      - "Language autobuild can fail on compiled languages without a build spec"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql"
+      - "https://github.com/github/codeql-action"
+
+  - id: github-code-quality
+    name: GitHub Code Quality
+    product_facts:
+      - github-code-quality-transition
+    cluster: security-scanning
+    status: ga
+    public_oss: paid
+    private_free: paid
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Team or Enterprise Cloud plan"
+      - "Enterprise owner allows Code Quality at the enterprise level"
+      - "Organization Settings -> Security -> Code quality -> Repository access scoped to the paid-tier repositories"
+      - "GitHub Actions enabled on the repository (scans run as Actions workflows)"
+      - "Optional PR gate: ruleset rule 'Require code quality results' with a severity threshold"
+    risks:
+      - "The public per-committer rate is disputed between GitHub's own sources: the product page states $0 for public repositories, the billing docs grant no visibility exemption. Never compile a public cost from this capability in either direction; treat it as account-observed"
+      - "Committers are counted once per organization, so enabling a single repository already bills the whole active committer set"
+      - "Scans consume Actions minutes on private repositories; AI-assisted detection and Autofix consume AI credits"
+      - "Ships no Action and no workflow_call entrypoint, so this library pins nothing for it; a REST API does exist (GET/PATCH /repos/{owner}/{repo}/code-quality/setup plus findings), so its state is drift-checkable by the estate reconciler, not from here"
+      - "Its check runs are named 'Analyze (<language>)', identical to CodeQL default setup, which runs from the same dynamic/github-code-scanning/codeql path; only the run name differs, so a required status check on that name cannot distinguish maintainability from security"
+      - "Requiring code quality results blocks merges while analysis is still running or when it fails, e.g. on exhausted Actions minutes"
+    deprecations: null
+    last_verified: "2026-08-10"
+    sources:
+      - "https://docs.github.com/en/code-security/concepts/about-code-quality"
+      - "https://docs.github.com/en/code-security/how-tos/maintain-quality-code/enable-code-quality"
+      - "https://docs.github.com/en/code-security/how-tos/maintain-quality-code/set-pr-thresholds"
+      - "https://docs.github.com/en/billing/concepts/product-billing/github-code-quality"
+      - "https://docs.github.com/en/rest/code-quality/code-quality"
+      - "https://github.com/features/code-quality"
+
+  - id: ossf-scorecard
+    name: OpenSSF Scorecard SARIF
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: unavailable
+    private_paid: unavailable
+    workflow: .github/workflows/public-scorecard.yml
+    example: examples/public-oss/scorecard-sarif.yml
+    required_permissions:
+      - "security-events: write"
+      - "id-token: write"
+      - "contents: read"
+      - "actions: read"
+    required_settings:
+      - "Public repository (Scorecard is public-oriented; forks unsupported)"
+      - "Code scanning enabled to render SARIF results"
+      - "security-events: write and id-token: write only for publish_results: true"
+      - "Code Scanning preserves Scorecard v5.5.0 upstream categories: supply-chain/branch-protection, supply-chain/local, supply-chain/online-scm"
+    risks:
+      - "Supported triggers are push and schedule on the default branch only; pull_request and workflow_dispatch are experimental"
+      - "Do not place under pull_request in caller workflows"
+      - "The sarif_category input is an upload fallback; upstream runAutomationDetails.id takes precedence"
+    deprecations: null
+    last_verified: "2026-08-13"
+    sources:
+      - "https://github.com/ossf/scorecard-action/blob/v2.4.4/README.md"
+      - "https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/using-code-scanning-with-your-existing-ci-system"
+      - "https://docs.github.com/en/actions/sharing-automations/reusing-workflows"
+
+  - id: ossf-scorecard-analysis
+    name: OpenSSF Scorecard read-only SARIF analysis
+    cluster: security-scanning
+    status: ga
+    public_oss: conditional
+    private_free: unavailable
+    private_paid: unavailable
+    workflow: .github/workflows/public-scorecard-analysis.yml
+    example: examples/public-oss/scorecard-analysis.yml
+    required_permissions:
+      - "contents: read"
+      - "actions: read"
+    required_settings:
+      - "Public repository (Scorecard is public-oriented; forks unsupported)"
+    risks:
+      - "Produces SARIF in-job but intentionally grants no upload, artifact publication, or OIDC authority"
+      - "Supported triggers are push and schedule on the default branch only"
+    deprecations: null
+    last_verified: "2026-08-13"
+    sources:
+      - "https://github.com/ossf/scorecard-action/blob/v2.4.4/README.md"
+      - "https://github.com/step-security/harden-runner"
+      - "https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations"
+
+  - id: ossf-scorecard-json
+    name: OpenSSF Scorecard JSON artifact
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: unavailable
+    private_paid: unavailable
+    workflow: .github/workflows/public-scorecard-json.yml
+    example: examples/public-oss/scorecard.yml
+    required_permissions:
+      - "id-token: write"
+      - "contents: read"
+      - "actions: read"
+    required_settings:
+      - "Public repository (Scorecard is public-oriented; forks unsupported)"
+      - "OpenSSF Scorecard API publish opt-in for the score badge"
+    risks:
+      - "Supported triggers are push and schedule on the default branch only; pull_request and workflow_dispatch are experimental"
+      - "JSON artifact mode is a project-health signal, not a code-scanning alert source"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://github.com/ossf/scorecard"
+      - "https://github.com/ossf/scorecard-action"
+
+  - id: dependency-review
+    name: Dependency review
+    cluster: supply-chain
+    status: ga
+    public_oss: free
+    private_free: unavailable
+    private_paid: available
+    workflow: .github/workflows/public-dependency-review.yml
+    example: examples/public-oss/dependency-review.yml
+    required_permissions:
+      - "contents: read"
+      - "pull-requests: write"
+    required_settings:
+      - "Dependency graph enabled"
+      - "GitHub Advanced Security enabled (required on private repos)"
+    risks:
+      - "Paid via GHAS on private repositories"
+      - "Runs on pull_request only; no signal on direct pushes"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-dependency-review"
+      - "https://github.com/actions/dependency-review-action"
+
+  - id: native-secret-scanning
+    name: GitHub native secret scanning
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: unavailable
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Secret scanning enabled"
+      - "GitHub Advanced Security enabled (required on private repos)"
+      - "Push protection recommended"
+    risks:
+      - "Private-repo detection requires paid GHAS; use gitleaks-secret-scan as the free private fallback"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning"
+
+  - id: gitleaks-secret-scan
+    name: Gitleaks secret scan
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/secret-scan.yml
+    example: examples/private-free/security.yml
+    # The compatibility default remains the digest-pinned container. The
+    # explicit binary mode is a separately pinned Linux/X64 contract and needs
+    # only a shell; callers compile the selected mode before choosing a class.
+    runtime_requirements: ["container-runtime"]
+    runtime_requirements_by_execution_mode:
+      container: ["container-runtime"]
+      binary: []
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Digest-pinned container image must be bumped by Dependabot to stay current"
+      - "Binary mode is allowlisted to Gitleaks 8.30.1 on Linux X64; unsupported tuples fail before checkout"
+      - "The binary release archive is bound to its official asset size and SHA-256, safely extracted, version-verified, and cleanup-proven"
+      - "Private-free contract intentionally contains no paid runtime-hardening action"
+      - "Checkout ignores persistent runner global Git config so ambient Authorization headers cannot combine with the job token"
+    deprecations: null
+    last_verified: "2026-08-13"
+    sources:
+      - "https://github.com/gitleaks/gitleaks"
+      - "https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1"
+      - "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#runner-context"
+
+  - id: actionlint
+    name: actionlint workflow linter
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/actionlint.yml
+    example: examples/private-free/security.yml
+    required_permissions:
+      - "contents: read"
+    required_settings:
+      - "Linux X64 runner (the workflow installs the checksum-verified linux_amd64 binary)"
+    risks:
+      - "Downloaded tarball is checksum-verified; bumping the version requires updating the SHA256"
+      - "A first-step guard rejects non-Linux-X64 runners before the download instead of failing mid-install"
+      - "Optional shellcheck (enable_shellcheck, default off) downloads the linux_x86_64 tarball and verifies it with sha256; it runs on tracked *.sh files only and needs shellcheck_sha256 set when enabled"
+      - "Checkout ignores persistent runner global Git config so ambient Authorization headers cannot combine with the job token"
+    deprecations: null
+    last_verified: "2026-08-04"
+    sources:
+      - "https://github.com/rhysd/actionlint"
+
+  - id: zizmor
+    name: zizmor workflow security scanner
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: unavailable
+    private_paid: available
+    workflow: .github/workflows/zizmor-sarif.yml
+    example: null
+    required_permissions:
+      - "actions: read"
+      - "contents: read"
+      - "security-events: write"
+    required_settings:
+      - "Code scanning enabled to consume SARIF when upload_sarif: true (GHAS on private)"
+    risks:
+      - "Use zizmor-no-sarif.yml for private-free repositories to avoid code-scanning permissions"
+      - "ci.yml runs the pedantic persona, which additionally requires every granted permission to carry a comment explaining it; auditor is stricter still and is a manual, not a blocking, audit"
+      - "SARIF upload requires code scanning (GHAS) on private repos; use the no-SARIF variant there"
+    deprecations: null
+    last_verified: "2026-08-01"
+    sources:
+      - "https://github.com/woodruffw/zizmor"
+      - "https://docs.zizmor.sh"
+
+  - id: zizmor-no-sarif
+    name: zizmor workflow security scanner (no SARIF)
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/zizmor-no-sarif.yml
+    example: examples/private-free/security.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Findings are enforced in logs but not uploaded to code scanning"
+      - "Use zizmor-sarif.yml when code scanning SARIF upload is available"
+      - "Checkout ignores persistent runner global Git config so ambient Authorization headers cannot combine with the job token"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://github.com/woodruffw/zizmor"
+      - "https://docs.zizmor.sh"
+
+  - id: harden-runner
+    name: StepSecurity Harden-Runner egress control
+    cluster: supply-chain
+    status: ga
+    public_oss: free
+    private_free: unavailable
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Free on public repositories; requires a paid StepSecurity plan on private repositories"
+    risks:
+      - "JavaScript pre/post hooks make a step-level boolean unsafe as a disable mechanism; keep the action out of private-free workflows"
+      - "egress_policy audit only observes; set block to enforce an allow-list"
+    deprecations: null
+    last_verified: "2026-07-10"
+    sources:
+      - "https://github.com/step-security/harden-runner"
+      - "https://docs.stepsecurity.io/harden-runner"
+      - "https://www.stepsecurity.io/pricing"
+
+  - id: cross-platform-smoke
+    name: Cross-platform smoke test
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/cross-platform-smoke.yml
+    example: examples/infra/cross-platform.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Use OS-specific command overrides when a smoke command is not portable across Linux, macOS, and Windows"
+      - "Checkout ignores persistent runner global Git config so ambient Authorization headers cannot combine with the job token"
+      - "macOS and Windows runner minutes are billed at a multiplier on private repos"
+      - "Cross-tier contract intentionally contains no paid runtime-hardening action"
+      - "checkout_ref lets the caller pick the checked-out code; the workflow fails closed when a privileged caller event (pull_request_target, workflow_run, issue_comment, issues, discussion, discussion_comment) supplies one"
+      - "install_command runs on every OS in the matrix before the smoke command; it is not a per-OS override, so a caller needing different install steps per OS must branch inside the command it passes"
+    deprecations: null
+    last_verified: "2026-08-03"
+    sources:
+      - "https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners"
+
+  - id: standard-hosted-runners
+    name: Standard GitHub-hosted runners
+    cluster: runners
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Actions enabled"
+    risks:
+      - "Public repos run free on standard runners; private repos consume included free minutes then bill per-minute"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners"
+
+  - id: larger-gpu-runners
+    name: Larger and GPU hosted runners
+    cluster: runners
+    status: ga
+    public_oss: paid
+    private_free: unavailable
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Larger runners configured in org/repo runner groups"
+      - "Billing enabled (larger and GPU runners are always metered)"
+    risks:
+      - "Metered on all tiers including public repos; no free allotment"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/using-github-hosted-runners/using-larger-runners/about-larger-runners"
+
+  - id: self-hosted-runners
+    name: Self-hosted runners
+    cluster: runners
+    status: ga
+    public_oss: conditional
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Self-hosted runner registered to the repo/org"
+    risks:
+      - "Not recommended on public repositories: fork PRs can execute untrusted code on your infrastructure"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners"
+
+  - id: oidc-cloud-publishing
+    name: OIDC cloud publishing
+    cluster: deployments
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions:
+      - "id-token: write"
+      - "contents: read"
+    required_settings:
+      - "Cloud provider OIDC trust configured (AWS/GCP/Azure/HashiCorp)"
+    risks:
+      - "Misconfigured trust conditions (subject claims) can grant unintended repos/branches access"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect"
+
+  - id: artifact-attestations
+    name: Artifact attestations
+    product_facts:
+      - "github-attestations-public"
+      - "github-attestations-private"
+      - "github-slsa-build-level-reusable"
+    cluster: supply-chain
+    status: ga
+    public_oss: free
+    private_free: paid
+    private_paid: conditional
+    workflow: .github/workflows/release-supply-chain.yml
+    example: null
+    required_permissions:
+      - "id-token: write"
+      - "attestations: write"
+      - "artifact-metadata: write"
+      - "contents: read"
+    required_settings:
+      - "Actions enabled"
+      - "Public repository on any plan; private/internal repositories require GitHub Enterprise Cloud (a plan gate — GHAS/Code Security does not unlock it)"
+    risks:
+      - "On private Free/Pro/Team repositories the attest actions fail before release creation; use release-supply-chain-free.yml there"
+      - "Verify with 'gh attestation verify <file> -R <org>/<repo>'"
+    deprecations: null
+    last_verified: "2026-07-11"
+    sources:
+      - "https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds"
+      - "https://docs.github.com/en/actions/concepts/security/artifact-attestations"
+
+  - id: sbom-generation
+    name: SBOM generation
+    cluster: supply-chain
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/release-supply-chain.yml
+    example: null
+    required_permissions:
+      - "contents: read"
+    required_settings:
+      - "Dependency graph enabled for the dependency-graph SBOM API (GET /repos/{owner}/{repo}/dependency-graph/sbom)"
+    risks:
+      - "actions/attest (SBOM mode) requires SPDX or CycloneDX JSON; checksum-pinned Syft is configured for spdx-json"
+    deprecations: null
+    last_verified: "2026-07-10"
+    sources:
+      - "https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/exporting-a-software-bill-of-materials-for-your-repository"
+      - "https://github.com/anchore/syft"
+
+  - id: slsa-build-provenance
+    name: SLSA build provenance
+    product_facts:
+      - "github-attestations-public"
+      - "github-attestations-private"
+    cluster: supply-chain
+    status: ga
+    public_oss: free
+    private_free: paid
+    private_paid: conditional
+    workflow: .github/workflows/release-supply-chain.yml
+    example: null
+    required_permissions:
+      - "id-token: write"
+      - "attestations: write"
+      - "artifact-metadata: write"
+      - "contents: read"
+    required_settings:
+      - "Build must run inside a reusable workflow to qualify for SLSA Build L3"
+      - "Public repository on any plan; private/internal repositories require GitHub Enterprise Cloud for Artifact Attestations"
+    risks:
+      - "Artifact Attestations give Build L2 by default; L3 is only valid because release-supply-chain.yml is a reusable workflow"
+      - "release-supply-chain-free.yml intentionally makes no SLSA claim (slsa_build_level: null)"
+    deprecations: null
+    last_verified: "2026-07-11"
+    sources:
+      - "https://slsa.dev/spec/v1.0/levels"
+      - "https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds"
+      - "https://docs.github.com/en/actions/concepts/security/artifact-attestations"
+
+  - id: immutable-releases
+    name: Immutable releases
+    cluster: releases-packages
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions:
+      - "contents: write"
+    required_settings:
+      - "Immutable releases enabled (GA 2025-10-28)"
+    risks:
+      - "Assets cannot be modified, deleted, or clobbered once published"
+      - "Release titles and bodies remain editable; integrity-sensitive notes must also be a checksummed immutable asset"
+      - "'gh release upload --clobber' actively FAILS on an immutable release; publish all assets in one shot or draft-then-publish and fail-if-exists"
+    deprecations: null
+    last_verified: "2026-07-10"
+    sources:
+      - "https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository"
+
+  - id: rulesets
+    name: Repository rulesets
+    cluster: governance
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: null
+    example: examples/quality/caller-native-gate.yml
+    required_permissions: []
+    required_settings:
+      - "Admin access to create rulesets (REST: POST /repos/{owner}/{repo}/rulesets)"
+      - "Full ruleset features on private repos may require a paid plan"
+    risks:
+      - "enforcement: evaluate runs in shadow mode and does not block; switch to active to enforce"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets"
+
+  - id: merge-queue
+    name: Merge queue
+    cluster: governance
+    status: ga
+    public_oss: conditional
+    private_free: unavailable
+    private_paid: conditional
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Branch protection or ruleset requires merge queue"
+      - "Required workflows include the merge_group event"
+    risks:
+      - "If a required check workflow lacks merge_group, queued merges cannot report the required status"
+      - "Available for organization-owned public repos and Enterprise Cloud private repos"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue"
+      - "https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#merge_group"
+
+  - id: branch-protection-classic
+    name: Branch protection (classic)
+    cluster: governance
+    status: deprecated
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Admin access; limited on Free plan private repos"
+    risks:
+      - "Superseded by repository rulesets; prefer rulesets for new configuration"
+    deprecations: "Superseded by repository rulesets (no hard removal date)"
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"
+
+  - id: workflow-execution-protections
+    name: Workflow execution protections
+    cluster: governance
+    status: preview
+    public_oss: free
+    private_free: conditional
+    private_paid: conditional
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Public preview enrollment"
+      - "Actor and event allow-list configured"
+    risks:
+      - "Public preview since 2026-06-18; allow-list is evaluated before a run and supports evaluate (shadow) mode"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions"
+
+  - id: actions-cache-security
+    name: Actions cache security (read-only untrusted cache)
+    cluster: governance
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Actions cache enabled"
+    risks:
+      - "Since 2026-06-26 untrusted triggers (pull_request_target, fork pull_request, issue_comment, workflow_run) get a read-only cache token scoped to the default branch, mitigating cache poisoning"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows"
+
+  - id: step-level-parallel-execution
+    name: Actions step-level parallel execution
+    cluster: actions-core
+    status: preview
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "GitHub Actions runtime with parallel-step support"
+    risks:
+      - "Public preview since 2026-06-25; keep canonical workflows sequential until the syntax is broadly proven"
+      - "Parallel steps can change artifact/cache/log ordering assumptions"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://github.blog/changelog/2026-06-25-actions-steps-can-now-be-run-in-parallel/"
+
+  - id: hosted-runner-governance-controls
+    name: GitHub-hosted runner governance controls
+    cluster: runners
+    status: preview
+    public_oss: conditional
+    private_free: conditional
+    private_paid: conditional
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Runner governance controls enabled in repository or organization settings"
+    risks:
+      - "Public preview controls should be documented and evaluated before becoming hard requirements"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://github.blog/changelog/2026-06-25-more-control-over-your-github-hosted-runners/"
+
+  - id: rhel-larger-runner-images
+    name: RHEL 9/10 larger-runner images
+    cluster: runners
+    status: preview
+    public_oss: paid
+    private_free: unavailable
+    private_paid: conditional
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Larger runners enabled"
+      - "RHEL image selected for Linux x64 larger runner"
+    risks:
+      - "Public preview; larger runners remain metered for public and private repositories"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://github.blog/changelog/2026-06-25-red-hat-enterprise-linux-runner-images-are-now-in-public-preview/"
+
+  - id: license-compliance-preview
+    name: Open source license compliance
+    cluster: supply-chain
+    status: preview
+    public_oss: unavailable
+    private_free: unavailable
+    private_paid: conditional
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "GitHub Enterprise Cloud"
+      - "GitHub Advanced Security Code Security license"
+      - "License policy configured"
+    risks:
+      - "Public preview since 2026-06-30; ruleset blocking behavior should be piloted in evaluate mode"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://github.blog/changelog/2026-06-30-open-source-license-compliance-is-in-public-preview/"
+
+  - id: agentic-workflows
+    name: GitHub Agentic Workflows
+    cluster: ai-agentic
+    status: preview
+    public_oss: conditional
+    private_free: conditional
+    private_paid: conditional
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Public preview enrollment"
+      - "GitHub Copilot enabled"
+    risks:
+      - "Public preview since 2026-06-11; read-only by default with safe-outputs, sandbox + firewall, and threat detection"
+      - "Recommended replacement surface for retiring GitHub Models"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://githubnext.com/projects/agentic-workflows/"
+
+  - id: copilot-autofix
+    name: Copilot Autofix for code scanning
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: unavailable
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions:
+      - "security-events: write"
+    required_settings:
+      - "Code scanning enabled"
+      - "GitHub Advanced Security enabled (required on private repos)"
+    risks:
+      - "Free on public repos; requires GHAS on private repos"
+      - "Suggested fixes must be human-reviewed before merge"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/code-security/code-scanning/managing-your-code-scanning-configuration/about-copilot-autofix-for-codeql"
+
+  - id: github-models
+    name: GitHub Models
+    cluster: ai-agentic
+    status: retiring
+    public_oss: conditional
+    private_free: conditional
+    private_paid: conditional
+    workflow: null
+    example: null
+    required_permissions:
+      - "models: read"
+    required_settings:
+      - "GitHub Models access (retiring)"
+    risks:
+      - "Do not build CI around 'models: read'; the capability is being removed"
+      - "Brownouts 2026-07-16 and 2026-07-23 before full retirement 2026-07-30"
+    deprecations: "Fully retired 2026-07-30 (brownouts 2026-07-16 and 2026-07-23). Replacement: Agentic Workflows / Copilot Autofix / external LLM via OIDC"
+    last_verified: "2026-07-04"
+    sources:
+      - "https://github.blog/changelog/2026-07-01-github-models-is-being-fully-retired-on-july-30-2026/"
+
+  - id: dependabot
+    name: Dependabot version and security updates
+    cluster: supply-chain
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: null
+    required_permissions: []
+    required_settings:
+      - "Dependency graph enabled"
+      - "Dependabot alerts and security updates enabled"
+    risks:
+      - "Dependabot PRs run with a restricted token; grant secrets explicitly if the workflow needs them"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/about-dependabot-security-updates"
+
+  - id: private-static-validation
+    name: Lightweight static validation
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/private-static.yml
+    example: examples/private-free/security.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Runs an arbitrary caller-supplied command; keep the command trusted and least-privilege"
+      - "Checkout ignores persistent runner global Git config so ambient Authorization headers cannot combine with the job token"
+      - "checkout_ref lets the caller pick the checked-out code; the workflow fails closed when a privileged caller event (pull_request_target, workflow_run, issue_comment, issues, discussion, discussion_comment) supplies one"
+    deprecations: null
+    last_verified: "2026-08-02"
+    sources:
+      - "https://docs.github.com/en/actions/using-workflows/reusing-workflows"
+
+  - id: release-promotion-gate
+    name: Exact-SHA release promotion gate
+    cluster: releases-packages
+    status: preview
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/release-promotion-gate.yml
+    example: examples/public-oss/release-with-promotion.yml
+    required_permissions:
+      - "contents: read"
+    required_settings:
+      - "Numeric release-tag creation restricted to audited release operators"
+      - "Release tags are signed annotated tags that GitHub reports as verified and valid"
+      - "Tag annotation contains canonical nddev-release-promotion/v1 JSON generated from exact-candidate evidence"
+      - "Publish job declares needs: promotion and receives write permissions only after this read-only gate succeeds"
+    risks:
+      - "The signed promotion record is an authorization assertion; its trust depends on restricting numeric tag creation to audited release operators"
+      - "The gate validates exact identities, evidence roles, freshness, and the GitHub tag-signature result, but it cannot read private control-plane artifacts with the caller-scoped token"
+      - "macOS x64 may use an explicitly limited artifact-validation substitute; that does not constitute Darwin x64 runtime execution"
+    deprecations: null
+    last_verified: "2026-08-05"
+    sources:
+      - "https://docs.github.com/en/rest/git/tags#get-a-tag"
+      - "https://docs.github.com/en/rest/git/refs#get-a-reference"
+      - "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets"
+
+  - id: release-supply-chain
+    name: Release supply chain (SBOM + attest + publish)
+    product_facts:
+      - "github-attestations-public"
+      - "github-attestations-private"
+    cluster: releases-packages
+    status: ga
+    public_oss: free
+    private_free: paid
+    private_paid: conditional
+    workflow: .github/workflows/release-supply-chain.yml
+    example: examples/public-oss/release.yml
+    required_permissions:
+      - "contents: write"
+      - "id-token: write"
+      - "attestations: write"
+      - "artifact-metadata: write"
+    required_settings:
+      - "OIDC available for attestations"
+      - "Public repository on any plan; private/internal repositories require GitHub Enterprise Cloud for the attestation steps"
+      - "Immutable-releases-compatible publish flow (no --clobber)"
+    risks:
+      - "Unconditional attestation steps fail on private Free/Pro/Team repositories before release creation; those callers must use release-supply-chain-free.yml"
+      - "Immutable releases make --clobber fail; the workflow must create the release with all assets in one shot or draft-then-publish and fail-if-exists"
+      - "GitHub release notes remain editable; release-notes.md is therefore published as a checksummed immutable asset"
+    deprecations: null
+    last_verified: "2026-07-11"
+    sources:
+      - "https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds"
+      - "https://docs.github.com/en/actions/concepts/security/artifact-attestations"
+      - "https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository"
+
+  - id: release-supply-chain-free
+    name: Release supply chain without attestations (private-free)
+    product_facts:
+      - "github-attestations-private"
+    cluster: releases-packages
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/release-supply-chain-free.yml
+    example: examples/release/private-free-release.yml
+    required_permissions:
+      - "contents: write"
+    required_settings:
+      - "Immutable-releases-compatible publish flow (no --clobber)"
+    risks:
+      - "Publishes no attestations and records slsa_build_level: null; plan-eligible repositories should use release-supply-chain.yml for SLSA provenance"
+      - "GitHub release notes remain editable; release-notes.md is therefore published as a checksummed immutable asset"
+    deprecations: null
+    last_verified: "2026-07-11"
+    sources:
+      - "https://docs.github.com/en/actions/concepts/security/artifact-attestations"
+      - "https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository"
+
+  - id: npm-trusted-publishing
+    name: npm trusted publishing
+    cluster: releases-packages
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: examples/release/npm-trusted-publishing.yml
+    required_permissions:
+      - "id-token: write"
+      - "contents: read"
+    required_settings:
+      - "npm package trusted publisher configured"
+      - "GitHub-hosted runner"
+    risks:
+      - "Self-hosted runners are not currently supported by npm trusted publishing"
+      - "After trusted publishing is configured, restrict legacy token-based publishing"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.npmjs.com/trusted-publishers/"
+
+  - id: pypi-trusted-publishing
+    name: PyPI trusted publishing
+    cluster: releases-packages
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: examples/release/pypi-trusted-publishing.yml
+    required_permissions:
+      - "id-token: write"
+      - "contents: read"
+    required_settings:
+      - "PyPI trusted publisher configured for the project and workflow"
+    risks:
+      - "Do not provide usernames, passwords, or API tokens in the trusted-publishing job"
+      - "Keep build and publish split so only the publishing job receives id-token: write"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.pypi.org/trusted-publishers/using-a-publisher/"
+
+  - id: python-ci
+    name: Python CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/python-ci.yml
+    example: examples/languages/python.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python"
+
+  - id: node-ci
+    name: Node.js CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/node-ci.yml
+    example: examples/languages/node.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs"
+
+  - id: go-ci
+    name: Go CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/go-ci.yml
+    example: examples/languages/go.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+      - "Checkout is shallow by default; ancestry-aware checks must set fetch_depth to 0"
+      - "setup-go caching defaults on; warm self-hosted callers with independently owned caches should set cache to false"
+    deprecations: null
+    last_verified: "2026-07-13"
+    sources:
+      - "https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go"
+      - "https://github.com/actions/checkout/blob/9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0/action.yml#L74-L76"
+
+  - id: rust-ci
+    name: Rust CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/rust-ci.yml
+    example: examples/languages/rust.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://doc.rust-lang.org/cargo/guide/continuous-integration.html"
+
+  - id: java-ci
+    name: Java CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/java-ci.yml
+    example: examples/languages/java.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven"
+
+  - id: dotnet-ci
+    name: .NET CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/dotnet-ci.yml
+    example: examples/languages/dotnet.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net"
+
+  - id: container-scan-trivy
+    name: Container build and Trivy scan
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/container-ci.yml
+    # trivy-action shells out to the Docker daemon.
+    runtime_requirements: ["container-runtime"]
+    example: examples/infra/container.yml
+    required_permissions:
+      - "contents: read"
+      - "security-events: write"
+    required_settings:
+      - "Code scanning enabled to upload the Trivy SARIF (optional; GHAS on private)"
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+      - "SARIF upload to code scanning is paid via GHAS on private repos"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://github.com/aquasecurity/trivy"
+      - "https://github.com/aquasecurity/trivy-action"
+
+  - id: terraform-ci
+    name: Terraform CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/terraform-ci.yml
+    example: examples/infra/terraform.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+      - "terraform plan/apply against real infra needs cloud OIDC and scoped credentials"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://developer.hashicorp.com/terraform/tutorials/automation/github-actions"
+
+  - id: docs-ci
+    name: Docs CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/docs-ci.yml
+    example: examples/infra/docs.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+    deprecations: null
+    last_verified: "2026-07-04"
+    sources:
+      - "https://docs.github.com/en/actions/using-workflows/reusing-workflows"
+
+  - id: monorepo-changed-paths
+    name: Monorepo changed-paths filter
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/monorepo-changed-paths.yml
+    example: examples/infra/monorepo.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Strict filter language: exact file paths or '/'-terminated directory prefixes; wildcards fail the run (the pre-0.6 startswith matcher crossed prefix boundaries)"
+      - "Fail-closed routing: unresolvable base_ref/PR/merge_group bases fail the run; a push without a usable previous tip conservatively reports every group as changed"
+      - "pull_request_target is rejected: GitHub checks out the base branch (not the PR), so a git diff would report a green all-false; route on pull_request instead"
+    deprecations: null
+    last_verified: "2026-07-11"
+    sources:
+      - "https://docs.github.com/en/actions/using-workflows/reusing-workflows"
+      - "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/events-that-trigger-workflows#pull_request_target"
+
+  - id: dart-flutter-ci
+    name: Dart/Flutter CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/dart-flutter-ci.yml
+    example: examples/languages/dart-flutter.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "The SDK is downloaded from Google's published release manifest and verified against the SHA-256 that manifest publishes; a channel without an exact flutter_version resolves to whatever that channel points at on the day"
+      - "Runtime evidence pins Flutter and validates the resolved Dart/Flutter identity; mutable channel selectors are not reproducible proof"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+      - "iOS/macOS builds require macOS runners billed at a 10x minute multiplier"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://docs.flutter.dev/deployment/cd"
+      - "https://github.com/subosito/flutter-action"
+
+  - id: web-ci
+    name: HTML/CSS/web CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/web-ci.yml
+    example: examples/languages/web.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Default lint uses bunx to fetch stylelint/htmlhint at runtime; pin them in package.json for reproducible CI"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://stylelint.io/"
+      - "https://htmlhint.com/"
+
+  - id: sql-ci
+    name: SQL CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/sql-ci.yml
+    example: examples/languages/sql.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Pin sqlfluff_version for reproducible linting; the default installs the latest release"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://docs.sqlfluff.com/"
+      - "https://github.com/sqlfluff/sqlfluff"
+
+  - id: cpp-ci
+    name: C/C++ CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/cpp-ci.yml
+    example: examples/languages/cpp.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "clang-format/cppcheck are opt-in and require the tools present (add cppcheck to apt_packages)"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://cmake.org/cmake/help/latest/manual/ctest.1.html"
+      - "https://clang.llvm.org/docs/ClangFormat.html"
+
+  - id: qt-ci
+    name: Qt CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/qt-ci.yml
+    example: examples/languages/qt.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Qt is downloaded at runtime by aqtinstall; an exact qt_version pins what is installed, and a wildcard resolves to the newest published patch on the day"
+      - "Runtime evidence needs an exact qt_version plus pinned aqtinstall/py7zr identities; a wildcard selector is not reproducible proof"
+      - "aqtinstall downloads Qt at runtime; pin qt_version for reproducible builds"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://github.com/jurplel/install-qt-action"
+      - "https://doc.qt.io/qt-6/cmake-manual.html"
+
+  - id: kotlin-android-ci
+    name: Kotlin/Android CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/kotlin-android-ci.yml
+    example: examples/languages/kotlin-android.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Runtime evidence records the JDK, Gradle and Android identities that were actually resolved; sections absent from a receipt were never proven, not silently assumed"
+      - "ktlint/detekt run as project-defined Gradle tasks supplied via lint_command"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://github.com/gradle/actions"
+      - "https://developer.android.com/build"
+
+  - id: swift-ci
+    name: Swift CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/swift-ci.yml
+    example: examples/languages/swift.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Defaults to a macOS runner billed at a 10x minute multiplier; SwiftLint runs on macOS only"
+      - "Cross-tier contract intentionally contains no paid runtime-hardening action"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://www.swift.org/documentation/"
+      - "https://github.com/realm/SwiftLint"
+
+  - id: r-ci
+    name: R CI
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/r-ci.yml
+    example: examples/languages/r.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Package dependencies install via a caller-provided install_command"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://github.com/r-lib/actions"
+      - "https://lintr.r-lib.org/"
+
+  - id: coverage-gate
+    name: Coverage gate
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/coverage-gate.yml
+    example: examples/quality/coverage-gate.yml
+    required_permissions:
+      - "contents: read"
+    required_settings:
+      - "CODECOV_TOKEN secret (required for private repos)"
+    risks:
+      - "Coverage thresholds are enforced by the caller's codecov.yml, not this workflow"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+      - "install_command runs arbitrary caller-supplied bash before the coverage command; keep it trusted and least-privilege"
+      - "upload_artifact (default off) uploads artifact_path via actions/upload-artifact using the job token; it needs artifact_path set and fails closed if no files match"
+    deprecations: null
+    last_verified: "2026-08-04"
+    sources:
+      - "https://docs.codecov.com/docs"
+      - "https://github.com/codecov/codecov-action"
+
+  - id: docs-quality
+    name: Docs quality (links, spelling, markdown)
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/docs-quality.yml
+    example: examples/quality/docs-quality.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Link checking hits the network; flaky external hosts can fail lychee (tune lychee_args)"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://github.com/lycheeverse/lychee-action"
+      - "https://github.com/crate-ci/typos"
+
+  - id: pr-hygiene
+    name: PR hygiene (commitlint, PR title, labeler, stale)
+    cluster: community-dx
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/pr-hygiene.yml
+    example: examples/quality/pr-hygiene.yml
+    required_permissions:
+      - "contents: read"
+      - "pull-requests: read (pr-title job reads the pull request it validates)"
+      - "pull-requests: write (labeler and stale jobs)"
+      - "issues: write (stale job)"
+    required_settings: []
+    risks:
+      - "labeler on fork PRs needs pull_request_target, which this library intentionally avoids; use it for same-repo PRs"
+      - "Callers must grant the union of the enabled jobs' permissions"
+      - "A caller cannot grant a reusable more than the reusable declares, so a missing scope here needs a library fix, not a caller change"
+      - "pr_title_types is comma-separated at the input boundary but converted to the newline-delimited `types:` the action expects; leaving it empty keeps the Conventional Commits defaults"
+      - "An empty commitlint_config omits configFile so the action owns default discovery; a non-empty relative path must resolve to a regular file inside the checkout and is passed byte-for-byte"
+      - "The labeler checks out the caller ref with credentials disabled so a branch-local configuration is the exact policy executed"
+      - "The reusable exposes the pinned labeler's documented new-labels and all-labels outputs so callers can distinguish an observable write from a successful no-match"
+    deprecations: null
+    last_verified: "2026-08-13"
+    sources:
+      - "https://github.com/wagoid/commitlint-github-action"
+      - "https://github.com/actions/labeler"
+
+  - id: semgrep-sast
+    name: Semgrep OSS SAST
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/semgrep-ci.yml
+    example: examples/security/semgrep.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Gate-only (no SARIF); use CodeQL/GHAS for code-scanning alerts on paid tiers"
+      - "Registry rulesets (p/ci) are fetched at runtime; pin semgrep_version for reproducibility"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://semgrep.dev/docs/"
+      - "https://github.com/semgrep/semgrep"
+
+  - id: osv-scanner-sca
+    name: OSV-Scanner SCA
+    cluster: supply-chain
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/osv-scan.yml
+    example: examples/security/osv-scan.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Checksum-pinned binary; bump osv_scanner_version and osv_scanner_sha256 together"
+      - "Gate-only free alternative to GitHub dependency review on private-free repos"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://google.github.io/osv-scanner/"
+      - "https://github.com/google/osv-scanner"
+
+  - id: grype-sca
+    name: Grype vulnerability scan
+    cluster: supply-chain
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/grype-scan.yml
+    example: examples/security/grype-scan.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Gate-only (table output); wire SARIF + code scanning separately on paid tiers"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://github.com/anchore/grype"
+      - "https://github.com/anchore/scan-action"
+
+  - id: hadolint-dockerfile
+    name: hadolint Dockerfile lint
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/hadolint-ci.yml
+    example: examples/security/hadolint.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Tune failure_threshold and ignore to match your Dockerfile policy"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://github.com/hadolint/hadolint"
+
+  - id: iac-scan-checkov
+    name: IaC scan (Checkov)
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/iac-scan.yml
+    example: examples/security/iac-scan.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Gate-only (CLI output); wire SARIF upload separately for code-scanning alerts"
+      - "Broadens Terraform-CI coverage to Kubernetes/CloudFormation/Helm/ARM"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://www.checkov.io/"
+      - "https://github.com/bridgecrewio/checkov-action"
+
+  - id: mutation-testing
+    name: Mutation testing
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/mutation-testing.yml
+    example: examples/testing/mutation-testing.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Mutation runs are slow; schedule them rather than gating every PR"
+      - "Private-repo runner minutes are metered beyond the included free allotment"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://mutmut.readthedocs.io/"
+      - "https://github.com/sourcefrog/cargo-mutants"
+
+  - id: fuzzing
+    name: Fuzzing
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/fuzzing.yml
+    example: examples/testing/fuzzing.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "cargo-fuzz needs a nightly toolchain; bound each run with -max_total_time"
+      - "For continuous coverage-guided fuzzing, integrate ClusterFuzzLite"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://rust-fuzz.github.io/book/cargo-fuzz.html"
+      - "https://google.github.io/clusterfuzzlite/"
+
+  - id: benchmark
+    name: Performance benchmark + regression alert (history publish)
+    cluster: observability
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/benchmark.yml
+    example: examples/testing/benchmark.yml
+    required_permissions:
+      - "contents: write (publish contract; file-backed history performs no repository write)"
+    required_settings: []
+    risks:
+      - "Publish lane pushes the selected history branch unless external_data_json_path is set; file-backed history performs no Git branch operation"
+      - "Benchmark noise on shared runners can cause false regressions; tune alert_threshold"
+    deprecations: null
+    last_verified: "2026-08-13"
+    sources:
+      - "https://github.com/benchmark-action/github-action-benchmark"
+      - "https://bencher.dev/"
+
+  - id: benchmark-compare
+    name: Performance benchmark regression check (read-only compare)
+    cluster: observability
+    status: ga
+    public_oss: free
+    private_free: conditional
+    private_paid: available
+    workflow: .github/workflows/benchmark-compare.yml
+    example: examples/testing/benchmark-compare.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Read-only lane: the job-scoped GITHUB_TOKEN cannot write, and auto-push is hard-wired off; record history on the default branch with benchmark.yml"
+      - "Benchmark noise on shared runners can cause false regressions; tune alert_threshold"
+    deprecations: null
+    last_verified: "2026-08-13"
+    sources:
+      - "https://github.com/benchmark-action/github-action-benchmark"
+      - "https://bencher.dev/"
+
+  - id: ai-code-review
+    name: AI code review
+    cluster: ai-agentic
+    status: ga
+    public_oss: conditional
+    private_free: conditional
+    private_paid: conditional
+    workflow: null
+    example: examples/level3/ai-review.yml
+    required_permissions:
+      - "contents: read"
+      - "pull-requests: write"
+    required_settings:
+      - "Model API key stored as a secret (e.g. ANTHROPIC_API_KEY), or a GitHub App (CodeRabbit)"
+    risks:
+      - "AI reviews are advisory; keep human review as the merge gate"
+      - "CodeRabbit is free for public OSS; Claude/Qodo consume paid model tokens"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://github.com/anthropics/claude-code-action"
+      - "https://github.com/qodo-ai/pr-agent"
+
+  - id: release-automation
+    name: Release automation (release-please / changesets)
+    cluster: releases-packages
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: null
+    example: examples/level3/release-please.yml
+    required_permissions:
+      - "contents: write"
+      - "pull-requests: write"
+    required_settings: []
+    risks:
+      - "Complements, not replaces, the tag-driven release-supply-chain workflow"
+      - "release-please opens a release PR; changesets suits monorepos with per-package versioning"
+    deprecations: null
+    last_verified: "2026-07-08"
+    sources:
+      - "https://github.com/googleapis/release-please-action"
+      - "https://github.com/changesets/action"
+
+  - id: gate
+    name: Caller-named reporting job for aggregated upstream results
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/gate.yml
+    example: examples/quality/gate-report.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "NOT AUTHORITATIVE: this reusable is not a required-check primitive. A reusable workflow cannot read its caller's needs context, so results arrive as the caller-authored needs_json string. It can prove the JSON is self-consistent; it can never prove the jobs ran. Use the caller-native gate in examples/quality/caller-native-gate.yml for a protected merge context"
+      - "The reusable fails closed on inputs that assert nothing (empty needs_json, empty required_jobs, a required job absent from needs, an entry with no result, or required_jobs omitting a job present in needs) — but a fabricated all-success object still passes and always will"
+      - "allow_skipped only tolerates 'skipped' — it does NOT tolerate 'failure' or 'cancelled'"
+    deprecations: null
+    last_verified: "2026-08-04"
+    sources:
+      - "https://docs.github.com/actions/using-jobs/using-jobs-in-a-workflow#defining-prerequisite-jobs"
+
+  - id: rust-supply-chain
+    name: Rust supply-chain checks (cargo-deny + cargo-audit + cargo-machete)
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/rust-supply-chain.yml
+    example: examples/security/rust-supply-chain.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "cargo-deny resolves Cargo.toml from working_directory; without a deny.toml, its default policy applies"
+      - "cargo-audit reads Cargo.lock; repos without a lockfile will fail"
+      - "cargo-machete output is advisory (exits 0 with warnings, not failures)"
+    deprecations: null
+    last_verified: "2026-08-13"
+    sources:
+      - "https://github.com/EmbarkStudios/cargo-deny"
+      - "https://github.com/rustsec/rustsec"
+      - "https://github.com/bnjbvr/cargo-machete"
+
+  - id: clusterfuzzlite-fuzzing
+    name: ClusterFuzzLite fuzzing (PR code-change + batch)
+    cluster: security-scanning
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/clusterfuzzlite.yml
+    example: examples/testing/clusterfuzzlite.yml
+    required_permissions:
+      - "actions: read"
+      - "contents: read"
+      - "security-events: write"
+    required_settings:
+      - "Fuzz targets in the repository (oss-fuzz compatible)"
+    risks:
+      - "Fuzzing consumes significant CI time; tune fuzz_seconds for PR vs batch"
+      - "SARIF upload requires code scanning enabled (free on public repos)"
+      - "The action pin follows a reviewed upstream commit newer than the stale v1 tag; zizmor tag audits are suppressed only on those two steps"
+    deprecations: null
+    last_verified: "2026-08-04"
+    sources:
+      - "https://github.com/google/clusterfuzzlite"

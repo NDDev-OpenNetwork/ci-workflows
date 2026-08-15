@@ -1,0 +1,16 @@
+# hadolint Dockerfile lint caller (any tier). Replace @<sha>.
+name: hadolint
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: hadolint-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  hadolint:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/hadolint-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      recursive: true

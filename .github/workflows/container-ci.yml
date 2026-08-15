@@ -1,0 +1,59 @@
+name: container-ci
+
+# Reusable Trivy scan for BOTH tiers: Trivy filesystem or image
+# vulnerability/misconfig scan. Least privilege (contents: read only): findings
+# fail the build rather than uploading SARIF (which needs code scanning). Public
+# repos wanting findings in the Security tab can extend this with an upload step.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      scan_type:
+        description: 'Trivy scan type: fs or image.'
+        type: string
+        default: 'fs'
+      scan_ref:
+        description: 'Path (fs) or image reference (image) to scan.'
+        type: string
+        default: '.'
+      severity:
+        type: string
+        default: 'CRITICAL,HIGH'
+      ignore_unfixed:
+        type: boolean
+        default: true
+      exit_code:
+        description: 'Trivy exit code on findings (1 fails the build).'
+        type: string
+        default: '1'
+      timeout_minutes:
+        type: number
+        default: 20
+
+permissions: {}
+
+jobs:
+  trivy:
+    name: trivy (${{ inputs.scan_type }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          scan-type: ${{ inputs.scan_type }}
+          scan-ref: ${{ inputs.scan_ref }}
+          severity: ${{ inputs.severity }}
+          ignore-unfixed: ${{ inputs.ignore_unfixed }}
+          exit-code: ${{ inputs.exit_code }}
+          format: table

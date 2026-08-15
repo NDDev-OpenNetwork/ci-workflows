@@ -1,0 +1,196 @@
+schema: nddev-ci-scorecard-evidence/v1
+entrypoint_matrix:
+  - identity: analysis-only
+    workflow: .github/workflows/public-scorecard-analysis.yml
+    public_execution_tier: conditional-public-oss
+    private_execution_tier: unsupported
+    runner_class: github-hosted-standard
+    capability: sarif-analysis-no-publication
+    permissions:
+      actions: read
+      contents: read
+    harden_runner:
+      required: true
+      pin: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920
+      egress_policy: audit
+      position: first
+    allowed_callers:
+      visibility: public
+      repository_kind: non-fork
+      events: [push, schedule]
+      ref: actual-default-branch
+      runner: ubuntu-latest
+    evidence_obligations:
+      - job-and-analysis-step-success
+      - no-oidc-or-write-permission
+      - no-artifact-or-sarif-upload-step
+      - exact-caller-and-reusable-sha
+  - identity: publish
+    workflow: .github/workflows/public-scorecard.yml
+    public_execution_tier: public-oss
+    private_execution_tier: unsupported
+    runner_class: github-hosted-standard
+    capability: scorecard-publication-and-sarif-upload
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      security-events: write
+    harden_runner:
+      required: true
+      pin: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920
+      egress_policy: audit
+      position: first
+    allowed_callers:
+      visibility: public
+      repository_kind: non-fork
+      events: [push, schedule]
+      ref: actual-default-branch
+      runner: ubuntu-latest
+    evidence_obligations:
+      - analysis-and-upload-steps-success
+      - exact-caller-and-reusable-sha
+      - accepted-code-scanning-analysis-set
+      - exact-ref-sha-workflow-tool-and-category-set
+category_contract:
+  authority: upstream-run-automation-details
+  category_separator: last-forward-slash
+  upload_fallback_category: ossf-scorecard
+  expected_categories:
+    - supply-chain/branch-protection
+    - supply-chain/local
+    - supply-chain/online-scm
+  expected_tool:
+    name: Scorecard
+    version: v5.5.0
+    guid: null
+  source_urls:
+    - https://github.com/ossf/scorecard/blob/v5.5.0/pkg/scorecard/sarif.go
+    - https://github.com/github/codeql-action/blob/d1ba80a13dd99fba24a470575428917156a28b43/src/upload-lib.ts
+    - https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support-for-code-scanning
+attempts:
+  - attempt: 1
+    classification: product-failure
+    caller_sha: 1c5545457b36d6875a43695902fca66a02136a18
+    run_id: 31662081168
+    run_url: https://github.com/NDDev-OpenNetwork/ci-workflows/actions/runs/31662081168
+    conclusion: startup_failure
+    reason: "Nested scorecard job requested id-token: write while its publish_results:false caller allowed id-token: none."
+  - attempt: 2
+    classification: product-failure
+    caller_sha: d1d5376da29bb2c494498630e04c5454287575a4
+    run_id: 31662731064
+    run_url: https://github.com/NDDev-OpenNetwork/ci-workflows/actions/runs/31662731064
+    conclusion: startup_failure
+    reason: "GitHub preflight validated the skipped publish job before if and rejected its write permissions for the read-only caller."
+  - attempt: 3
+    classification: contract-test-failure
+    base_sha: d1d5376da29bb2c494498630e04c5454287575a4
+    issue_receipt: https://github.com/NDDev-OpenNetwork/ci-workflows/issues/128#issuecomment-5275483568
+    command: python3 scripts/validate_all.py --tier core
+    failed_contract: harden-runner-contract
+    reason: "The physical public analysis entrypoint was absent from the exact Harden-Runner public/GHAS allowlist."
+recovery_attempts:
+  - attempt: 1
+    classification: product-contract-failure
+    caller_sha: 292bd5b4cb4b0df6848a204ffcb85367475b9f4e
+    run_id: 31663872580
+    run_url: https://github.com/NDDev-OpenNetwork/ci-workflows/actions/runs/31663872580
+    job_ids: [94334223400, 94334223449]
+    analysis_ids: [1611368002, 1611367941, 1611367893]
+    artifact_id: 9167197636
+    artifact_sha256: d0343578d2def1f7c6b4a0a139a381876f76b376fb0662e39ce9c80b06e3ea33
+    issue_receipt: https://github.com/NDDev-OpenNetwork/ci-workflows/issues/128#issuecomment-5275586641
+    reason: "The verifier required one caller category, but upstream Scorecard emitted three authoritative runAutomationDetails categories that upload-sarif preserved."
+designated_consumer:
+  repository: NDDev-OpenNetwork/ci-workflows
+  visibility: public
+  default_branch: main
+  caller_workflow: .github/workflows/scorecard.yml
+  reusable_workflow: .github/workflows/public-scorecard.yml
+  analysis_reusable_workflow: .github/workflows/public-scorecard-analysis.yml
+  supported_events: [push, schedule]
+  runner: ubuntu-latest
+  publish_results: true
+  sarif_fallback_category: ossf-scorecard
+  sarif_categories:
+    - supply-chain/branch-protection
+    - supply-chain/local
+    - supply-chain/online-scm
+  sarif_tool:
+    name: Scorecard
+    version: v5.5.0
+    guid: null
+  required_permissions:
+    actions: read
+    contents: read
+    id-token: write
+    security-events: write
+  analysis_only_permissions:
+    actions: read
+    contents: read
+proof:
+  repository: NDDev-OpenNetwork/ci-workflows
+  caller_sha: de7128a2ce7ceaa3b85c9e73c08eb344171aec2a
+  caller_ref: refs/heads/main
+  caller_workflow: .github/workflows/scorecard.yml
+  event: push
+  run_id: 31665252755
+  run_url: https://github.com/NDDev-OpenNetwork/ci-workflows/actions/runs/31665252755
+  job_id: 94338313401
+  job_url: https://github.com/NDDev-OpenNetwork/ci-workflows/actions/runs/31665252755/job/94338313401
+  analysis_only_job_id: 94338313497
+  analysis_only_job_url: https://github.com/NDDev-OpenNetwork/ci-workflows/actions/runs/31665252755/job/94338313497
+  analysis_only_step: success
+  analysis_step: success
+  upload_step: success
+  reusable_sha: de7128a2ce7ceaa3b85c9e73c08eb344171aec2a
+  reusable_digest: 5e47a29cbb5375589bfd61bc57b6db91d2ce9bebb98f56ae53d3d1d57746fc79
+  reusable_workflow: .github/workflows/public-scorecard.yml
+  analysis_reusable_sha: de7128a2ce7ceaa3b85c9e73c08eb344171aec2a
+  analysis_reusable_digest: 1dcc639b5bc7f12bb1529aee473103c445eea54a498575ad6610534d8fff9998
+  analysis_reusable_workflow: .github/workflows/public-scorecard-analysis.yml
+  artifact_id: 9167681947
+  artifact_sha256: 1f7960814496809b3d223fc023907c4841d05bc950ec58fd171870ab268e3af4
+  run_started_at: '2026-08-13T03:52:53Z'
+  run_completed_at: '2026-08-13T03:54:00Z'
+  analyses:
+    - id: 1611438989
+      url: https://api.github.com/repos/NDDev-OpenNetwork/ci-workflows/code-scanning/analyses/1611438989
+      analysis_key: .github/workflows/scorecard.yml:scorecard
+      ref: refs/heads/main
+      commit_sha: de7128a2ce7ceaa3b85c9e73c08eb344171aec2a
+      category: supply-chain/branch-protection
+      tool:
+        name: Scorecard
+        version: v5.5.0
+        guid: null
+      created_at: '2026-08-13T03:53:50Z'
+      sarif_id: 9743c3bc-96ca-11f1-9b91-8d63f84a8ed2
+      error: ''
+    - id: 1611439032
+      url: https://api.github.com/repos/NDDev-OpenNetwork/ci-workflows/code-scanning/analyses/1611439032
+      analysis_key: .github/workflows/scorecard.yml:scorecard
+      ref: refs/heads/main
+      commit_sha: de7128a2ce7ceaa3b85c9e73c08eb344171aec2a
+      category: supply-chain/local
+      tool:
+        name: Scorecard
+        version: v5.5.0
+        guid: null
+      created_at: '2026-08-13T03:53:50Z'
+      sarif_id: 9743c3bc-96ca-11f1-9b91-8d63f84a8ed2
+      error: ''
+    - id: 1611439071
+      url: https://api.github.com/repos/NDDev-OpenNetwork/ci-workflows/code-scanning/analyses/1611439071
+      analysis_key: .github/workflows/scorecard.yml:scorecard
+      ref: refs/heads/main
+      commit_sha: de7128a2ce7ceaa3b85c9e73c08eb344171aec2a
+      category: supply-chain/online-scm
+      tool:
+        name: Scorecard
+        version: v5.5.0
+        guid: null
+      created_at: '2026-08-13T03:53:51Z'
+      sarif_id: 9743c3bc-96ca-11f1-9b91-8d63f84a8ed2
+      error: ''

@@ -1,0 +1,323 @@
+name: runtime-fixtures
+
+# The consumer fixture estate. This is what `catalog/runtime-coverage.yml` has
+# been honest about not having.
+#
+# Static validation proves the contracts hold in the tree. It cannot prove a
+# reusable workflow *starts* — that its `workflow_call` interface resolves, that
+# its permissions are sufficient, that its downloads and checksums work on a real
+# runner. ADR 0003 says so plainly: "The fixture estate that would supply real
+# proof is still absent." Two of forty-six workflows were runtime-proven, and
+# both only because this repository happened to call them for its own sake.
+#
+# So this workflow calls them deliberately, as a consumer would, with the same
+# safe inputs a consumer would pass. Each successful job is real evidence for one
+# reusable, and its run URL plus the workflow's sha256 go into the ledger.
+#
+# Deliberately NOT a required check and deliberately not on `pull_request`:
+# evidence production is not merge gating, and running the whole estate on every
+# pull request would be a cost this buys nothing back. `ci-gate` does not depend
+# on it.
+#
+# Triggers: a push to `fixtures/**` produces evidence on demand (workflow_dispatch
+# only works from the default branch, which is no use while proving a change);
+# the weekly schedule keeps evidence from going stale as pins move.
+#
+# Every call names `runner: ubuntu-latest` explicitly. These reusables default to
+# a private self-hosted label, and a default belongs to the pinned commit, not to
+# the caller — the same rule every example here follows.
+
+on:
+  push:
+    branches: ['fixtures/**']
+  schedule:
+    # Sundays 04:00 UTC — well clear of the Monday Dependabot and maintenance
+    # windows, so a failure here is not confused with a pin bump.
+    - cron: "0 4 * * 0"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: runtime-fixtures-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # required-gate — the workflow-lint lane, including its Linux X64 runner guard
+  # and the per-job Git-config isolation.
+  fixture-actionlint:
+    name: fixture / actionlint
+    permissions:
+      contents: read
+    uses: ./.github/workflows/actionlint.yml
+    with:
+      runner: ubuntu-latest
+
+  # security-blocking — the private-free scanner lane. Must be proven separately
+  # from the SARIF variant precisely because it drops the upload step and its
+  # permission, so this run is the only thing that can prove the reduced set is
+  # sufficient.
+  fixture-zizmor-no-sarif:
+    name: fixture / zizmor (no SARIF)
+    permissions:
+      contents: read
+    uses: ./.github/workflows/zizmor-no-sarif.yml
+    with:
+      runner: ubuntu-latest
+
+  # security-blocking — full-history gitleaks through a digest-pinned container.
+  fixture-secret-scan:
+    name: fixture / secret-scan
+    permissions:
+      contents: read
+    uses: ./.github/workflows/secret-scan.yml
+    with:
+      runner: ubuntu-latest
+
+  # security-blocking — the same full-history scan through the independently
+  # pinned native release asset. No Docker command is reachable in this mode.
+  fixture-secret-scan-binary:
+    name: fixture / secret-scan / binary
+    permissions:
+      contents: read
+    uses: ./.github/workflows/secret-scan.yml
+    with:
+      runner: ubuntu-latest
+      execution_mode: binary
+
+  # required-gate — the private-free validation lane. Runs this repository's own
+  # blocking tier, which is a real caller command rather than a toy one.
+  fixture-private-static:
+    name: fixture / private-static
+    permissions:
+      contents: read
+    uses: ./.github/workflows/private-static.yml
+    with:
+      runner: ubuntu-latest
+      # The first fixture run failed here with `uv: command not found`: the lane
+      # sets up Python and then runs a caller command with no installer in
+      # scope. That gap is now closed by setup_uv, and this fixture is what
+      # proves it.
+      setup_uv: true
+      install_command: >-
+        "$pythonLocation/bin/python" -I -B -m venv --copies .venv &&
+        uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
+      # Deliberately NOT `validate_all --tier core`. That command reads
+      # runtime-coverage.yml, whose digests this very run exists to refresh, so
+      # the fixture could only pass once it had already succeeded — a circular
+      # dependency that made the lane look broken every time a proven workflow
+      # changed. These validators are just as real and depend on the tree alone.
+      command: >-
+        export PATH="$PWD/.venv/bin:$PATH" &&
+        .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch check_workflow_contracts.py -- &&
+        .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch check_permissions.py -- &&
+        .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch check_pinned_actions.py -- &&
+        .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch generate_docs.py -- --check
+
+  # required-gate — the change router. On a branch push `github.event.before` is
+  # the all-zero oid, so this exercises the conservative all-true path: the one
+  # that must never silently report all-false.
+  fixture-monorepo-router:
+    name: fixture / monorepo router
+    permissions:
+      contents: read
+    uses: ./.github/workflows/monorepo-changed-paths.yml
+    with:
+      runner: ubuntu-latest
+      filters: '{"workflows":[".github/workflows/"],"catalog":["catalog/"],"scripts":["scripts/"]}'
+
+  # security-blocking — checksum-verified OSV-Scanner binary and the
+  # fail-on-known-vulnerability gate.
+  fixture-osv-scan:
+    name: fixture / osv-scan
+    permissions:
+      contents: read
+    uses: ./.github/workflows/osv-scan.yml
+    with:
+      runner: ubuntu-latest
+      # tests/fixtures/android vendors the Android Gradle Plugin's transitive
+      # closure so the fixture can build under LockMode.STRICT. It is a fixture
+      # input, not something this library ships or whose versions it picks, and
+      # scanning it reports 159 findings nobody here can act on. osv-scanner has
+      # no config-file path scoping -- `PackageOverrides.path` is rejected as an
+      # unknown key by 2.4.0 -- so the exclusion is a scan argument. Grype and
+      # Trivy express the same exclusion in .grype.yaml and trivy.yaml.
+      scan_args: '--recursive --experimental-exclude tests/fixtures/android .'
+
+  # security-blocking — Semgrep SAST, exercising the config input and the
+  # non-SARIF gate path.
+  fixture-semgrep:
+    name: fixture / semgrep
+    permissions:
+      contents: read
+    uses: ./.github/workflows/semgrep-ci.yml
+    with:
+      runner: ubuntu-latest
+
+  fixture-coverage-gate:
+    name: fixture / coverage gate
+    permissions:
+      contents: read
+    uses: ./.github/workflows/coverage-gate.yml
+    with:
+      runner: ubuntu-latest
+      working_directory: tests/fixtures/python
+      coverage_command: "mkdir -p coverage && printf '<coverage version=\"1\"/>\\n' > coverage/coverage.xml"
+      use_codecov: false
+      use_coveralls: false
+      upload_artifact: true
+      artifact_name: fixture-coverage-report
+      artifact_path: tests/fixtures/python/coverage/coverage.xml
+
+  fixture-grype-scan:
+    name: fixture / grype scan
+    permissions:
+      contents: read
+    uses: ./.github/workflows/grype-scan.yml
+    with:
+      runner: ubuntu-latest
+      path: tests/fixtures
+      severity_cutoff: critical
+      fail_build: true
+
+  fixture-iac-scan:
+    name: fixture / iac scan
+    permissions:
+      contents: read
+    uses: ./.github/workflows/iac-scan.yml
+    with:
+      runner: ubuntu-latest
+      directory: tests/fixtures/terraform
+      framework: terraform
+      soft_fail: true
+      quiet: false
+
+  fixture-public-codeql:
+    name: fixture / public CodeQL
+    permissions:
+      actions: read           # CodeQL SARIF upload reads this workflow run
+      contents: read          # CodeQL checks out and analyzes this repository
+      security-events: write  # publish the fixture analysis to code scanning
+    uses: ./.github/workflows/public-codeql.yml
+    with:
+      runner: ubuntu-latest
+      languages: '["actions"]'
+      autobuild: false
+
+  fixture-zizmor-sarif:
+    name: fixture / zizmor SARIF
+    permissions:
+      actions: read           # SARIF upload reads this workflow run
+      contents: read          # zizmor checks out and analyzes the clean fixture
+      security-events: write  # publish the fixture SARIF to code scanning
+    uses: ./.github/workflows/zizmor-sarif.yml
+    with:
+      runner: ubuntu-latest
+      persona: regular
+      min_severity: high
+      target: tests/fixtures/zizmor-clean
+
+  fixture-rust-supply-chain:
+    name: fixture / Rust supply chain
+    permissions:
+      contents: read
+    uses: ./.github/workflows/rust-supply-chain.yml
+    with:
+      runner: ubuntu-latest
+      working_directory: tests/fixtures/rust
+      deny_arguments: '--all-features --config tests/fixtures/rust/deny.toml'
+      enable_deny: true
+      enable_audit: true
+      enable_machete: true
+
+  # supporting — documentation lane.
+  fixture-docs-ci:
+    name: fixture / docs-ci
+    permissions:
+      contents: read
+    uses: ./.github/workflows/docs-ci.yml
+    with:
+      runner: ubuntu-latest
+      # The default glob is repo-wide, which is the point — this lane checks
+      # every link this repository ships. It has to skip the negative fixture,
+      # whose link is broken deliberately so the negative gates in ci.yml can prove the
+      # checker still fails. Without the exclusion the two lanes contradict each
+      # other, and the positive one loses.
+      exclude_glob: 'tests/fixtures/negative/**/*.md'
+
+  # supporting — the reporting helper, called the way a consumer should call it:
+  # every job in `needs` listed in `required_jobs`, and never as a required check.
+  fixture-gate-report:
+    name: fixture / gate (report)
+    needs: [fixture-actionlint, fixture-docs-ci]
+    if: always()
+    permissions:
+      contents: read
+    uses: ./.github/workflows/gate.yml
+    with:
+      runner: ubuntu-latest
+      check_name: fixture summary
+      needs_json: ${{ toJSON(needs) }}
+      required_jobs: "fixture-actionlint,fixture-docs-ci"
+
+
+  # --- Language lanes -------------------------------------------------------
+  # Each of these calls a reusable exactly as a consumer would, against a real
+  # minimal project under tests/fixtures/. The projects are deliberately
+  # dependency-free: a fixture that downloads a package tree proves the network
+  # works, not that the workflow does.
+
+  # supporting — Go build/vet/test lane against a module with a test, a
+  # benchmark and a fuzz target.
+  evidence:
+    name: evidence summary
+    needs:
+      - fixture-actionlint
+      - fixture-zizmor-no-sarif
+      - fixture-secret-scan
+      - fixture-secret-scan-binary
+      - fixture-private-static
+      - fixture-monorepo-router
+      - fixture-osv-scan
+      - fixture-semgrep
+      - fixture-coverage-gate
+      - fixture-grype-scan
+      - fixture-iac-scan
+      - fixture-public-codeql
+      - fixture-zizmor-sarif
+      - fixture-rust-supply-chain
+      - fixture-docs-ci
+      - fixture-gate-report
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up isolated Python contract runtime
+        id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.13'
+          update-environment: false
+
+      - name: Provision isolated Python contract runtime
+        env:
+          PYTHON_PATH: ${{ steps.python.outputs.python-path }}
+        run: >-
+          "$PYTHON_PATH" -I -B -m venv --copies .venv
+
+      - name: Render evidence for the runtime-coverage ledger
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PROVES: >-
+            {"fixture-actionlint":"actionlint.yml","fixture-zizmor-no-sarif":"zizmor-no-sarif.yml","fixture-secret-scan":"secret-scan.yml","fixture-secret-scan-binary":"secret-scan.yml","fixture-private-static":"private-static.yml","fixture-monorepo-router":"monorepo-changed-paths.yml","fixture-osv-scan":"osv-scan.yml","fixture-semgrep":"semgrep-ci.yml","fixture-coverage-gate":"coverage-gate.yml","fixture-grype-scan":"grype-scan.yml","fixture-iac-scan":"iac-scan.yml","fixture-public-codeql":"public-codeql.yml","fixture-zizmor-sarif":"zizmor-sarif.yml","fixture-rust-supply-chain":"rust-supply-chain.yml","fixture-docs-ci":"docs-ci.yml","fixture-gate-report":"gate.yml"}
+        run: |
+          set -euo pipefail
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch render_runtime_evidence.py --

@@ -1,0 +1,207 @@
+name: pr-hygiene
+
+# Reusable PR-hygiene bundle. Each check is an independently toggled job with
+# least-privilege permissions. Trigger from pull_request (commitlint, pr-title,
+# labeler) and/or schedule (stale). The caller must grant the union of the
+# enabled jobs' permissions. Every tool is free on every tier.
+
+on:
+  workflow_call:
+    outputs:
+      labeler_new_labels:
+        description: 'Comma-separated labels added by the enabled labeler job.'
+        value: ${{ jobs.labeler.outputs.new_labels }}
+      labeler_all_labels:
+        description: 'Comma-separated labels present after the enabled labeler job.'
+        value: ${{ jobs.labeler.outputs.all_labels }}
+    inputs:
+      # Defaults hosted, unlike most reusables here. This workflow is triggered
+      # by `pull_request`, so on a public caller it runs fork-authored code; a
+      # self-hosted default would hand that code an estate runner without the
+      # caller ever naming one. Estate callers opt in explicitly.
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      commitlint:
+        type: boolean
+        default: true
+      commitlint_config:
+        description: 'Path to a commitlint config. Empty uses the repository default.'
+        type: string
+        default: ''
+      pr_title:
+        type: boolean
+        default: true
+      pr_title_types:
+        description: 'Comma-separated allowed conventional-commit types (e.g. feat,fix). Empty uses the action defaults.'
+        type: string
+        default: ''
+      pr_title_require_scope:
+        description: 'Require a scope in every PR title.'
+        type: boolean
+        default: false
+      pr_title_subject_pattern:
+        description: 'Regex constraining the PR title subject. Empty applies no extra subject validation.'
+        type: string
+        default: ''
+      labeler:
+        type: boolean
+        default: false
+      labeler_config:
+        type: string
+        default: '.github/labeler.yml'
+      stale:
+        type: boolean
+        default: false
+      days_before_stale:
+        type: number
+        default: 60
+      days_before_close:
+        type: number
+        default: 14
+      stale_operations_per_run:
+        description: 'Maximum number of operations per run for the stale job.'
+        type: number
+        default: 30
+      stale_exempt_issue_labels:
+        description: 'Comma-separated issue labels that exempt an issue from stale processing. Empty disables the exemption.'
+        type: string
+        default: ''
+      stale_exempt_pr_labels:
+        description: 'Comma-separated PR labels that exempt a pull request from stale processing. Empty disables the exemption.'
+        type: string
+        default: ''
+      timeout_minutes:
+        type: number
+        default: 10
+
+permissions: {}
+
+jobs:
+  commitlint:
+    if: ${{ inputs.commitlint }}
+    name: commitlint
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate explicit commitlint configuration
+        if: ${{ inputs.commitlint_config != '' }}
+        id: commitlint_config
+        shell: bash
+        env:
+          COMMITLINT_CONFIG: ${{ inputs.commitlint_config }}
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          python3 -I <<'PY'
+          import os
+          from pathlib import Path
+
+          raw = os.environ['COMMITLINT_CONFIG']
+          workspace = Path(os.environ['WORKSPACE']).resolve()
+          if not raw or '\n' in raw or '\r' in raw:
+              raise SystemExit('commitlint config: path must be one non-empty line')
+          supplied = Path(raw)
+          if supplied.is_absolute():
+              raise SystemExit('commitlint config: absolute paths are refused')
+          resolved = (workspace / supplied).resolve()
+          try:
+              resolved.relative_to(workspace)
+          except ValueError:
+              raise SystemExit('commitlint config: path escapes the checkout')
+          if not resolved.is_file():
+              raise SystemExit(f'commitlint config: not a regular file: {raw}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              print(f'config_file={raw}', file=output)
+          PY
+      - name: commitlint (default configuration)
+        if: ${{ inputs.commitlint_config == '' }}
+        uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed  # v6.2.1
+      - name: commitlint (explicit configuration)
+        if: ${{ inputs.commitlint_config != '' }}
+        uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed  # v6.2.1
+        with:
+          configFile: ${{ steps.commitlint_config.outputs.config_file }}
+
+  pr-title:
+    if: ${{ inputs.pr_title }}
+    name: pr-title
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+      pull-requests: read # the action reads the pull request it validates
+    steps:
+      - name: Normalize PR-title options
+        id: pr_title_opts
+        shell: bash
+        env:
+          PR_TITLE_TYPES: ${{ inputs.pr_title_types }}
+        run: |
+          set -euo pipefail
+          # amannn/action-semantic-pull-request expects newline-delimited types;
+          # callers pass a comma-separated list. Convert commas to newlines and
+          # trim, leaving the output empty when no types were supplied (the action
+          # then falls back to its Conventional Commits defaults).
+          types_newline="$(printf '%s' "$PR_TITLE_TYPES" | tr ',' '\n' | sed '/^[[:space:]]*$/d')"
+          {
+            printf 'pr_title_types<<EOF_PR_TITLE_TYPES\n'
+            printf '%s\n' "$types_newline"
+            printf 'EOF_PR_TITLE_TYPES\n'
+          } >> "$GITHUB_OUTPUT"
+      - name: Validate PR title (Conventional Commits)
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50  # v6.1.1
+        with:
+          types: ${{ steps.pr_title_opts.outputs.pr_title_types }}
+          requireScope: ${{ inputs.pr_title_require_scope }}
+          subjectPattern: ${{ inputs.pr_title_subject_pattern }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  labeler:
+    if: ${{ inputs.labeler }}
+    name: labeler
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read          # read the labeler configuration from the tree
+      pull-requests: write    # apply labels to the pull request
+    outputs:
+      new_labels: ${{ steps.label.outputs.new-labels }}
+      all_labels: ${{ steps.label.outputs.all-labels }}
+    steps:
+      - name: Checkout labeler configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Label pull request
+        id: label
+        uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13  # v7.0.0
+        with:
+          configuration-path: ${{ inputs.labeler_config }}
+
+  stale:
+    if: ${{ inputs.stale }}
+    name: stale
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read          # read the stale-bot configuration from the tree
+      issues: write           # comment on and close stale issues
+      pull-requests: write    # comment on and close stale pull requests
+    steps:
+      - name: Mark stale issues and pull requests
+        uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93  # v11.0.0
+        with:
+          days-before-stale: ${{ inputs.days_before_stale }}
+          days-before-close: ${{ inputs.days_before_close }}
+          operations-per-run: ${{ inputs.stale_operations_per_run }}
+          exempt-issue-labels: ${{ inputs.stale_exempt_issue_labels }}
+          exempt-pr-labels: ${{ inputs.stale_exempt_pr_labels }}

@@ -1,0 +1,78 @@
+name: zizmor-no-sarif
+
+# Reusable zizmor GitHub Actions security static analysis WITHOUT SARIF upload.
+# Least-privilege variant for the PRIVATE FREE tier: it requests only
+# `contents: read` (code scanning is a paid feature on private repos, so there
+# is no `security-events: write`). Findings are enforced as a build gate and
+# printed to the log instead of uploaded to code scanning.
+#
+# Public repos and private repos with GitHub Code Security should use
+# zizmor-sarif.yml to get findings in the Security tab.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      zizmor_version:
+        type: string
+        default: '1.26.1'
+      persona:
+        description: 'zizmor persona: regular, pedantic, or auditor.'
+        type: string
+        default: 'regular'
+      min_severity:
+        description: 'Minimum finding severity to report: unknown, informational, low, medium, high.'
+        type: string
+        default: 'low'
+      target:
+        description: 'Path zizmor analyzes.'
+        type: string
+        default: '.'
+
+permissions: {}
+
+jobs:
+  zizmor:
+    name: zizmor (no SARIF)
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Isolate global Git config
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          isolated_config="$RUNNER_TEMP/nddev-ci-global.gitconfig"
+          : > "$isolated_config"
+          printf 'GIT_CONFIG_GLOBAL=%s\n' "$isolated_config" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: 0.11.30
+          # Consumer-facing gate. uv provisions our pinned analyser here,
+          # not the caller's dependencies, so there is nothing to choose.
+          enable-cache: false
+
+      - name: Run zizmor (plain, enforced)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ZIZMOR_VERSION: ${{ inputs.zizmor_version }}
+          ZIZMOR_PERSONA: ${{ inputs.persona }}
+          ZIZMOR_MIN_SEVERITY: ${{ inputs.min_severity }}
+          ZIZMOR_TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          uvx "zizmor@${ZIZMOR_VERSION}" \
+            --persona "${ZIZMOR_PERSONA}" \
+            --min-severity "${ZIZMOR_MIN_SEVERITY}" \
+            "${ZIZMOR_TARGET}"

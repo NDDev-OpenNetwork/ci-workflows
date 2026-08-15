@@ -1,0 +1,1259 @@
+schema: nddev-ci-free-tier-facts/v1
+generated_at_utc: '2026-07-11T18:05:00Z'
+review_cutoff_utc: '2026-07-11T18:05:00Z'
+default_refresh_days: 30
+semantics:
+  official: current first-party maintained source
+  vendor-verified: provider pricing page; still requires contract/region/account verification
+  conditional: grant, approval, preview, card, or non-universal eligibility
+  deprecated: retired, shutdown, or unsuitable as a new baseline
+  normalization_warning: minutes, credits, builds, GB-minutes, vCPU-minutes, and grants are not additive without
+    resource-class and multiplier normalization
+facts:
+- id: github-actions-public-standard
+  provider: GitHub
+  product: Actions standard GitHub-hosted runners
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  plans:
+  - Free
+  - Pro
+  - Team
+  - Enterprise Cloud
+  model: public-unmetered
+  allowance:
+    value: null
+    unit: standard-runner-minutes
+    period: unmetered
+    multipliers: {}
+  conditions:
+  - Only standard GitHub-hosted runners; larger runners are billed
+  - 'ALL THREE operating systems are included, not Linux only. The runners reference lists macos-latest,
+    macos-14, macos-15, macos-26, macos-15-intel, macos-26-intel and xcode-27 under "Standard GitHub-hosted
+    runners for public repositories" alongside ubuntu-* and windows-*, and states "Use of the standard
+    GitHub-hosted runners is free and unlimited on public repositories".'
+  - 'Larger runners are billed even here: "Larger runners are always charged for, even when used by public
+    repositories or when you have quota available from your plan." A larger runner is any label carrying a
+    size suffix -- -N-cores, -large, -xlarge.'
+  - 'The OS multiplier applies to PRIVATE repositories only, and it is steep: Linux $0.006/min, Windows
+    $0.010/min (1.67x), macOS $0.062/min (10.33x). A macOS matrix lane that costs nothing on a public
+    repository consumes ten times the included quota on a private one.'
+  payment_method: not-required-for-included-use
+  overage: not-applicable-for-standard-public-runners
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-12'
+  expires_after: '2026-10-30'
+  source_urls:
+  - https://docs.github.com/en/billing/concepts/product-billing/github-actions
+  - https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+  - https://docs.github.com/en/billing/managing-billing-for-your-products/managing-billing-for-github-actions/about-billing-for-github-actions
+  notes:
+  - Public standard runners are documented as free and unlimited.
+  - 'Re-verified 2026-08-12 against the runners reference and the Actions billing page, because the ledger
+    held no macOS coverage at all while this library defaults swift-ci.yml to macos-latest and
+    cross-platform-smoke.yml to a matrix including macOS and Windows. One summary of the billing page
+    asserted that only Linux standard runners are free on public repositories; the sentence it quoted says
+    no such thing, and the runners reference lists macOS under the public standard set. Recorded from the
+    primary wording rather than the summary.'
+  - 'Expiry staggered to 2026-10-30: eight facts already share 2026-10-09, and a re-verified fact rejoining
+    that cluster would rebuild the cliff the staggering rule exists to prevent.'
+- id: github-actions-private-free-personal
+  provider: GitHub
+  product: Actions included usage
+  surface: hosted-ci
+  repository_visibility:
+  - private
+  plans:
+  - Free personal
+  model: recurring-quota
+  allowance:
+    value: 2000
+    unit: runner-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - 500 MB shared Actions artifact/GitHub Packages storage
+  - 10 GB cache per repository
+  - A GitHub Actions budget with Stop paid usage enabled is required to prevent overage when a payment method exists
+  payment_method: not-required-until-overage
+  overage: blocked without valid payment method; billed when enabled
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-13'
+  expires_after: '2026-10-31'
+  source_urls:
+  - https://docs.github.com/en/billing/concepts/product-billing/github-actions
+  - https://docs.github.com/en/billing/concepts/budgets-and-alerts
+  notes: []
+- id: github-actions-private-pro
+  provider: GitHub
+  product: Actions included usage
+  surface: hosted-ci
+  repository_visibility:
+  - private
+  plans:
+  - Pro
+  model: recurring-quota
+  allowance:
+    value: 3000
+    unit: runner-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - 1 GB shared Actions artifact/GitHub Packages storage
+  - 10 GB cache per repository
+  - A GitHub Actions budget with Stop paid usage enabled is required to prevent overage when a payment method exists
+  payment_method: not-required-until-overage
+  overage: billed when enabled
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-13'
+  expires_after: '2026-11-01'
+  source_urls:
+  - https://docs.github.com/en/billing/concepts/product-billing/github-actions
+  - https://docs.github.com/en/billing/concepts/budgets-and-alerts
+  notes: []
+- id: github-actions-private-free-org
+  provider: GitHub
+  product: Actions included usage
+  surface: hosted-ci
+  repository_visibility:
+  - private
+  plans:
+  - Free organization
+  model: recurring-quota
+  allowance:
+    value: 2000
+    unit: runner-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - 500 MB shared Actions artifact/GitHub Packages storage
+  - 10 GB cache per repository
+  - A GitHub Actions budget with Stop paid usage enabled is required to prevent overage when a payment method exists
+  payment_method: not-required-until-overage
+  overage: blocked without valid payment method; billed when enabled
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-13'
+  expires_after: '2026-11-02'
+  source_urls:
+  - https://docs.github.com/en/billing/concepts/product-billing/github-actions
+  - https://docs.github.com/en/billing/concepts/budgets-and-alerts
+  notes: []
+- id: github-actions-private-team
+  provider: GitHub
+  product: Actions included usage
+  surface: hosted-ci
+  repository_visibility:
+  - private
+  plans:
+  - Team
+  model: recurring-quota
+  allowance:
+    value: 3000
+    unit: runner-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - 2 GB shared Actions artifact/GitHub Packages storage
+  - 10 GB cache per repository
+  - 75 GB custom image storage
+  - A GitHub Actions budget with Stop paid usage enabled is required to prevent overage when a payment method exists
+  payment_method: not-required-until-overage
+  overage: billed when enabled
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-13'
+  expires_after: '2026-11-03'
+  source_urls:
+  - https://docs.github.com/en/billing/concepts/product-billing/github-actions
+  - https://docs.github.com/en/billing/concepts/budgets-and-alerts
+  notes: []
+- id: github-actions-private-ghec
+  provider: GitHub
+  product: Actions included usage
+  surface: hosted-ci
+  repository_visibility:
+  - private
+  - internal
+  plans:
+  - Enterprise Cloud
+  model: recurring-quota
+  allowance:
+    value: 50000
+    unit: runner-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - 50 GB shared Actions artifact/GitHub Packages storage
+  - 10 GB cache per repository
+  - 150 GB custom image storage
+  - A GitHub Actions budget with Stop paid usage enabled is required to prevent overage when the contract permits it
+  payment_method: contract-dependent
+  overage: billed under enterprise account
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-13'
+  expires_after: '2026-11-04'
+  source_urls:
+  - https://docs.github.com/en/billing/concepts/product-billing/github-actions
+  - https://docs.github.com/en/billing/concepts/budgets-and-alerts
+  notes: []
+- id: github-actions-larger-runners
+  provider: GitHub
+  product: Actions larger runners
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  - internal
+  plans:
+  - Team
+  - Enterprise Cloud
+  - eligible plans
+  model: paid-only
+  allowance:
+    value: 0
+    unit: included-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - Always billed, including public repositories and despite standard-runner quota
+  payment_method: required
+  overage: metered from first minute
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-09'
+  source_urls:
+  - https://docs.github.com/en/billing/concepts/product-billing/github-actions
+  notes: []
+- id: github-actions-self-hosted-control-plane
+  provider: GitHub
+  product: Actions self-hosted runners
+  surface: self-hosted-ci
+  repository_visibility:
+  - public
+  - private
+  - internal
+  plans:
+  - All eligible GitHub plans
+  model: zero-license-control-plane
+  allowance:
+    value: null
+    unit: github-actions-control-plane-minutes
+    period: unmetered
+    multipliers: {}
+  conditions:
+  - Compute, maintenance, isolation, networking and incident response remain operator costs
+  - Do not expose persistent trusted runners to untrusted public-fork code
+  payment_method: not-required-for-actions-usage
+  overage: infrastructure-provider costs apply
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-09'
+  source_urls:
+  - https://docs.github.com/en/billing/concepts/product-billing/github-actions
+  - https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/apply-labels
+  - https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/manage-access
+  notes:
+  - Current official billing documentation says Actions usage is free for self-hosted runners.
+- id: github-attestations-public
+  provider: GitHub
+  product: Artifact attestations
+  surface: supply-chain
+  repository_visibility:
+  - public
+  plans:
+  - Free
+  - Pro
+  - Team
+  - Enterprise Cloud
+  model: included-feature
+  allowance:
+    value: null
+    unit: attestations
+    period: feature
+    multipliers: {}
+  conditions:
+  - Workflow must generate attestations explicitly
+  - OIDC and attestations permissions required
+  payment_method: not-required
+  overage: not-stated
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/code-security/concepts/supply-chain-security/supply-chain-security
+  notes: []
+- id: github-slsa-build-level-reusable
+  provider: GitHub
+  product: SLSA build level for artifact attestations
+  surface: supply-chain
+  repository_visibility:
+  - public
+  - private
+  - internal
+  plans:
+  - Free
+  - Pro
+  - Team
+  - Enterprise Cloud
+  model: included-feature
+  allowance:
+    value: 3
+    unit: slsa-v1-build-level
+    period: feature
+    multipliers: {}
+  conditions:
+  - 'Artifact attestations on their own reach SLSA v1.0 Build Level 2. GitHub states
+    that Level 3 additionally requires build isolation: "Reusable workflows can provide
+    isolation between the build process and the calling workflow, to meet SLSA v1.0
+    Build Level 3."'
+  - release-supply-chain.yml is a reusable workflow, which is why its release manifest
+    records slsa_build_level 3; release-supply-chain-free.yml publishes no attestations
+    and records null.
+  - This is a claim shipped to consumers in every release manifest. If GitHub restates
+    the level, or SLSA revises what Build L3 requires, the manifest becomes wrong and
+    the emitting workflow must change with it.
+  payment_method: not-required
+  overage: not-applicable
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-14'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/actions/concepts/security/artifact-attestations
+  notes:
+  - Backs the slsa_build_level 3 value emitted by release-supply-chain.yml and the Build
+    L3 row in docs/07.
+- id: github-attestations-private
+  provider: GitHub
+  product: Artifact attestations
+  surface: supply-chain
+  repository_visibility:
+  - private
+  - internal
+  plans:
+  - Enterprise Cloud
+  model: plan-gated
+  allowance:
+    value: null
+    unit: attestations
+    period: feature
+    multipliers: {}
+  conditions:
+  - Unavailable for private/internal repositories on Free, Pro or Team
+  - Not unlocked by GHAS/Code Security; a plan gate, and not supported on Enterprise Server
+  payment_method: enterprise-plan-required
+  overage: not-applicable
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/code-security/concepts/supply-chain-security/supply-chain-security
+  - https://docs.github.com/en/actions/concepts/security/artifact-attestations
+  - https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
+  notes:
+  - 'Backs catalog capabilities artifact-attestations, slsa-build-provenance, release-supply-chain (private-free release uses release-supply-chain-free.yml).'
+- id: github-dependency-review-public
+  provider: GitHub
+  product: Dependency review
+  surface: security
+  repository_visibility:
+  - public
+  plans:
+  - All current plans
+  model: included-feature
+  allowance:
+    value: null
+    unit: repository-feature
+    period: feature
+    multipliers: {}
+  conditions:
+  - Dependency graph and dependency review enabled by default
+  payment_method: not-required
+  overage: not-applicable
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/code-security/concepts/supply-chain-security/supply-chain-security
+  notes: []
+- id: github-dependency-review-private
+  provider: GitHub
+  product: Dependency review
+  surface: security
+  repository_visibility:
+  - private
+  plans:
+  - Team
+  - Enterprise Cloud
+  model: add-on-gated
+  allowance:
+    value: null
+    unit: repository-feature
+    period: feature
+    multipliers: {}
+  conditions:
+  - Organization-owned repository
+  - GitHub Code Security or GitHub Advanced Security license required
+  payment_method: paid-add-on-required
+  overage: license-dependent
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/code-security/concepts/supply-chain-security/supply-chain-security
+  notes: []
+- id: github-dependabot-private
+  provider: GitHub
+  product: Dependabot alerts and security updates
+  surface: security
+  repository_visibility:
+  - private
+  plans:
+  - All eligible plans
+  model: included-feature
+  allowance:
+    value: null
+    unit: repository-feature
+    period: feature
+    multipliers: {}
+  conditions:
+  - Enable dependency graph and Dependabot alerts
+  - Security updates require alerts
+  payment_method: not-required
+  overage: not-applicable
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/code-security/concepts/supply-chain-security/supply-chain-security
+  notes: []
+- id: github-secret-scanning-public
+  provider: GitHub
+  product: Secret scanning
+  surface: security
+  repository_visibility:
+  - public
+  plans:
+  - All current plans
+  model: included-feature
+  allowance:
+    value: null
+    unit: repository-feature
+    period: feature
+    multipliers: {}
+  conditions:
+  - Runs automatically for free on public repositories
+  payment_method: not-required
+  overage: not-applicable
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/code-security/reference/secret-security/supported-secret-scanning-patterns
+  notes: []
+- id: github-secret-scanning-private-org
+  provider: GitHub
+  product: Secret scanning / Secret Protection
+  surface: security
+  repository_visibility:
+  - private
+  - internal
+  plans:
+  - Team
+  - Enterprise Cloud
+  model: add-on-gated
+  allowance:
+    value: null
+    unit: repository-feature
+    period: feature
+    multipliers: {}
+  conditions:
+  - Organization-owned repository
+  - GitHub Secret Protection must be enabled
+  payment_method: paid-add-on-required
+  overage: license-dependent
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/code-security/reference/secret-security/supported-secret-scanning-patterns
+  notes: []
+- id: github-environments-public
+  provider: GitHub
+  product: Actions environments
+  surface: deployment
+  repository_visibility:
+  - public
+  plans:
+  - Free
+  - Pro
+  - Team
+  - Enterprise Cloud
+  model: included-feature
+  allowance:
+    value: null
+    unit: repository-feature
+    period: feature
+    multipliers: {}
+  conditions:
+  - Environment secrets and protection rules available
+  - Some custom protection-rule integrations may have separate requirements
+  payment_method: not-required
+  overage: not-applicable
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments
+  notes: []
+- id: github-environments-private
+  provider: GitHub
+  product: Actions environments
+  surface: deployment
+  repository_visibility:
+  - private
+  - internal
+  plans:
+  - Pro
+  - Team
+  - Enterprise Cloud
+  model: plan-gated
+  allowance:
+    value: null
+    unit: repository-feature
+    period: feature
+    multipliers: {}
+  conditions:
+  - Unavailable for private repositories on GitHub Free
+  - Wait timer and required reviewers on Free/Pro/Team are public-only
+  payment_method: paid-base-plan-required
+  overage: not-applicable
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-11-06'
+  source_urls:
+  - https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments
+  notes: []
+- id: github-code-quality-transition
+  provider: GitHub
+  product: Code Quality
+  surface: quality
+  repository_visibility:
+  - public
+  - private
+  - internal
+  plans:
+  - Team
+  - Enterprise Cloud
+  model: scheduled-paid-transition
+  allowance:
+    value: 10
+    unit: usd-per-active-committer
+    period: month
+    multipliers: {}
+  conditions:
+  - Public preview before 2026-07-20
+  - GA and paid from 2026-07-20
+  - 'DISPUTED — the public per-committer rate is not settled between GitHub''s own sources. The product
+    page states "Public repositories: $0 per committer + usage-based billing for AI-powered work"; the
+    billing documentation states only that "each active committer uses one Code Quality license", with
+    no visibility exemption and no rate. Do not compile a public per-committer cost from this fact:
+    treat it as account-observed until NDDev Licensing/Billing or an invoice resolves it. The $10
+    private rate and the Team/Enterprise plan gate are undisputed.'
+  - Active committers are counted once per organization across every repository with Code Quality enabled
+  - A committer is active if one of their commits was pushed in the last 90 days, regardless of authoring date
+  - Bot accounts are not billed
+  - Licence is independent of Code Security / Secret Protection; Advanced Security does not include it
+  - AI capabilities add usage charges
+  - Deterministic CodeQL analysis consumes Actions minutes
+  - Scope with the org-level Repository access control (all / selected / no repositories) to choose which repositories bill
+  payment_method: required-from-2026-07-20
+  overage: AI usage and Actions minutes may add cost
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-01'
+  expires_after: '2026-10-21'
+  source_urls:
+  - https://github.blog/changelog/2026-06-16-github-code-quality-generally-available-july-20-2026/
+  - https://docs.github.com/en/billing/concepts/product-billing/github-code-quality
+  - https://docs.github.com/en/code-security/how-tos/maintain-quality-code/enable-code-quality
+  - https://docs.github.com/en/code-security/how-tos/maintain-quality-code/disable-code-quality
+  notes:
+  - 'GA + paid transition completed 2026-07-20 as scheduled; no longer time-critical.'
+  - 'Re-verified 2026-07-21 against the billing docs: standalone per-active-committer license ($10/active committer/month), CodeQL scans consume Actions minutes, AI features consume AI credits at $0.01/credit, independent of Advanced Security licenses; Team + Enterprise Cloud.'
+  - 'Re-verified 2026-08-01: visibility does not gate the licence REQUIREMENT — a public repository still consumes one Code Quality licence per active committer, and only avoids the Actions-minutes component (standard runners are unmetered on public). That is why the tier docs exclude Code Quality from both free tiers instead of folding it into the public tier. This note does NOT settle the public RATE and must not be read as overriding the DISPUTED condition above. An earlier revision said flatly that public repositories are not free, README compiled that into a headline claim, and the dispute recorded in the same fact was quietly resolved in prose. State the licence requirement; leave the rate account-observed.'
+- id: gitlab-free-hosted
+  provider: GitLab
+  product: GitLab.com Free compute
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Free
+  model: recurring-quota
+  allowance:
+    value: 400
+    unit: compute-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - Shared-runner use may require identity/payment verification
+  - Own runners do not consume hosted compute quota
+  - 10 GiB project storage
+  payment_method: may-be-required-for-shared-runners
+  overage: purchase additional compute or use own runners
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-11'
+  source_urls:
+  - https://about.gitlab.com/pricing/
+  notes: []
+- id: gitlab-open-source-program
+  provider: GitLab
+  product: GitLab for Open Source
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  plans:
+  - Ultimate for qualifying OSS
+  model: application-grant
+  allowance:
+    value: 50000
+    unit: compute-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - Qualification and acceptance required
+  - Project must remain eligible under program rules
+  - Membership must be renewed annually or the account is downgraded
+  - The program page states the compute-minute grant alongside an annual renewal cycle without naming
+    the accrual period; treat the monthly reading as the Ultimate-tier allotment, not a program claim
+  payment_method: not-required-after-approval
+  overage: program/plan dependent
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-11'
+  source_urls:
+  - https://about.gitlab.com/solutions/open-source/join/
+  notes:
+  - 'Re-verified 2026-08-10: grant is GitLab Ultimate (self-managed or SaaS) including 50,000 compute
+    minutes, gated on OSI-approved licence, public visibility and non-profit status, applied for
+    through the Customers Portal and renewed annually.'
+- id: circleci-free
+  provider: CircleCI
+  product: Free plan
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Free
+  model: credit-quota
+  allowance:
+    value: 30000
+    unit: credits
+    period: month
+    multipliers: {}
+  conditions:
+  - 5 active users
+  - Linux Medium consumes 10 credits per minute, yielding about 3,000 minutes at that class
+  - Other executors/resource classes consume credits at different rates
+  payment_method: not-required
+  overage: upgrade or wait for reset
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-18'
+  source_urls:
+  - https://circleci.com/pricing/
+  notes: []
+- id: circleci-open-source
+  provider: CircleCI
+  product: Open Source plan credits
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  plans:
+  - Approved OSS
+  model: application-grant
+  allowance:
+    value: 400000
+    unit: credits
+    period: month
+    multipliers: {}
+  conditions:
+  - Approval required
+  - Linux/Arm/Docker pool; Windows/macOS allowance is lower and separately limited
+  payment_method: not-required-after-approval
+  overage: plan dependent
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-18'
+  source_urls:
+  - https://circleci.com/open-source/
+  notes: []
+- id: appveyor-public
+  provider: AppVeyor
+  product: Free open-source plan
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  plans:
+  - Free OSS
+  model: public-unmetered
+  allowance:
+    value: null
+    unit: projects
+    period: unmetered
+    multipliers: {}
+  conditions:
+  - Unlimited public projects
+  - 1 concurrent hosted job
+  - 5 concurrent self-hosted jobs
+  - 60 minutes maximum per job
+  payment_method: not-required
+  overage: private repositories require trial or paid plan
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-25'
+  source_urls:
+  - https://www.appveyor.com/pricing/
+  notes: []
+- id: semaphore-cloud-free
+  provider: Semaphore
+  product: Cloud free recurring credit
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Free
+  model: credit-quota
+  allowance:
+    value: 15
+    unit: usd-credits
+    period: month
+    multipliers: {}
+  conditions:
+  - Approximately 2,000 Ubuntu x64 2-vCPU minutes at published rate
+  - 20 GB egress
+  - 100 GB storage
+  - 9.6 GB cache per project
+  payment_method: not-required
+  overage: upgrade/add payment
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-25'
+  source_urls:
+  - https://semaphore.io/pricing
+  notes: []
+- id: semaphore-community
+  provider: Semaphore
+  product: Semaphore Community Edition
+  surface: self-hosted-ci
+  repository_visibility:
+  - public
+  - private
+  - internal
+  plans:
+  - Community
+  model: zero-license-self-hosted
+  allowance:
+    value: null
+    unit: build-minutes
+    period: unmetered
+    multipliers: {}
+  conditions:
+  - Operator supplies infrastructure and maintenance
+  payment_method: not-required-for-license
+  overage: infrastructure costs apply
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-25'
+  source_urls:
+  - https://semaphore.io/community
+  notes: []
+- id: azure-pipelines-private
+  provider: Microsoft Azure DevOps
+  product: Azure Pipelines private projects
+  surface: hosted-ci
+  repository_visibility:
+  - private
+  plans:
+  - Free included parallel job
+  model: recurring-quota
+  allowance:
+    value: 1800
+    unit: hosted-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - One Microsoft-hosted parallel job
+  - 60-minute job limit
+  - One self-hosted parallel job without hosted minute limit
+  - The Microsoft-hosted free tier is not automatic; it must be enabled by linking the organization to
+    a valid Azure subscription. The self-hosted free tier is granted automatically.
+  - Public projects are retired and convert to private in 2027, after which they receive the same
+    private-project allocation
+  payment_method: Azure subscription/organization setup may be required
+  overage: purchase parallel jobs
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-25'
+  source_urls:
+  - https://learn.microsoft.com/en-us/azure/devops/pipelines/licensing/concurrent-jobs
+  notes:
+  - 'Re-verified 2026-08-10: 1,800 minutes/month, one hosted parallel job, 60-minute job limit,
+    360 minutes per job on the paid tier with no monthly limit.'
+- id: azure-pipelines-public-retirement
+  provider: Microsoft Azure DevOps
+  product: Azure DevOps public projects
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  plans:
+  - Legacy only
+  model: retiring
+  allowance:
+    value: 0
+    unit: new-public-projects
+    period: feature
+    multipliers: {}
+  conditions:
+  - New public projects retired in April 2026
+  - Existing public projects scheduled to convert to private in 2027
+  payment_method: not-applicable
+  overage: select another public CI baseline
+  status: deprecated
+  source_authority: primary
+  verified_at: '2026-07-11'
+  expires_after: '2027-01-01'
+  source_urls:
+  - https://learn.microsoft.com/en-us/azure/devops/organizations/projects/public-projects-retirement
+  notes: []
+- id: bitbucket-free
+  provider: Atlassian
+  product: Bitbucket Cloud Free + Pipelines
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Free
+  model: recurring-quota
+  allowance:
+    value: 50
+    unit: build-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - Up to 5 users
+  - Unlimited public/private repositories
+  - 1 GB Git LFS
+  - Community/academic allowances may differ
+  payment_method: not-required
+  overage: purchase build minutes or upgrade
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-25'
+  source_urls:
+  - https://www.atlassian.com/software/bitbucket/pricing
+  notes: []
+- id: buildkite-personal
+  provider: Buildkite
+  product: Personal plan hosted agents
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Personal
+  model: recurring-quota
+  allowance:
+    value: 500
+    unit: linux-vcpu-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - 3 concurrent jobs
+  - 1 user
+  - 90-day retention
+  - Small AMD64 hosted agents
+  - Agent/self-hosted economics differ
+  payment_method: not-required
+  overage: upgrade or self-host
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-25'
+  source_urls:
+  - https://buildkite.com/pricing/
+  notes: []
+- id: google-cloud-build-free
+  provider: Google Cloud
+  product: Cloud Build free tier
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Google Cloud Free Tier
+  model: recurring-quota
+  allowance:
+    value: 2500
+    unit: e2-standard-2-build-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - Default pool eligible usage
+  - Promotional/subject to change
+  - Other Google Cloud services and egress can incur charges
+  payment_method: cloud-billing-account-may-be-required
+  overage: metered Google Cloud billing
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-16'
+  source_urls:
+  - https://cloud.google.com/build/pricing
+  notes: []
+- id: aws-codebuild-free
+  provider: AWS
+  product: CodeBuild free tier
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - AWS Free Tier
+  model: recurring-quota
+  allowance:
+    value: 100
+    unit: ec2-build-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - Eligible general1.small or arm1.small compute
+  - 'Alternative Lambda allowance: 6,000 seconds at 1 GB'
+  - Ancillary AWS services and transfer may incur charges
+  payment_method: AWS-account-required
+  overage: metered AWS billing
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-16'
+  source_urls:
+  - https://aws.amazon.com/codebuild/pricing/
+  notes: []
+- id: blacksmith-free
+  provider: Blacksmith
+  product: Free GitHub Actions runner pool
+  surface: hosted-actions-runner
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Free
+  model: recurring-quota
+  allowance:
+    value: 3000
+    unit: runner-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - Vendor-managed runners integrated with GitHub Actions
+  - Linux/ARM/Windows/macOS availability varies by offering
+  - Verify current price and data-processing terms before adoption
+  payment_method: not-required
+  overage: upgrade
+  status: vendor-verified
+  source_authority: vendor
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-04'
+  source_urls:
+  - https://www.blacksmith.sh/pricing
+  notes:
+  - Ignore stale third-party claims that GitHub itself charges a self-hosted control-plane fee; current GitHub official
+    docs say self-hosted Actions usage is free.
+- id: ubicloud-free
+  provider: Ubicloud
+  product: GitHub Actions runners monthly credit
+  surface: hosted-actions-runner
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Pay-as-you-go with recurring credit
+  model: credit-quota
+  allowance:
+    value: 2
+    unit: usd-credits
+    period: month
+    multipliers: {}
+  conditions:
+  - About 1,250 runner minutes at cited base rate
+  - Credit card required
+  - Exact minutes depend on runner type
+  payment_method: required
+  overage: metered billing
+  status: vendor-verified
+  source_authority: vendor
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-04'
+  source_urls:
+  - https://www.ubicloud.com/use-cases/github-actions
+  notes: []
+- id: buddy-free
+  provider: Buddy
+  product: Free plan
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Free
+  model: resource-quota
+  allowance:
+    value: 300
+    unit: pipeline-gb-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - 1 seat
+  - 1 concurrent pipeline
+  - 1 GB cache
+  - GB-minute unit is not directly comparable to runner minutes
+  payment_method: not-required
+  overage: upgrade
+  status: vendor-verified
+  source_authority: vendor
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-04'
+  source_urls:
+  - https://buddy.works/pricing
+  notes: []
+- id: harness-free
+  provider: Harness
+  product: Continuous Delivery & Git Experience Free
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Free
+  model: credit-quota
+  allowance:
+    value: 2000
+    unit: credits
+    period: month
+    multipliers: {}
+  conditions:
+  - Harness Cloud may require card validation
+  - Local runner is an alternative
+  - Credit consumption depends on execution class
+  payment_method: may-be-required
+  overage: upgrade/purchase
+  status: vendor-verified
+  source_authority: vendor
+  verified_at: '2026-08-10'
+  expires_after: '2026-09-04'
+  source_urls:
+  - https://www.harness.io/pricing
+  - https://developer.harness.io/docs/continuous-integration/get-started/ci-subscription-mgmt/
+  notes: []
+- id: codemagic-personal
+  provider: Codemagic
+  product: Personal plan
+  surface: mobile-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Personal
+  model: recurring-quota
+  allowance:
+    value: 500
+    unit: macos-build-minutes
+    period: month
+    multipliers: {}
+  conditions:
+  - Free allowance is platform-specific
+  - Linux/Windows free-minute rules differ; verify before workload placement
+  payment_method: not-required
+  overage: metered/upgrade
+  status: vendor-verified
+  source_authority: vendor
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-02'
+  source_urls:
+  - https://codemagic.io/pricing/
+  notes: []
+- id: appcircle-always-free
+  provider: Appcircle
+  product: Always Free
+  surface: mobile-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - Free
+  model: build-count-quota
+  allowance:
+    value: 20
+    unit: builds
+    period: month
+    multipliers: {}
+  conditions:
+  - 1 concurrent build
+  - 30-minute maximum per build
+  payment_method: not-required
+  overage: upgrade
+  status: vendor-verified
+  source_authority: vendor
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-02'
+  source_urls:
+  - https://appcircle.io/pricing
+  notes: []
+- id: bitrise-hobby
+  provider: Bitrise
+  product: Hobby plan
+  surface: mobile-ci
+  repository_visibility:
+  - private
+  plans:
+  - Hobby
+  model: credit-quota
+  allowance:
+    value: 300
+    unit: credits
+    period: month
+    multipliers: {}
+  conditions:
+  - 1 private app
+  - Up to 5 concurrency
+  - 90-minute maximum build duration
+  - Credit conversion depends on machine type
+  payment_method: not-required
+  overage: upgrade
+  status: vendor-verified
+  source_authority: vendor
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-02'
+  source_urls:
+  - https://bitrise.io/pricing
+  notes: []
+- id: travis-open-source-conditional
+  provider: Travis CI
+  product: Open source credits
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  plans:
+  - OSS grant
+  model: application-grant
+  allowance:
+    value: null
+    unit: credits
+    period: month
+    multipliers: {}
+  conditions:
+  - Not an automatic universal free public tier
+  - Credits require request/approval and current eligibility review
+  payment_method: not-required-after-approval
+  overage: paid plan or renewed grant
+  status: conditional
+  source_authority: vendor
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-23'
+  source_urls:
+  - https://www.travis-ci.com/pricing/
+  - https://docs.travis-ci.com/user/billing-overview/
+  notes: []
+- id: cirrus-ci-shutdown
+  provider: Cirrus Labs
+  product: Cirrus CI hosted service
+  surface: hosted-ci
+  repository_visibility:
+  - public
+  - private
+  plans:
+  - All
+  model: shutdown
+  allowance:
+    value: 0
+    unit: available-builds
+    period: feature
+    multipliers: {}
+  conditions:
+  - Hosted Cirrus CI service shut down on 2026-06-01
+  payment_method: not-applicable
+  overage: migrate to another provider
+  status: deprecated
+  source_authority: primary
+  verified_at: '2026-07-11'
+  expires_after: null
+  source_urls:
+  - https://cirrus-ci.org/
+  notes: []
+- id: teamcity-professional
+  provider: JetBrains
+  product: TeamCity Professional
+  surface: self-hosted-ci
+  repository_visibility:
+  - public
+  - private
+  - internal
+  plans:
+  - Professional
+  model: zero-license-self-hosted
+  allowance:
+    value: null
+    unit: build-minutes
+    period: unmetered
+    multipliers: {}
+  conditions:
+  - 3 build agents
+  - Capped at 100 build configurations and 10 pipelines, including archived ones; each additional
+    agent raises the configuration limit by 10
+  - Build time is unlimited
+  - Operator supplies infrastructure and maintenance
+  payment_method: not-required-for-license
+  overage: additional agents/enterprise features may require license
+  status: official
+  source_authority: primary
+  verified_at: '2026-08-10'
+  expires_after: '2026-10-23'
+  source_urls:
+  - https://www.jetbrains.com/teamcity/buy/
+  - https://www.jetbrains.com/help/teamcity/licensing-policy.html
+  notes:
+  - 'Corrected 2026-08-10: the fact previously claimed "unlimited build configurations". The licensing
+    policy caps free Professional at 100 build configurations and 10 pipelines; only build *time* is
+    unlimited. Unlimited configurations require Enterprise.'

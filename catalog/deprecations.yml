@@ -1,0 +1,55 @@
+# Deprecated, retiring, and removed capabilities relevant to ci-workflows.
+# Machine-readable source of truth. Mirrored by docs/. Enforced by scripts/validate_catalog.py.
+# status enum: retiring | deprecated | removed
+# Last verified: 2026-07-04
+
+deprecations:
+  - id: github-models
+    name: GitHub Models
+    status: retiring
+    effective_date: "2026-07-30"
+    replacement: "Agentic Workflows / Copilot Autofix / external LLM via OIDC"
+    notes: >-
+      Fully retired 2026-07-30 with brownouts on 2026-07-16 and 2026-07-23.
+      Do not build CI around the 'models: read' permission.
+    sources:
+      - "https://github.blog/changelog/2026-07-01-github-models-is-being-fully-retired-on-july-30-2026/"
+
+  - id: branch-protection-classic
+    name: Branch protection (classic)
+    status: deprecated
+    effective_date: null
+    replacement: "Repository rulesets"
+    notes: >-
+      Superseded by repository rulesets, which are GA and canonical. No hard
+      removal date announced; use rulesets for all new branch, tag, and push
+      governance.
+    sources:
+      - "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets"
+      - "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"
+
+  - id: release-clobber-fallback
+    name: "gh release upload --clobber fallback"
+    status: removed
+    effective_date: "2025-10-28"
+    replacement: "One-shot 'gh release create' with all assets, or draft-then-publish and fail-if-exists"
+    notes: >-
+      Immutable releases went GA on 2025-10-28. Once a release is published its
+      assets cannot be modified, deleted, or clobbered, so 'gh release upload
+      --clobber' actively fails. This repo has immutable releases enabled, so any
+      --clobber fallback is dead code that will error and must be restructured.
+    sources:
+      - "https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases"
+
+  - id: zizmor-single-workflow
+    name: "Single zizmor.yml reusable workflow"
+    status: deprecated
+    effective_date: null
+    replacement: "zizmor-sarif.yml (SARIF upload) and zizmor-no-sarif.yml (no code scanning)"
+    notes: >-
+      The combined zizmor.yml gated SARIF upload behind an input. The canonical
+      inventory splits it into an explicit SARIF-uploading variant and a
+      no-SARIF variant so private (non-GHAS) callers do not carry code-scanning
+      permissions they cannot use.
+    sources:
+      - "https://github.com/woodruffw/zizmor"

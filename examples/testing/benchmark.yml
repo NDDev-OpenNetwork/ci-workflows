@@ -1,0 +1,18 @@
+# Benchmark + regression alert caller (publish lane): always pushes gh-pages
+# history, hence contents: write. For pull requests and read-only checks use
+# examples/testing/benchmark-compare.yml. Replace @<sha> with a full SHA.
+name: benchmark
+on:
+  push: { branches: [main] }
+permissions: {}
+jobs:
+  benchmark:
+    permissions: { contents: write }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/benchmark.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      language: python
+      tool: pytest
+      bench_command: 'pytest --benchmark-only --benchmark-json=output.json'
+      output_file_path: output.json
+      history_branch: gh-pages

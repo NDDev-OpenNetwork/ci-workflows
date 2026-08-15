@@ -1,0 +1,17 @@
+# Node.js CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: node
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: node-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  node:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/node-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      install_command: 'bun install --frozen-lockfile'
+      test_command: 'bun test'

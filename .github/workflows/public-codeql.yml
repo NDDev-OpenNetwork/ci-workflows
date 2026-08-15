@@ -1,0 +1,153 @@
+name: public-codeql
+
+# Reusable CodeQL code-scanning for PUBLIC repositories (free GitHub code scanning).
+# Caller example:
+#   jobs:
+#     codeql:
+#       uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-codeql.yml@<full-sha>
+#       with:
+#         languages: '["python","actions"]'
+
+on:
+  workflow_call:
+    inputs:
+      languages:
+        description: 'JSON array of CodeQL languages, e.g. ["python","actions"].'
+        type: string
+        default: '["actions"]'
+      queries:
+        description: 'CodeQL query suite.'
+        type: string
+        default: 'security-and-quality'
+      config_file:
+        description: 'Optional CodeQL config file path.'
+        type: string
+        default: ''
+      autobuild:
+        description: 'Run github/codeql-action/autobuild before analyze.'
+        type: boolean
+        default: false
+      build_command:
+        description: 'Custom build command (bash) instead of autobuild. Empty = use autobuild setting. E.g. "cargo build --workspace --locked".'
+        type: string
+        default: ''
+      post_analyze_command:
+        description: 'Optional command (bash) to run AFTER analyze, e.g. extraction-diagnostics collection. Runs with always() so it captures failures too.'
+        type: string
+        default: ''
+      output_directory:
+        description: 'Optional CodeQL analyze output directory for SARIF artifacts.'
+        type: string
+        default: ''
+      upload_sarif_artifact:
+        description: 'Upload output_directory as an artifact after analysis.'
+        type: boolean
+        default: false
+      artifact_name:
+        type: string
+        default: 'codeql-results'
+      retention_days:
+        type: number
+        default: 14
+      runner:
+        description: 'Runner label.'
+        type: string
+        default: 'ubuntu-latest'
+      egress_policy:
+        description: 'harden-runner egress policy: audit or block.'
+        type: string
+        default: 'audit'
+
+permissions: {}
+
+jobs:
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 20
+    permissions:
+      actions: read           # upload-sarif reads this workflow run
+      contents: read          # check out the tree being analysed
+      security-events: write  # publish CodeQL results to code scanning
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(inputs.languages) }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920  # v2.20.0
+        with:
+          egress-policy: ${{ inputs.egress_policy }}
+
+      - name: Isolate global Git config
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          isolated_config="$RUNNER_TEMP/nddev-ci-global.gitconfig"
+          : > "$isolated_config"
+          printf 'GIT_CONFIG_GLOBAL=%s\n' "$isolated_config" >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        if: ${{ matrix.language == 'go' }}
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Initialize CodeQL
+        if: ${{ inputs.config_file == '' }}
+        uses: github/codeql-action/init@d1ba80a13dd99fba24a470575428917156a28b43  # v4.37.5
+        with:
+          languages: ${{ matrix.language }}
+          queries: ${{ inputs.queries }}
+
+      - name: Initialize CodeQL with config
+        if: ${{ inputs.config_file != '' }}
+        uses: github/codeql-action/init@d1ba80a13dd99fba24a470575428917156a28b43  # v4.37.5
+        with:
+          languages: ${{ matrix.language }}
+          config-file: ${{ inputs.config_file }}
+
+      - name: Autobuild
+        if: ${{ inputs.autobuild && inputs.build_command == '' }}
+        uses: github/codeql-action/autobuild@d1ba80a13dd99fba24a470575428917156a28b43  # v4.37.5
+
+      - name: Custom build
+        if: ${{ inputs.build_command != '' }}
+        env:
+          BUILD_COMMAND: ${{ inputs.build_command }}
+        run: bash -euo pipefail -c "$BUILD_COMMAND"
+
+      - name: Analyze
+        if: ${{ inputs.output_directory == '' }}
+        uses: github/codeql-action/analyze@d1ba80a13dd99fba24a470575428917156a28b43  # v4.37.5
+        with:
+          category: "/language:${{ matrix.language }}"
+
+      - name: Analyze with output directory
+        if: ${{ inputs.output_directory != '' }}
+        uses: github/codeql-action/analyze@d1ba80a13dd99fba24a470575428917156a28b43  # v4.37.5
+        with:
+          category: "/language:${{ matrix.language }}"
+          output: ${{ inputs.output_directory }}
+
+      - name: Upload CodeQL SARIF artifact
+        if: ${{ always() && inputs.upload_sarif_artifact && inputs.output_directory != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: ${{ inputs.artifact_name }}-${{ matrix.language }}
+          path: ${{ inputs.output_directory }}
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention_days }}
+
+      - name: Post-analyze command
+        if: ${{ always() && inputs.post_analyze_command != '' }}
+        env:
+          POST_ANALYZE_COMMAND: ${{ inputs.post_analyze_command }}
+        run: bash -euo pipefail -c "$POST_ANALYZE_COMMAND"

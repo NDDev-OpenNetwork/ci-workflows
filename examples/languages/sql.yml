@@ -1,0 +1,17 @@
+# SQL CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: sql
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: sql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sql:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/sql-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      dialect: postgres
+      paths: 'migrations'

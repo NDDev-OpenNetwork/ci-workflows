@@ -1,0 +1,95 @@
+name: python-ci
+
+# Reusable Python CI for BOTH tiers: pinned astral-sh/setup-uv with dependency
+# caching, a uv-managed Python toolchain, and caller-provided install/test
+# commands passed via env (no `${{ inputs.* }}` inline in run:).
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      python_version:
+        type: string
+        default: '3.13'
+      working_directory:
+        type: string
+        default: '.'
+      uv_version:
+        description: 'Exact astral-sh/uv version to pin.'
+        type: string
+        default: '0.11.30'
+      install_command:
+        description: 'Dependency install command (bash). Empty to skip.'
+        type: string
+        default: 'uv sync --frozen'
+      test_command:
+        description: 'Test/verify command (bash).'
+        type: string
+        required: true
+      timeout_minutes:
+        type: number
+        default: 20
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  python:
+    name: python (${{ inputs.python_version }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: ${{ inputs.uv_version }}
+          enable-cache: true
+          # python-version sets UV_PYTHON; activate-environment creates a venv
+          # on that interpreter and puts it on PATH for every later step. Both
+          # are needed. A previous version ran `uv python install` on its own,
+          # which downloaded the requested Python and then left it unused: the
+          # caller's install and test commands resolved `python` from PATH and
+          # got the runner's system interpreter instead. The first fixture run
+          # caught it — the job announced "Python 3.13 tests passed" while
+          # pytest had run on the image's 3.12.
+          python-version: ${{ inputs.python_version }}
+          activate-environment: true
+
+      - name: Install dependencies
+        if: ${{ inputs.install_command != '' }}
+        env:
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+
+      - name: Run tests
+        env:
+          TEST_COMMAND: ${{ inputs.test_command }}
+          PY_VERSION: ${{ inputs.python_version }}
+        run: |
+          bash -euo pipefail -c "$TEST_COMMAND"
+          # Report the interpreter that actually ran, not the one that was
+          # requested. Printing the input was how the inert python_version
+          # stayed invisible for so long.
+          echo "Tests passed on $(python -V 2>&1) (requested ${PY_VERSION})." \
+            >> "$GITHUB_STEP_SUMMARY"

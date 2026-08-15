@@ -1,0 +1,53 @@
+name: grype-scan
+
+# Reusable Grype vulnerability (SCA) scan for BOTH tiers. Free on private-free.
+# Scans a filesystem path (or SBOM) and fails at/above the severity cutoff.
+# Gate-only: table output, no SARIF upload.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      path:
+        description: 'Filesystem path to scan.'
+        type: string
+        default: '.'
+      severity_cutoff:
+        description: 'Fail at/above: negligible, low, medium, high, or critical.'
+        type: string
+        default: 'high'
+      only_fixed:
+        type: boolean
+        default: false
+      fail_build:
+        type: boolean
+        default: true
+      timeout_minutes:
+        type: number
+        default: 15
+
+permissions: {}
+
+jobs:
+  grype:
+    name: grype
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Grype scan
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2  # v7.4.0
+        with:
+          path: ${{ inputs.path }}
+          fail-build: ${{ inputs.fail_build }}
+          severity-cutoff: ${{ inputs.severity_cutoff }}
+          only-fixed: ${{ inputs.only_fixed }}
+          output-format: table

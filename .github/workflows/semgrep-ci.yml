@@ -1,0 +1,76 @@
+name: semgrep-ci
+
+# Reusable Semgrep OSS SAST for BOTH tiers. Free on private-free repos, where
+# CodeQL is a paid GHAS feature. Gate-only: findings fail the job and no SARIF is
+# uploaded, so no code-scanning (security-events) permission is required.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      working_directory:
+        type: string
+        default: '.'
+      config:
+        description: 'Semgrep ruleset(s): p/ci, p/default, p/security-audit, or a local path.'
+        type: string
+        default: 'p/ci'
+      semgrep_version:
+        description: 'Exact semgrep version to pin.'
+        type: string
+        default: '1.170.0'
+      extra_args:
+        type: string
+        default: ''
+      timeout_minutes:
+        type: number
+        default: 20
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  semgrep:
+    name: semgrep
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: 0.11.30
+          # uv provisions our pinned analyser here, not the caller's
+          # dependencies; a restored entry would be unreviewed input to a scan.
+          enable-cache: false
+
+      - name: Semgrep scan
+        env:
+          SEMGREP_VERSION: ${{ inputs.semgrep_version }}
+          SEMGREP_CONFIG: ${{ inputs.config }}
+          SEMGREP_EXTRA_ARGS: ${{ inputs.extra_args }}
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          uvx "semgrep${SEMGREP_VERSION:+@$SEMGREP_VERSION}" scan --error --metrics off --config "$SEMGREP_CONFIG" $SEMGREP_EXTRA_ARGS
+          echo "Semgrep SAST passed." >> "$GITHUB_STEP_SUMMARY"

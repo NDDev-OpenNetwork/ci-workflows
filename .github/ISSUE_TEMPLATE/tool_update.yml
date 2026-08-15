@@ -1,0 +1,57 @@
+name: Tool / action update
+description: A pinned tool or action has a newer version worth adopting.
+title: "chore: bump <tool> to <version>"
+labels: ["dependencies", "tool-update", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when a pinned action or tool has a new release. Dependabot
+        already batches most GitHub Actions bumps weekly — check for an open
+        Dependabot PR first. This form is useful for non-Dependabot tools
+        (e.g. digest-pinned containers, checksum-verified downloads) or when a
+        bump needs human judgment.
+  - type: input
+    id: tool
+    attributes:
+      label: Tool / action name
+      placeholder: "e.g. step-security/harden-runner, gitleaks/gitleaks, rhysd/actionlint"
+    validations:
+      required: true
+  - type: input
+    id: current
+    attributes:
+      label: Current pin
+      description: The SHA / digest / checksum currently pinned, and its version comment.
+      placeholder: "e.g. step-security/harden-runner@bf7454d...  # v2.20.0"
+    validations:
+      required: true
+  - type: input
+    id: new-version
+    attributes:
+      label: New version
+      description: The target version (and its full SHA / digest, if you have it).
+      placeholder: "e.g. v2.20.0 (@<40-char-sha>)"
+    validations:
+      required: true
+  - type: input
+    id: changelog
+    attributes:
+      label: Changelog / release notes link
+      placeholder: "https://github.com/<owner>/<repo>/releases/tag/<tag>"
+    validations:
+      required: true
+  - type: checkboxes
+    id: breaking
+    attributes:
+      label: Breaking change
+      options:
+        - label: This release contains breaking changes that affect how our workflows call it.
+          required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything else — which workflows use it, security fixes in the release, migration steps.
+    validations:
+      required: false

@@ -1,0 +1,16 @@
+# Grype SCA caller (any tier — free on private-free). Replace @<sha>.
+name: grype-scan
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: grype-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  grype:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/grype-scan.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      severity_cutoff: high

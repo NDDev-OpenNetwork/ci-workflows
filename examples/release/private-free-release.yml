@@ -1,0 +1,21 @@
+# Tag-driven immutable release WITHOUT attestations, for private repositories
+# on the Free, Pro, or Team plan (GitHub Artifact Attestations there require
+# GitHub Enterprise Cloud). Same five checksummed assets as the attested
+# variant. Replace @<sha> with a pinned full commit SHA of ci-workflows.
+name: release
+on:
+  push:
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+permissions: {}
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    permissions: { contents: write }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/release-supply-chain-free.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      version: ${{ github.ref_name }}
+      package_name: my-repo
+      archive_paths: "README.md LICENSE VERSION CHANGELOG.md src"

@@ -1,0 +1,98 @@
+name: mutation-testing
+
+# Reusable mutation testing for BOTH tiers. Sets up the toolchain for the chosen
+# language (python -> mutmut, rust -> cargo-mutants, node -> Stryker) and runs
+# caller-provided install/mutation commands passed via env.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      language:
+        description: 'Toolchain to set up: python, rust, or node.'
+        type: string
+        default: 'python'
+      working_directory:
+        type: string
+        default: '.'
+      python_version:
+        type: string
+        default: '3.13'
+      node_version:
+        type: string
+        default: '22'
+      rust_toolchain:
+        type: string
+        default: 'stable'
+      install_command:
+        description: 'Install the mutation tool, e.g. "pip install mutmut" / "cargo install cargo-mutants --locked" / "npm ci".'
+        type: string
+        default: ''
+      mutation_command:
+        description: 'Run mutation testing, e.g. "mutmut run" / "cargo mutants" / "npx stryker run".'
+        type: string
+        default: ''
+      timeout_minutes:
+        type: number
+        default: 45
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  mutation:
+    name: mutation (${{ inputs.language }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        if: ${{ inputs.language == 'python' }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Set up Node.js
+        if: ${{ inputs.language == 'node' }}
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Set up Rust
+        if: ${{ inputs.language == 'rust' }}
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659  # v1.17.0
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+
+      - name: Install mutation tool
+        if: ${{ inputs.install_command != '' }}
+        env:
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+
+      - name: Run mutation testing
+        env:
+          MUTATION_COMMAND: ${{ inputs.mutation_command }}
+        run: |
+          bash -euo pipefail -c "$MUTATION_COMMAND"
+          echo "Mutation testing passed." >> "$GITHUB_STEP_SUMMARY"

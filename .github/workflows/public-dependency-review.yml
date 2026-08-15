@@ -1,0 +1,63 @@
+name: public-dependency-review
+
+# Reusable Dependency Review for PUBLIC repositories (free on public repos).
+# Caller must trigger on pull_request.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      fail_on_severity:
+        description: 'Minimum severity that fails the check: low, moderate, high, critical.'
+        type: string
+        default: 'moderate'
+      comment_summary_in_pr:
+        type: string
+        default: 'on-failure'
+      vulnerability_check:
+        type: boolean
+        default: true
+      allow_licenses:
+        description: 'Optional comma/newline separated allow-licenses list.'
+        type: string
+        default: ''
+
+permissions: {}
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 10
+    permissions:
+      contents: read          # diff the pull request against its base
+      pull-requests: write    # post the dependency-review summary comment
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920  # v2.20.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Dependency review
+        if: ${{ inputs.allow_licenses == '' }}
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
+        with:
+          fail-on-severity: ${{ inputs.fail_on_severity }}
+          comment-summary-in-pr: ${{ inputs.comment_summary_in_pr }}
+          vulnerability-check: ${{ inputs.vulnerability_check }}
+
+      - name: Dependency review with license allowlist
+        if: ${{ inputs.allow_licenses != '' }}
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
+        with:
+          fail-on-severity: ${{ inputs.fail_on_severity }}
+          comment-summary-in-pr: ${{ inputs.comment_summary_in_pr }}
+          vulnerability-check: ${{ inputs.vulnerability_check }}
+          allow-licenses: ${{ inputs.allow_licenses }}

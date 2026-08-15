@@ -1,0 +1,16 @@
+# Checkov IaC scan caller (any tier). Replace @<sha>.
+name: iac-scan
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: iac-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  iac-scan:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/iac-scan.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      framework: terraform

@@ -1,0 +1,85 @@
+name: go-ci
+
+# Reusable Go CI for BOTH tiers: pinned setup-go (built-in module
+# and build cache), and caller-provided build/test commands passed via env.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      go_version:
+        type: string
+        default: '1.24'
+      working_directory:
+        type: string
+        default: '.'
+      fetch_depth:
+        description: 'Number of commits to fetch. Use 0 when checks inspect ancestry or merge parents.'
+        type: number
+        default: 1
+      cache:
+        description: 'Restore/save the setup-go module/build cache. Disable when a warm self-hosted runner owns those caches.'
+        type: boolean
+        default: true
+      build_command:
+        description: 'Build command (bash). Empty to skip.'
+        type: string
+        default: 'go build ./...'
+      test_command:
+        description: 'Test/verify command (bash).'
+        type: string
+        default: 'go test ./...'
+      timeout_minutes:
+        type: number
+        default: 20
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  go:
+    name: go (${{ inputs.go_version }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: ${{ inputs.fetch_depth }}
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version: ${{ inputs.go_version }}
+          cache: ${{ inputs.cache }}
+
+      - name: Build
+        if: ${{ inputs.build_command != '' }}
+        env:
+          BUILD_COMMAND: ${{ inputs.build_command }}
+        run: bash -euo pipefail -c "$BUILD_COMMAND"
+
+      - name: Run tests
+        env:
+          TEST_COMMAND: ${{ inputs.test_command }}
+          GO_VER: ${{ inputs.go_version }}
+        run: |
+          bash -euo pipefail -c "$TEST_COMMAND"
+          echo "Go ${GO_VER} build + tests passed." >> "$GITHUB_STEP_SUMMARY"

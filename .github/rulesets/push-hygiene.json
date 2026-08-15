@@ -1,0 +1,24 @@
+{
+  "name": "Push hygiene (generated artifacts)",
+  "target": "push",
+  "enforcement": "evaluate",
+  "bypass_actors": [
+    {
+      "actor_id": 5,
+      "actor_type": "RepositoryRole",
+      "bypass_mode": "always"
+    }
+  ],
+  "conditions": {},
+  "rules": [
+    {
+      "type": "file_path_restriction",
+      "parameters": {
+        "restricted_file_paths": [
+          "dist/**",
+          "**/*.tar.gz"
+        ]
+      }
+    }
+  ]
+}

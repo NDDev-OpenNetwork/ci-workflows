@@ -1,0 +1,46 @@
+name: Docs gap
+description: A documentation page or section is missing, wrong, or outdated.
+title: "docs: <what is missing or wrong>"
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us keep the docs accurate. For usage questions, check the
+        [README](https://github.com/NDDev-OpenNetwork/ci-workflows#readme) and
+        each workflow's header comment first.
+  - type: dropdown
+    id: doc
+    attributes:
+      label: Which doc?
+      options:
+        - README.md
+        - SECURITY.md
+        - CONTRIBUTING.md
+        - SUPPORT.md
+        - Workflow header comment (in .github/workflows/)
+        - docs/ page
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Section heading, file path, or URL of the affected doc (if known).
+      placeholder: "e.g. README > Inputs, or docs/release-supply-chain.md"
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is missing, wrong, or outdated?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+      description: Proposed wording or the correct information, if you have it.
+    validations:
+      required: false

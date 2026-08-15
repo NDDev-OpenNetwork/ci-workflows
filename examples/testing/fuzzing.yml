@@ -1,0 +1,13 @@
+# Fuzzing caller (scheduled). Replace @<sha>.
+name: fuzzing
+on:
+  workflow_dispatch:
+  schedule: [{ cron: "0 4 * * *" }]
+permissions: {}
+jobs:
+  fuzz:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/fuzzing.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      fuzz_command: 'cargo fuzz run fuzz_target_1 -- -max_total_time=300'

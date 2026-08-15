@@ -1,0 +1,19 @@
+# Read-only benchmark regression check for pull requests: contents: read only,
+# no history push, so a write-capable token never reaches the benchmark action.
+# Record history on the default branch with examples/testing/benchmark.yml.
+# Replace @<sha> with a pinned full commit SHA.
+name: benchmark-compare
+on:
+  pull_request: { branches: [main] }
+permissions: {}
+jobs:
+  benchmark:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/benchmark-compare.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      language: python
+      tool: pytest
+      bench_command: 'pytest --benchmark-only --benchmark-json=output.json'
+      output_file_path: output.json
+      history_branch: gh-pages

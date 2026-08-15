@@ -1,0 +1,454 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # ci-gate is this repository's required context. A required check is never
+  # reported to a merge queue unless its workflow subscribes to merge_group,
+  # so without this an enabled queue would wait forever for a status that can
+  # never arrive.
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # Cancel superseded PR iterations, but never a queued merge-group candidate
+  # or a main push: cancelling those makes branch protection observe a
+  # partial-cancel status instead of a decisive result.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Blocking tier. Every check here is a property of the tree in hand, so it can
+  # only fail because of the change. Calendar-driven external facts are NOT here
+  # — see maintenance.yml. One required job used to mix the two, which made a
+  # third party's pricing page going stale enough to block an unrelated bugfix.
+  validate:
+    name: static validators
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920  # v2.20.0
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            agent.api.stepsecurity.io:443
+            github.com:443
+            api.github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            raw.githubusercontent.com:443
+            astral.sh:443
+            pypi.org:443
+            files.pythonhosted.org:443
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+          update-environment: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: 0.11.30
+          # Stated, not inherited -- and it does change something. The pinned
+          # action declares `enable-cache: auto`, and `auto` resolves to true on
+          # a GitHub-hosted runner. This comment used to claim setup-uv did not
+          # cache by default; `catalog/cache-contract.yml` now records the real
+          # default and the sweep resolves it from the pinned action.yml.
+          enable-cache: false
+      - name: Install validator dependencies
+        env:
+          PYTHON_PATH: ${{ steps.python.outputs.python-path }}
+        run: |
+          "$PYTHON_PATH" -I -B -m venv --copies .venv
+          uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
+      - name: Run static validators
+        run: |
+          .venv/bin/python -I -B scripts/check_python_syntax.py
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch validate_all.py -- --tier core
+
+  # Blocking, but scoped: a product fact is checked for expiry only when the
+  # changed capability declares it, and a runtime-coverage waiver only when its
+  # workflow was touched. Needs full history to resolve a merge base.
+  validate-touched:
+    name: changed-path validators
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920  # v2.20.0
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            agent.api.stepsecurity.io:443
+            github.com:443
+            api.github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            raw.githubusercontent.com:443
+            astral.sh:443
+            pypi.org:443
+            files.pythonhosted.org:443
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+          update-environment: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: 0.11.30
+          # Stated, not inherited -- and it does change something. The pinned
+          # action declares `enable-cache: auto`, and `auto` resolves to true on
+          # a GitHub-hosted runner. This comment used to claim setup-uv did not
+          # cache by default; `catalog/cache-contract.yml` now records the real
+          # default and the sweep resolves it from the pinned action.yml.
+          enable-cache: false
+      - name: Install validator dependencies
+        env:
+          PYTHON_PATH: ${{ steps.python.outputs.python-path }}
+        run: |
+          "$PYTHON_PATH" -I -B -m venv --copies .venv
+          uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
+      # Resolving the base is the whole job of this step, and giving up on it
+      # used to divert the run into `--tier scheduled`. That tier is advisory
+      # calendar and network work: it does not contain these blocking
+      # changed-path checks at all, and it does contain checks that need a token
+      # and two external hosts this job deliberately does not grant. So the
+      # fallback both skipped what it was required to prove and made a required
+      # gate fail on an expired third-party fact. `--tier touched --all-paths`
+      # would not fix it either: `facts_reached_by` returns "all facts" as soon
+      # as the ledger itself is in scope, so a whole-tree touched run *is* the
+      # calendar sweep -- the exact thing the tier split moved off the PR path.
+      #
+      # No event base is not "nothing to scope". Everything this ref adds on top
+      # of the default branch is the change, and that is resolvable.
+      - name: Resolve the change base
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          python3 -I <<'PY'
+          import os
+          import subprocess
+          import sys
+
+          ZERO_OID = "0" * 40
+
+          event = os.environ.get("EVENT_NAME", "")
+          default_branch = os.environ.get("DEFAULT_BRANCH", "")
+          base = {
+              "pull_request": os.environ.get("PR_BASE_SHA", ""),
+              "merge_group": os.environ.get("MERGE_GROUP_BASE_SHA", ""),
+              "push": os.environ.get("PUSH_BEFORE", ""),
+          }.get(event, "")
+
+          # An all-zero oid means "no previous tip": branch creation, or a
+          # force-push beyond reachable history.
+          if base == ZERO_OID:
+              base = ""
+
+
+          def git(*args):
+              return subprocess.run(["git", *args], capture_output=True, text=True, check=False)
+
+
+          if not base:
+              if not default_branch:
+                  sys.exit("no event base, and no default branch to resolve one against")
+              remote = f"refs/remotes/origin/{default_branch}"
+              # `fetch-depth: 0` fetches every branch, so this ref is normally
+              # already here. Fetch it explicitly when it is not, rather than
+              # let a missing ref become an empty scope that reports success.
+              if git("rev-parse", "--verify", "--quiet", remote).returncode != 0:
+                  fetched = git(
+                      "fetch", "--no-tags", "origin",
+                      f"+refs/heads/{default_branch}:{remote}")
+                  if fetched.returncode != 0:
+                      sys.exit(f"cannot fetch {remote}: {fetched.stderr.strip()}")
+              resolved = git("merge-base", "HEAD", remote)
+              if resolved.returncode != 0 or not resolved.stdout.strip():
+                  sys.exit(
+                      f"cannot resolve a merge base between HEAD and {remote}: "
+                      f"{resolved.stderr.strip()}")
+              base = resolved.stdout.strip()
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"base={base}\n")
+          PY
+      # One command, no branch: the tier is not a function of how the run was
+      # triggered. A base that resolves to HEAD itself -- dispatching on the
+      # default branch -- scopes to nothing and says so, which is honest; the
+      # structural half of these ledgers already blocks in `core`.
+      - name: Run changed-path validators
+        env:
+          BASE_REF: ${{ steps.base.outputs.base }}
+        run: |
+          set -euo pipefail
+          .venv/bin/python -I -B scripts/check_python_syntax.py
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch validate_all.py -- --tier touched --changed-from "$BASE_REF"
+
+  actionlint:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/actionlint.yml
+    with:
+      runner: ubuntu-latest
+
+  zizmor:
+    permissions:
+      actions: read           # upload-sarif reads this workflow run
+      contents: read          # check out the tree being analysed
+      security-events: write  # publish zizmor SARIF to code scanning
+    uses: ./.github/workflows/zizmor-sarif.yml
+    with:
+      runner: ubuntu-latest
+      # pedantic adds undocumented-permissions on top of the regular persona:
+      # every granted scope must say why it is granted. That is enforceable
+      # here precisely because this repository grants few of them, and a
+      # reviewer reading a permissions block should never have to guess.
+      persona: pedantic
+
+  # --- Negative gates -------------------------------------------------------
+  # Proves the gates still REFUSE bad input, not merely that they pass on good
+  # input. A gate that never fails is not a gate, and nothing else here would
+  # notice one silently becoming a no-op.
+  #
+  # These live in ci.yml rather than in a workflow of their own because a
+  # required context must be caller-native: ci-gate's `needs` is this run's real
+  # dependency graph, and nothing may cross a workflow boundary. They cannot be
+  # a called reusable either — a self workflow must not be `on: workflow_call`,
+  # since everything that is becomes part of the product consumers pin.
+  #
+  # Each probe lifts a gate's real step out of its workflow and runs it here,
+  # where an exit code is just data. `continue-on-error` is rejected on a job
+  # that calls a reusable with `uses:`, so calling the reusables and letting
+  # them fail would turn every run red; scripts/negative_gate_probe.py exists to
+  # avoid exactly that. See its docstring for the properties it enforces on
+  # itself.
+
+  shell-gates:
+    name: gates refuse bad input
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
+        with:
+          go-version: '1.24'
+          # setup-go caches the module and build cache with no input at all.
+          # This job is in `ci-gate.needs`, so that entry would be an unreviewed
+          # input to a required check. Found by deriving the required surface
+          # from the gate's own graph rather than from a hand-written list.
+          cache: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with:
+          terraform_wrapper: false
+
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.13'
+          update-environment: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: 0.11.30
+          enable-cache: false
+
+      - name: Install the probe's dependency and both Python fixtures
+        env:
+          PYTHON_PATH: ${{ steps.python.outputs.python-path }}
+        run: |
+          set -euo pipefail
+          "$PYTHON_PATH" -I -B -m venv --copies .venv
+          # The probe reads workflow YAML through the repository's strict
+          # loader, so it needs PyYAML — from the hash-locked file CI already
+          # uses, not an ad-hoc install.
+          uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
+          # Both fixture packages must be importable in one environment: the
+          # probe runs the same step twice and only the directory changes.
+          uv pip install --python .venv/bin/python \
+            -e tests/fixtures/python -e tests/fixtures/negative/python pytest
+
+      - name: terraform-ci must reject unformatted HCL
+        run: |
+          .venv/bin/python -I -B scripts/check_python_syntax.py
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch negative_gate_probe.py -- \
+            --workflow .github/workflows/terraform-ci.yml --job terraform \
+            --step 'Format check' \
+            --bad tests/fixtures/negative/terraform --good tests/fixtures/terraform
+
+      - name: go-ci must report a failing test
+        run: |
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch negative_gate_probe.py -- \
+            --workflow .github/workflows/go-ci.yml --job go \
+            --step 'Run tests' \
+            --bad tests/fixtures/negative/go --good tests/fixtures/go
+
+      - name: sql-ci must reject SQL the dialect refuses
+        run: |
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch negative_gate_probe.py -- \
+            --workflow .github/workflows/sql-ci.yml --job sql \
+            --step 'Lint' \
+            --bad tests/fixtures/negative/sql --good tests/fixtures/sql
+
+      - name: python-ci must report a failing test
+        run: |
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch negative_gate_probe.py -- \
+            --workflow .github/workflows/python-ci.yml --job python \
+            --step 'Run tests' \
+            --bad tests/fixtures/negative/python --good tests/fixtures/python \
+            --python-input test_command='-m pytest -q'
+
+      - name: docs-ci must reject a broken relative link
+        run: |
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch negative_gate_probe.py -- \
+            --workflow .github/workflows/docs-ci.yml --job docs \
+            --step 'Check relative Markdown links' \
+            --bad . --good . \
+            --bad-input docs_glob='tests/fixtures/negative/docs-links/**/*.md' \
+            --good-input docs_glob='tests/fixtures/docs/**/*.md'
+
+      # The token goes through env, never the command line: putting a
+      # credential in an argument is the interpolation pattern zizmor itself
+      # exists to catch, and it would show up in the process list.
+      - name: zizmor must reject a template injection
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch negative_gate_probe.py -- \
+            --workflow .github/workflows/zizmor-no-sarif.yml --job zizmor \
+            --step 'Run zizmor (plain, enforced)' \
+            --bad . --good . \
+            --context-env github.token=GITHUB_TOKEN \
+            --bad-input target=tests/fixtures/negative/zizmor/injection.yml \
+            --good-input target=tests/fixtures/zizmor-clean/.github/workflows/clean.yml
+
+  dockerfile-gate:
+    name: hadolint refuses an unpinned image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.13'
+          update-environment: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: 0.11.30
+          enable-cache: false
+
+      - name: Install the probe's dependency
+        env:
+          PYTHON_PATH: ${{ steps.python.outputs.python-path }}
+        run: |
+          set -euo pipefail
+          "$PYTHON_PATH" -I -B -m venv --copies .venv
+          uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
+
+      # hadolint varies by input rather than by directory, and its binary is
+      # installed by an earlier step of the workflow itself, so --before runs
+      # that download instead of assuming a hadolint is already present.
+      - name: hadolint-ci must reject an unpinned base and package
+        run: |
+          .venv/bin/python -I -B scripts/check_python_syntax.py
+          .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch negative_gate_probe.py -- \
+            --workflow .github/workflows/hadolint-ci.yml --job hadolint \
+            --before 'Download hadolint (pinned + checksum-verified)' \
+            --step 'Run hadolint' \
+            --bad . --good . \
+            --bad-input dockerfile=tests/fixtures/negative/docker/Dockerfile \
+            --good-input dockerfile=tests/fixtures/docker/Dockerfile
+
+  ci-gate:
+    name: ci-gate
+    needs: [validate, validate-touched, actionlint, zizmor, shell-gates, dockerfile-gate]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      # Caller-native: `needs` is this run's real dependency graph, so nothing
+      # crosses a workflow boundary and nothing can be substituted. This is the
+      # shape a required check must have — see docs/08 and gate.yml's header.
+      - name: Aggregate required results
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          python3 -I <<'PY'
+          import json
+          import os
+          import sys
+
+          results = json.loads(os.environ["RESULTS"])
+          if not results:
+              print("ci-gate: needs context is empty", file=sys.stderr)
+              raise SystemExit(1)
+          failures = [
+              f"  {job}: {(entry or {}).get('result', 'unknown')}"
+              for job, entry in sorted(results.items())
+              if (entry or {}).get("result") != "success"
+          ]
+          if failures:
+              print("ci-gate FAILED:", file=sys.stderr)
+              for line in failures:
+                  print(line, file=sys.stderr)
+              raise SystemExit(1)
+          print(f"ci-gate passed ({len(results)} jobs)")
+          PY

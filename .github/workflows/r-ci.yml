@@ -1,0 +1,87 @@
+name: r-ci
+
+# Reusable R CI for BOTH tiers: pinned r-lib setup-r (public RSPM
+# binaries), and caller-provided install/lint/test commands passed via env.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      r_version:
+        type: string
+        default: 'release'
+      working_directory:
+        type: string
+        default: '.'
+      use_public_rspm:
+        description: 'Use the public RStudio Package Manager for fast binary installs.'
+        type: boolean
+        default: true
+      install_command:
+        description: 'Dependency install command (bash). Empty to skip.'
+        type: string
+        default: "Rscript -e 'install.packages(c(\"lintr\", \"testthat\"))'"
+      lint:
+        description: 'Run lintr::lint_dir().'
+        type: boolean
+        default: false
+      test_command:
+        description: 'Test/check command (bash).'
+        type: string
+        default: "Rscript -e 'testthat::test_local()'"
+      timeout_minutes:
+        type: number
+        default: 30
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  r:
+    name: r (${{ inputs.r_version }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@d3c5be51b12e724e68f33216ca3c148b66d5f0b6  # v2.12.1
+        with:
+          r-version: ${{ inputs.r_version }}
+          use-public-rspm: ${{ inputs.use_public_rspm }}
+
+      - name: Install dependencies
+        if: ${{ inputs.install_command != '' }}
+        env:
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+
+      - name: Lint
+        if: ${{ inputs.lint }}
+        run: Rscript -e 'lintr::lint_dir()'
+
+      - name: Test
+        env:
+          TEST_COMMAND: ${{ inputs.test_command }}
+        run: |
+          bash -euo pipefail -c "$TEST_COMMAND"
+          echo "R checks passed." >> "$GITHUB_STEP_SUMMARY"

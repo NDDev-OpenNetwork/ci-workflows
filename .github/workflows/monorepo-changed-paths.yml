@@ -1,0 +1,252 @@
+name: monorepo-changed-paths
+
+# Reusable monorepo change router for BOTH tiers.
+# Computes which caller-defined path groups changed (pure git; no third-party
+# action) and exposes them as a JSON object output, so downstream jobs can gate
+# themselves with `if: fromJSON(needs.changes.outputs.result).<group>`.
+#
+# Filter language (strict, no wildcards): each group maps to a non-empty array
+# of either exact file paths ("pyproject.toml") or directory prefixes ending
+# in '/' ("services/api/"). A directory prefix matches only paths under that
+# directory ("src/" never matches "src-old/x"). Wildcard characters, empty
+# groups, and non-normalized paths fail the run.
+#
+# Fail-closed routing: an explicit base_ref, pull request base, or merge_group
+# base that cannot be resolved FAILS the run instead of reporting "unchanged".
+# A push without a usable previous tip (branch creation, force-push beyond
+# reachable history) and any other event without base_ref conservatively
+# report EVERY group as changed, never a silent all-false.
+#
+# pull_request_target is REJECTED. GitHub checks out the base branch (not the
+# PR) for that privileged event, so a git diff sees none of the proposed
+# changes and would return a green all-false; checking out fork code under
+# pull_request_target is itself unsafe. Route change detection on
+# pull_request instead (its checkout contains the PR's merged tree).
+
+on:
+  workflow_call:
+    inputs:
+      filters:
+        description: >-
+          JSON object mapping group name ([A-Za-z0-9_-]) to a non-empty array
+          of exact file paths or directory prefixes ending in '/', e.g.
+          {"api":["services/api/"],"web":["apps/web/","package.json"]}.
+          Wildcards are rejected.
+        type: string
+        required: true
+      base_ref:
+        description: >-
+          Optional base ref, compared with merge-base semantics (defaults to
+          the PR/merge-group base or the previous push tip).
+        type: string
+        default: ''
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+    outputs:
+      result:
+        description: 'JSON object of group -> bool (did that group change).'
+        value: ${{ jobs.changes.outputs.result }}
+
+permissions: {}
+
+jobs:
+  changes:
+    name: detect changed paths
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      result: ${{ steps.detect.outputs.result }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect changed groups
+        id: detect
+        env:
+          FILTERS: ${{ inputs.filters }}
+          BASE_REF: ${{ inputs.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          python3 -I <<'PY'
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+          import sys
+
+          def fail(message):
+              print(f"changed-paths: {message}", file=sys.stderr)
+              raise SystemExit(1)
+
+          def run_git(*args):
+              return subprocess.run(
+                  ["git", *args],
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  check=False,
+              )
+
+          def resolve_commit(ref):
+              if not ref:
+                  return None
+              result = run_git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+              if result.returncode != 0:
+                  return None
+              return result.stdout.strip()
+
+          GROUP_NAME = re.compile(r"[A-Za-z0-9_-]{1,64}")
+          WILDCARDS = set("*?[]{}!")
+          ZERO_OID = re.compile(r"0{40}|0{64}")
+
+          def validate_filters(raw):
+              try:
+                  parsed = json.loads(raw)
+              except ValueError as exc:
+                  fail(f"filters must be a JSON object: {exc}")
+              if not isinstance(parsed, dict) or not parsed:
+                  fail("filters must be a non-empty JSON object of group -> path array")
+              validated = {}
+              for group, patterns in parsed.items():
+                  if not isinstance(group, str) or GROUP_NAME.fullmatch(group) is None:
+                      fail(
+                          f"invalid group name {group!r} "
+                          "(allowed: letters, digits, '_', '-'; max 64)"
+                      )
+                  if not isinstance(patterns, list) or not patterns:
+                      fail(f"group {group!r} must map to a non-empty array of paths")
+                  cleaned = []
+                  for pattern in patterns:
+                      if not isinstance(pattern, str) or not pattern:
+                          fail(f"group {group!r} contains a non-string or empty path")
+                      if any(ord(ch) < 32 or ord(ch) == 127 for ch in pattern):
+                          fail(f"group {group!r}: control characters are not allowed")
+                      if "\\" in pattern:
+                          fail(f"group {group!r}: use forward slashes in {pattern!r}")
+                      if any(ch in WILDCARDS for ch in pattern):
+                          fail(
+                              f"group {group!r}: wildcard pattern {pattern!r} is not "
+                              "supported; use an exact file path or a directory "
+                              "prefix ending in '/'"
+                          )
+                      candidate = pattern[:-1] if pattern.endswith("/") else pattern
+                      path = pathlib.PurePosixPath(candidate)
+                      if (
+                          pattern.startswith("/")
+                          or candidate in {"", ".", ".."}
+                          or path.as_posix() != candidate
+                          or any(part in {"", ".", ".."} for part in path.parts)
+                      ):
+                          fail(
+                              f"group {group!r}: {pattern!r} is not a normalized "
+                              "relative path"
+                          )
+                      cleaned.append(pattern)
+                  validated[group] = cleaned
+              return validated
+
+          filters = validate_filters(os.environ["FILTERS"])
+
+          event = os.environ["EVENT_NAME"]
+          base_ref = os.environ["BASE_REF"]
+          pr_base = os.environ["PR_BASE_SHA"]
+          merge_group_base = os.environ["MERGE_GROUP_BASE_SHA"]
+          push_before = os.environ["PUSH_BEFORE"]
+
+          # pull_request_target checks out the base branch, not the PR, so a
+          # git diff here cannot see the proposed changes and would report a
+          # green all-false. Reject it before any base resolution; a git-diff
+          # router must not be trusted under this privileged event, and
+          # checking out fork code to work around it is unsafe.
+          if event == "pull_request_target":
+              fail(
+                  "pull_request_target is not supported: GitHub checks out the "
+                  "base branch (not the PR), so change detection would silently "
+                  "return all-false. Route this workflow on pull_request instead."
+              )
+
+          conservative_reason = None
+          diff_base = None
+          if base_ref:
+              commit = resolve_commit(base_ref)
+              if commit is None:
+                  fail(f"base_ref {base_ref!r} does not resolve to a commit")
+              merge = run_git("merge-base", commit, "HEAD")
+              if merge.returncode != 0:
+                  fail(f"no merge base between base_ref {base_ref!r} and HEAD")
+              diff_base = merge.stdout.strip()
+          elif event == "pull_request":
+              commit = resolve_commit(pr_base)
+              if commit is None:
+                  fail("pull request base SHA is missing or unreachable")
+              merge = run_git("merge-base", commit, "HEAD")
+              if merge.returncode != 0:
+                  fail("no merge base between the pull request base and HEAD")
+              diff_base = merge.stdout.strip()
+          elif event == "merge_group":
+              commit = resolve_commit(merge_group_base)
+              if commit is None:
+                  fail("merge_group base SHA is missing or unreachable")
+              diff_base = commit
+          elif event == "push":
+              if not push_before or ZERO_OID.fullmatch(push_before):
+                  conservative_reason = (
+                      "push has no previous tip (branch creation or missing "
+                      "event metadata)"
+                  )
+              else:
+                  commit = resolve_commit(push_before)
+                  if commit is None:
+                      conservative_reason = (
+                          "push previous tip is unreachable (history rewrite)"
+                      )
+                  else:
+                      diff_base = commit
+          else:
+              conservative_reason = (
+                  f"event '{event}' provides no diff base; pass base_ref for "
+                  "exact routing"
+              )
+
+          if conservative_reason is None:
+              diff = run_git("diff", "-z", "--name-only", "--no-renames", diff_base, "HEAD")
+              if diff.returncode != 0:
+                  fail(f"git diff against {diff_base} failed: {diff.stderr.strip()}")
+              changed = [entry for entry in diff.stdout.split("\0") if entry]
+              result = {}
+              for group, patterns in filters.items():
+                  result[group] = any(
+                      path.startswith(pattern)
+                      if pattern.endswith("/")
+                      else path == pattern
+                      for path in changed
+                      for pattern in patterns
+                  )
+              base_note = f"diffed {len(changed)} changed path(s) against {diff_base}"
+          else:
+              result = {group: True for group in filters}
+              base_note = f"conservative all-true: {conservative_reason}"
+
+          payload = json.dumps(result)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+              stream.write(f"result={payload}\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
+              stream.write("### Changed path groups\n\n")
+              stream.write(f"{base_note}\n\n")
+              stream.write("```json\n")
+              stream.write(payload + "\n")
+              stream.write("```\n")
+          print(base_note)
+          print(payload)
+          PY

@@ -1,0 +1,64 @@
+name: public-scorecard-json
+
+# Reusable OSSF Scorecard for PUBLIC repositories in JSON artifact mode.
+# This is the estate default: Scorecard is a project-health signal, not a
+# vulnerability source, so it does not upload SARIF into code scanning and does
+# not request `security-events: write`.
+#
+# Caller should trigger on push to the default branch and on a weekly schedule.
+# `pull_request` remains experimental for scorecard-action and is intentionally
+# not the recommended default.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      publish_results:
+        description: 'Publish results to the OpenSSF Scorecard API. Disabled by default because reusable workflow calls do not satisfy Scorecard webapp verification shape.'
+        type: boolean
+        default: false
+      artifact_name:
+        type: string
+        default: 'scorecard-results'
+      retention_days:
+        type: number
+        default: 14
+
+permissions: {}
+
+jobs:
+  scorecard:
+    name: OSSF Scorecard analysis
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 15
+    permissions:
+      id-token: write         # OIDC token for the Scorecard publish step
+      contents: read          # read the repository Scorecard evaluates
+      actions: read           # Scorecard inspects workflow definitions
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920  # v2.20.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc  # v2.4.4
+        with:
+          results_file: results.json
+          results_format: json
+          publish_results: ${{ inputs.publish_results }}
+
+      - name: Upload Scorecard JSON
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: results.json
+          retention-days: ${{ inputs.retention_days }}

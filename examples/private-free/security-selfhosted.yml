@@ -1,0 +1,37 @@
+# Private security suite with zero GitHub Actions compute meter.
+# Replace `private-ci` with an isolated ephemeral runner label registered only
+# to private repositories. Destroy the VM after one job; cost control must not
+# expose a persistent trusted machine to pull-request code. Self-hosted
+# infrastructure still has its own cost; this promise covers only GitHub
+# Actions runner-minute metering.
+# Replace @<sha> with a pinned full commit SHA of ci-workflows.
+name: security
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  secret-scan:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@<sha>
+    with:
+      runner: private-ci
+  actionlint:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/actionlint.yml@<sha>
+    with:
+      runner: private-ci
+  zizmor:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/zizmor-no-sarif.yml@<sha>
+    with:
+      runner: private-ci
+  validate:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/private-static.yml@<sha>
+    with:
+      runner: private-ci
+      command: "python3 scripts/validate_all.py"

@@ -1,0 +1,16 @@
+# Java CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: java
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: java-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  java:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/java-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      test_command: 'mvn -B verify'

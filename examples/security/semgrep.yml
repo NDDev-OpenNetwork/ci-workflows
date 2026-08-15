@@ -1,0 +1,16 @@
+# Semgrep OSS SAST caller (any tier — free on private-free). Replace @<sha>.
+name: semgrep
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: semgrep-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  semgrep:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/semgrep-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      config: p/ci

@@ -1,0 +1,75 @@
+name: fuzzing
+
+# Reusable fuzzing for BOTH tiers. Defaults to Rust cargo-fuzz (libFuzzer) on a
+# nightly toolchain with a bounded time budget - run it on a schedule. Override
+# the commands for other harnesses (e.g. ClusterFuzzLite, libFuzzer, AFL++).
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      working_directory:
+        type: string
+        default: '.'
+      rust_toolchain:
+        type: string
+        default: 'nightly'
+      install_command:
+        description: 'Install the fuzzer. Empty to skip.'
+        type: string
+        default: 'cargo install cargo-fuzz --locked'
+      fuzz_command:
+        description: 'Run fuzzing with a bounded budget.'
+        type: string
+        default: 'cargo fuzz run fuzz_target_1 -- -max_total_time=60'
+      timeout_minutes:
+        type: number
+        default: 30
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  fuzz:
+    name: fuzz
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659  # v1.17.0
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+
+      - name: Install fuzzer
+        if: ${{ inputs.install_command != '' }}
+        env:
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+
+      - name: Run fuzzing
+        env:
+          FUZZ_COMMAND: ${{ inputs.fuzz_command }}
+        run: |
+          bash -euo pipefail -c "$FUZZ_COMMAND"
+          echo "Fuzzing run completed." >> "$GITHUB_STEP_SUMMARY"

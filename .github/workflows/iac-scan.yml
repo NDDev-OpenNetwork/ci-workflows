@@ -1,0 +1,58 @@
+name: iac-scan
+
+# Reusable Infrastructure-as-Code static analysis (Checkov) for BOTH tiers.
+# Free everywhere. Scans Terraform, Kubernetes, CloudFormation, Helm, ARM, and
+# more. Gate-only: CLI output, no SARIF upload.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      directory:
+        type: string
+        default: '.'
+      framework:
+        description: 'Checkov framework filter, e.g. all, terraform, kubernetes, cloudformation.'
+        type: string
+        default: 'all'
+      soft_fail:
+        description: 'Report findings without failing the job.'
+        type: boolean
+        default: false
+      quiet:
+        type: boolean
+        default: true
+      skip_check:
+        description: 'Comma-separated check IDs to skip, e.g. "CKV_AWS_1,CKV_AWS_2".'
+        type: string
+        default: ''
+      timeout_minutes:
+        type: number
+        default: 15
+
+permissions: {}
+
+jobs:
+  iac-scan:
+    name: iac-scan
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@9b70310bcd306d11740313070b940167d6b23085  # v12.3115.0
+        with:
+          directory: ${{ inputs.directory }}
+          framework: ${{ inputs.framework }}
+          soft_fail: ${{ inputs.soft_fail }}
+          quiet: ${{ inputs.quiet }}
+          skip_check: ${{ inputs.skip_check }}
+          output_format: cli

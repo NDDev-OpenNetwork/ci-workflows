@@ -1,0 +1,54 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore"
+      include: scope
+    labels:
+      - dependencies
+      - ci
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        # Swift major tags can move before a stable release. Keep them in a
+        # separately reviewable PR that must carry runtime consumer evidence.
+        exclude-patterns:
+          - swift-actions/setup-swift
+      github-actions-security:
+        applies-to: security-updates
+        patterns: ['*']
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore"
+      include: scope
+    labels:
+      - dependencies
+      - ci
+    groups:
+      python:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      pip-security:
+        applies-to: security-updates
+        patterns: ['*']

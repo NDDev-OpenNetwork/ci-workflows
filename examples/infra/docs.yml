@@ -1,0 +1,16 @@
+# Docs CI (broken relative-link check) caller (any tier). Replace @<sha>.
+name: docs
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  docs:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/docs-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      docs_glob: 'docs/**/*.md'

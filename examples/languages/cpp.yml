@@ -1,0 +1,18 @@
+# C/C++ CI caller (any tier). Replace @<sha> with a pinned full commit SHA.
+name: cpp
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: cpp-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  cpp:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/cpp-ci.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      apt_packages: 'cppcheck ninja-build'
+      format_check: true
+      cppcheck: true

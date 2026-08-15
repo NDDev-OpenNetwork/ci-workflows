@@ -1,0 +1,103 @@
+name: swift-ci
+
+# Reusable Swift CI. Defaults to a macOS runner (Swift + Xcode preinstalled;
+# iOS/macOS builds bill at a 10x minute multiplier). Optional swift-actions
+# setup for Linux/pinned Swift, optional SwiftLint + swift-format gates, and
+# caller-provided build/test commands passed via env. The workflow is safe for
+# the private-free tier and therefore contains no paid runtime-hardening action.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: >-
+          macos-latest is a STANDARD hosted runner, so this default is free and
+          unlimited on a public repository. On a private one macOS bills at
+          10.33x Linux, so a private caller should think about the lane rather
+          than inherit it. See catalog/product-facts.yml
+          (github-actions-public-standard).
+        type: string
+        default: 'macos-latest'
+      swift_version:
+        description: 'Swift version for swift-actions/setup-swift (Linux/pinned). Empty uses the runner toolchain.'
+        type: string
+        default: ''
+      working_directory:
+        type: string
+        default: '.'
+      swiftlint:
+        description: 'Install (brew) and run SwiftLint. macOS runners only.'
+        type: boolean
+        default: false
+      swift_format:
+        description: 'Run "swift format lint" over the tree.'
+        type: boolean
+        default: false
+      build_command:
+        description: 'Build command (bash). Empty to skip.'
+        type: string
+        default: 'swift build'
+      test_command:
+        description: 'Test command (bash).'
+        type: string
+        default: 'swift test'
+      timeout_minutes:
+        type: number
+        default: 30
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  swift:
+    name: swift
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Swift
+        if: ${{ inputs.swift_version != '' }}
+        uses: swift-actions/setup-swift@364295d9c23900ce04d4e5cc708387921b4e50f9  # v3.0.0-beta.1
+        with:
+          swift-version: ${{ inputs.swift_version }}
+
+      - name: SwiftLint
+        if: ${{ inputs.swiftlint && runner.os == 'macOS' }}
+        run: |
+          brew install swiftlint
+          swiftlint --strict
+
+      - name: swift-format
+        if: ${{ inputs.swift_format }}
+        run: swift format lint --recursive --strict .
+
+      - name: Build
+        if: ${{ inputs.build_command != '' }}
+        env:
+          BUILD_COMMAND: ${{ inputs.build_command }}
+        run: bash -euo pipefail -c "$BUILD_COMMAND"
+
+      - name: Test
+        env:
+          TEST_COMMAND: ${{ inputs.test_command }}
+        run: |
+          bash -euo pipefail -c "$TEST_COMMAND"
+          echo "Swift build + test passed." >> "$GITHUB_STEP_SUMMARY"

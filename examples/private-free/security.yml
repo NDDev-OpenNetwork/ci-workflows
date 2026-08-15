@@ -1,0 +1,42 @@
+# Private security suite without paid GitHub security add-ons.
+# This variant explicitly uses standard GitHub-hosted runners: its included
+# allowance is bounded and overage can be billed. Use security-selfhosted.yml
+# when the requirement is zero GitHub Actions compute meter.
+# Harden-Runner and code scanning are paid on private repos, so this caller uses
+# workflows whose files contain neither paid capability.
+# Each callee isolates global Git config before checkout; callers do not need to
+# sanitize persistent self-hosted runner credentials.
+# Replace @<sha> with a pinned full commit SHA of ci-workflows.
+name: security
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  secret-scan:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      # Optional Docker-free lane for a Linux X64 worker. Omit this input to
+      # preserve the digest-pinned container default.
+      execution_mode: binary
+  actionlint:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/actionlint.yml@<sha>
+    with:
+      runner: ubuntu-latest
+  zizmor:
+    permissions: { contents: read }   # least privilege: no security-events: write
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/zizmor-no-sarif.yml@<sha>
+    with:
+      runner: ubuntu-latest
+  validate:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/private-static.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      command: "python3 scripts/validate_all.py"

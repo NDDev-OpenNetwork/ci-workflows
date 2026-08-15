@@ -1,0 +1,413 @@
+name: qt-ci
+
+# Reusable Qt (C++) CI for BOTH tiers: Qt is installed with a pinned aqtinstall
+# invoked directly, with cache, optional ccache, and caller-provided
+# configure/build/test commands passed via env. Defaults target a CMake project.
+#
+# aqtinstall is driven here rather than through `jurplel/install-qt-action`
+# because that action names `actions/setup-python` and its own sub-action by tag
+# inside its definition, and GitHub resolves the whole nested action graph at job
+# setup. Any repository enforcing "require actions to be pinned to a full-length
+# commit SHA" -- the control this library recommends to its own consumers --
+# therefore could not start this workflow at all. Every action reachable from
+# here is pinned by us.
+
+on:
+  workflow_call:
+    outputs:
+      evidence:
+        description: 'Redacted JSON receipt for the Qt/CMake toolchain and successful default lanes.'
+        value: ${{ jobs.qt.outputs.evidence }}
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      qt_version:
+        description: 'Qt version spec for aqtinstall, e.g. 6.8.* or 6.8.3.'
+        type: string
+        default: '6.8.*'
+      qt_host:
+        description: 'aqtinstall host (linux, mac, windows). Empty auto-detects from the runner.'
+        type: string
+        default: ''
+      qt_target:
+        description: 'aqtinstall target: desktop, android, or ios.'
+        type: string
+        default: 'desktop'
+      qt_arch:
+        description: 'aqtinstall arch (empty picks the host default).'
+        type: string
+        default: ''
+      qt_modules:
+        description: 'Space-separated extra Qt modules, e.g. "qtcharts qtmultimedia".'
+        type: string
+        default: ''
+      working_directory:
+        type: string
+        default: '.'
+      enable_ccache:
+        type: boolean
+        default: false
+      ccache_key:
+        type: string
+        default: 'qt-ci'
+      configure_command:
+        description: 'Configure command (bash). Empty to skip.'
+        type: string
+        default: 'cmake -S . -B build -DCMAKE_BUILD_TYPE=Release'
+      build_command:
+        description: 'Build command (bash). Empty to skip.'
+        type: string
+        default: 'cmake --build build --parallel'
+      test_command:
+        description: 'Test command (bash). Empty to skip.'
+        type: string
+        default: 'ctest --test-dir build --output-on-failure'
+      timeout_minutes:
+        type: number
+        default: 40
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  qt:
+    name: qt (${{ inputs.qt_version }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    outputs:
+      evidence: ${{ steps.evidence.outputs.evidence }}
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          # Pinned, not inherited: setup-uv's `version` defaults to the
+          # version in pyproject.toml or, absent one, whatever is latest.
+          # There is no pyproject.toml here, so this resolved to latest --
+          # a SHA-pinned action installing an unpinned tool.
+          version: 0.11.30
+          # uv provisions aqtinstall here, not the caller's dependencies.
+          # The Qt install itself is cached separately and by key, below.
+          enable-cache: false
+
+      # The toolchain is installed from a hash-locked closure, not resolved at
+      # run time. `uvx --from 'aqtinstall@3.3.0' --with 'py7zr==1.0.0'` pinned two
+      # names and left everything they pull unbounded -- aqtinstall declares
+      # bs4, defusedxml, humanize, patch-ng, semantic-version and texttable with
+      # no upper bound -- so two runs of the same workflow SHA could install
+      # different code without this repository changing. That mattered here more
+      # than most places: driving aqtinstall directly was itself a supply-chain
+      # decision, taken to escape an action whose nested graph could not be pinned.
+      #
+      # This is a reusable workflow, so the checkout above is the *caller's* tree
+      # and the lock is not in it. It is fetched from the exact commit of this
+      # workflow file -- `job.workflow_sha` is the runner's own answer to "what
+      # is executing", which the caller cannot forge -- and its digest is checked
+      # against the value recorded here before anything is installed. Pinning the
+      # workflow therefore pins the closure, and `--require-hashes` means even a
+      # substituted lock cannot introduce a package.
+      - name: Provision the locked Qt toolchain
+        id: toolchain
+        env:
+          CALLEE_REPOSITORY: ${{ job.workflow_repository }}
+          CALLEE_SHA: ${{ job.workflow_sha }}
+          LOCK_SHA256: e8fd018f0ce1d2f8f23d1fe9ce674e384e98e3fc1ac34386e2fa769fede16185
+          PYTHON_VERSION: '3.13'
+        run: |
+          set -euo pipefail
+          lock="$RUNNER_TEMP/requirements-qt.txt"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$lock" \
+            "https://raw.githubusercontent.com/$CALLEE_REPOSITORY/$CALLEE_SHA/requirements-qt.txt"
+          printf '%s  %s\n' "$LOCK_SHA256" "$lock" | sha256sum --check --status || {
+            echo "::error::the fetched Qt toolchain lock does not match the digest this workflow was published with"
+            exit 1
+          }
+          uv venv --python "$PYTHON_VERSION" "$RUNNER_TEMP/qt-tools"
+          uv pip install --python "$RUNNER_TEMP/qt-tools" --require-hashes -r "$lock"
+          printf 'bin=%s\n' "$RUNNER_TEMP/qt-tools/bin" >> "$GITHUB_OUTPUT"
+          printf 'lock_sha256=%s\n' "$LOCK_SHA256" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve the Qt release
+        id: release
+        working-directory: ${{ github.workspace }}
+        env:
+          QT_ARCH: ${{ inputs.qt_arch }}
+          QT_HOST: ${{ inputs.qt_host }}
+          QT_MODULES: ${{ inputs.qt_modules }}
+          QT_TARGET: ${{ inputs.qt_target }}
+          QT_VERSION: ${{ inputs.qt_version }}
+          TOOLCHAIN_BIN: ${{ steps.toolchain.outputs.bin }}
+        run: |
+          set -euo pipefail
+          # aqt and py7zr are pinned exactly. They are this workflow's own tool
+          # versions, and `check_sdk_runtime_fixtures` compares the aqt identity
+          # in the receipt against the fixture spec, so the two cannot drift
+          # apart unnoticed.
+          aqt() { "$TOOLCHAIN_BIN/aqt" "$@"; }
+
+          host="$QT_HOST"
+          if [ -z "$host" ]; then
+            case "$RUNNER_OS" in
+              Linux)   host=linux ;;
+              macOS)   host=mac ;;
+              Windows) host=windows ;;
+              *) echo "unsupported runner OS: $RUNNER_OS" >&2; exit 1 ;;
+            esac
+          fi
+
+          # A wildcard is resolved to the exact release before anything is
+          # installed, so the cache key and the receipt name one version rather
+          # than whatever the spec happened to match that day.
+          spec="${QT_VERSION%.\*}"
+          version="$(aqt list-qt "$host" "$QT_TARGET" --latest-version --spec "$spec")"
+          if [ -z "$version" ]; then
+            echo "no Qt release matches ${QT_VERSION} for ${host}/${QT_TARGET}" >&2
+            exit 1
+          fi
+
+          arch="$QT_ARCH"
+          # One architecture per line, so every later test is a quoted stream
+          # rather than an unquoted expansion relying on word splitting.
+          available="$(aqt list-qt "$host" "$QT_TARGET" --arch "$version" \
+            | tr '[:space:]' '\n' | grep -v '^$' || true)"
+          if [ -z "$arch" ]; then
+            # Exactly one published architecture is an unambiguous default; more
+            # than one is the caller's choice to make, not ours to guess.
+            count="$(printf '%s\n' "$available" | grep -c . || true)"
+            if [ "$count" != "1" ]; then
+              echo "Qt ${version} publishes ${count} architectures for ${host}/${QT_TARGET}:" >&2
+              printf '%s\n' "$available" >&2
+              echo "pass qt_arch to choose one" >&2
+              exit 1
+            fi
+            arch="$available"
+          elif ! printf '%s\n' "$available" | grep -qx "$arch"; then
+            echo "Qt ${version} does not publish architecture ${arch} for ${host}/${QT_TARGET}" >&2
+            exit 1
+          fi
+
+          modules_key="$(printf '%s' "$QT_MODULES" | tr ' ' '-')"
+          # `aqt version` writes to stderr and leaves stdout empty, so the
+          # identity is captured here, on the stream it actually uses, rather
+          # than by a later `check_output` that would record an empty string.
+          aqt_version="$(aqt version 2>&1 1>/dev/null | sed -n 's/.*\(aqtinstall(aqt) v[0-9][^ ]*\).*/\1/p' | head -n 1)"
+          if [ -z "$aqt_version" ]; then
+            echo "could not read the aqtinstall identity" >&2
+            exit 1
+          fi
+
+          {
+            printf 'aqt_version=%s\n' "$aqt_version"
+            printf 'arch=%s\n' "$arch"
+            printf 'host=%s\n' "$host"
+            printf 'version=%s\n' "$version"
+            printf 'cache_key=qt-ci-v1-%s-%s-%s-%s\n' "$host" "$arch" "$version" "${modules_key:-none}"
+          } >> "$GITHUB_OUTPUT"
+          echo "resolved Qt ${version} ${arch} on ${host}/${QT_TARGET}"
+
+      - name: Restore the Qt installation
+        id: qt-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ runner.temp }}/qt
+          key: ${{ steps.release.outputs.cache_key }}
+
+      - name: Install Qt
+        if: ${{ steps.qt-cache.outputs.cache-hit != 'true' }}
+        working-directory: ${{ github.workspace }}
+        env:
+          QT_ARCH: ${{ steps.release.outputs.arch }}
+          QT_HOST: ${{ steps.release.outputs.host }}
+          QT_MODULES: ${{ inputs.qt_modules }}
+          QT_TARGET: ${{ inputs.qt_target }}
+          QT_VERSION: ${{ steps.release.outputs.version }}
+          TOOLCHAIN_BIN: ${{ steps.toolchain.outputs.bin }}
+        run: |
+          set -euo pipefail
+          # `qt_modules` is documented as space-separated, so it is read into an
+          # array rather than left to word splitting at the call site.
+          modules=()
+          if [ -n "$QT_MODULES" ]; then
+            read -r -a modules <<< "$QT_MODULES"
+            modules=(-m "${modules[@]}")
+          fi
+          "$TOOLCHAIN_BIN/aqt" install-qt \
+            "$QT_HOST" "$QT_TARGET" "$QT_VERSION" "$QT_ARCH" \
+            "${modules[@]}" \
+            --outputdir "${RUNNER_TEMP}/qt"
+
+      - name: Put Qt on PATH
+        working-directory: ${{ github.workspace }}
+        env:
+          QT_ARCH: ${{ steps.release.outputs.arch }}
+          QT_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          # The published architecture identifier and the directory aqt writes
+          # are not the same string: `linux_gcc_64` installs into `gcc_64`. That
+          # mapping is aqt's business and differs by host, so the prefix is not
+          # stripped by a rule here -- the install is located by the thing that
+          # actually identifies it, a `bin/qmake`. Zero or several is a failure,
+          # never a guess.
+          base="${RUNNER_TEMP}/qt/${QT_VERSION}"
+          roots="$(find "$base" -mindepth 3 -maxdepth 3 -type f \
+            \( -name qmake -o -name qmake.exe \) -printf '%h\n' 2>/dev/null \
+            | sed 's#/bin$##' | sort -u || true)"
+          count="$(printf '%s\n' "$roots" | grep -c . || true)"
+          if [ "$count" != "1" ]; then
+            echo "expected exactly one Qt install under ${base}, found ${count}" >&2
+            ls -la "$base" >&2 || true
+            exit 1
+          fi
+          root="$roots"
+          echo "$root/bin" >> "$GITHUB_PATH"
+          {
+            echo "QT_ROOT_DIR=$root"
+            echo "CMAKE_PREFIX_PATH=$root"
+          } >> "$GITHUB_ENV"
+          "$root/bin/qmake" -query QT_VERSION
+
+      - name: Set up ccache
+        if: ${{ inputs.enable_ccache }}
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03  # v1.2.23
+        with:
+          key: ${{ inputs.ccache_key }}
+
+      - name: Configure
+        if: ${{ inputs.configure_command != '' }}
+        env:
+          CONFIGURE_COMMAND: ${{ inputs.configure_command }}
+        run: bash -euo pipefail -c "$CONFIGURE_COMMAND"
+
+      - name: Build
+        if: ${{ inputs.build_command != '' }}
+        env:
+          BUILD_COMMAND: ${{ inputs.build_command }}
+        run: bash -euo pipefail -c "$BUILD_COMMAND"
+
+      - name: Test
+        if: ${{ inputs.test_command != '' }}
+        env:
+          TEST_COMMAND: ${{ inputs.test_command }}
+          TEST_LOG: ${{ runner.temp }}/qt-tests.log
+        run: |
+          set -euo pipefail
+          bash -euo pipefail -c "$TEST_COMMAND" 2>&1 | tee "$TEST_LOG"
+
+      - name: Emit runtime evidence
+        id: evidence
+        env:
+          BUILD_COMMAND: ${{ inputs.build_command }}
+          CALLEE_PATH: ${{ job.workflow_file_path }}
+          CALLEE_REPOSITORY: ${{ job.workflow_repository }}
+          CALLEE_SHA: ${{ job.workflow_sha }}
+          AQT_VERSION: ${{ steps.release.outputs.aqt_version }}
+          TOOLCHAIN_LOCK_SHA256: ${{ steps.toolchain.outputs.lock_sha256 }}
+          CONFIGURE_COMMAND: ${{ inputs.configure_command }}
+          QT_VERSION_INPUT: ${{ inputs.qt_version }}
+          TEST_COMMAND: ${{ inputs.test_command }}
+          TEST_LOG: ${{ runner.temp }}/qt-tests.log
+        run: |
+          python3 -I <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess
+
+          def tool(argv, pattern=None):
+              """Report a tool identity, or None when the tool is not installed."""
+              if shutil.which(argv[0]) is None:
+                  return None
+              out = subprocess.check_output(argv, text=True)
+              return out.splitlines()[0].strip() if pattern is None else out.strip()
+
+          # Provenance of the workflow that is running, not of the caller's tree.
+          # `github.*` in a called reusable is bound to the CALLER, so hashing
+          # `${github.workspace}/.github/workflows/qt-ci.yml` digests whichever
+          # file the caller happens to have at that path -- or fails outright.
+          # `job.workflow_*` is bound to the callee and comes from the runner, so
+          # the repository/sha/path triple names these exact bytes and a caller
+          # cannot forge it.
+          receipt = {
+              "callee_path": os.environ["CALLEE_PATH"],
+              "callee_repository": os.environ["CALLEE_REPOSITORY"],
+              "callee_sha": os.environ["CALLEE_SHA"],
+              "caller_repository": os.environ["GITHUB_REPOSITORY"],
+              "caller_sha": os.environ["GITHUB_SHA"],
+              "kind": "qt",
+              "os": os.environ["RUNNER_OS"],
+              "runner_arch": os.environ["RUNNER_ARCH"],
+              "schema_version": 1,
+          }
+          sections = ["toolchain"]
+          receipt["cache_key_prefix"] = "qt-ci-v1"
+          receipt["qt_version_input"] = os.environ["QT_VERSION_INPUT"]
+          # Resolved in the install step: `aqt` lives in the provisioned
+          # toolchain rather than on PATH here, and reports its identity on
+          # stderr. The lock digest goes in beside it, so the receipt records the
+          # whole executable closure rather than one package's version -- which
+          # was the gap: `aqt 3.3.0` said nothing about the twenty-six packages
+          # underneath it.
+          if os.environ.get("AQT_VERSION"):
+              receipt["aqt_version"] = os.environ["AQT_VERSION"]
+          if os.environ.get("TOOLCHAIN_LOCK_SHA256"):
+              receipt["toolchain_lock_sha256"] = os.environ["TOOLCHAIN_LOCK_SHA256"]
+          cmake = tool(["cmake", "--version"])
+          if cmake is not None:
+              receipt["cmake_version"] = cmake
+          qt_version = tool(["qmake", "-query", "QT_VERSION"], pattern=True)
+          if qt_version is not None:
+              receipt["qt_version"] = qt_version
+
+          # Each block is conditional on the same input that produced the step it
+          # describes. `configure_command`, `build_command` and `test_command` are
+          # each documented "Empty to skip", so a caller that skips one must get a
+          # receipt without that section -- not an unhandled FileNotFoundError on
+          # a log the skipped step never wrote.
+          if os.environ["CONFIGURE_COMMAND"]:
+              sections.append("configure")
+              receipt["configure_command"] = os.environ["CONFIGURE_COMMAND"]
+          if os.environ["BUILD_COMMAND"]:
+              sections.append("build")
+              receipt["build_command"] = os.environ["BUILD_COMMAND"]
+          if os.environ["TEST_COMMAND"]:
+              log = pathlib.Path(os.environ["TEST_LOG"])
+              if log.is_file():
+                  text = log.read_text(encoding="utf-8")
+                  total = re.search(r"tests failed out of (\d+)", text)
+                  sections.append("test")
+                  receipt["test_command"] = os.environ["TEST_COMMAND"]
+                  receipt["test_count"] = (
+                      int(total.group(1)) if "100% tests passed" in text and total else 0
+                  )
+                  receipt["test_log_sha256"] = hashlib.sha256(log.read_bytes()).hexdigest()
+
+          receipt["sections"] = sorted(sections)
+          encoded = json.dumps(receipt, sort_keys=True, separators=(",", ":"))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"evidence={encoded}\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write(f"\nRuntime evidence: `{encoded}`\n")
+          PY
+
+      - name: Summary
+        env:
+          QT_VERSION: ${{ inputs.qt_version }}
+        run: echo "Qt ${QT_VERSION} configure + build + test passed." >> "$GITHUB_STEP_SUMMARY"

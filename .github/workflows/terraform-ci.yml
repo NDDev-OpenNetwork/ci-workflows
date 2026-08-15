@@ -1,0 +1,65 @@
+name: terraform-ci
+
+# Reusable Terraform CI for BOTH tiers: pinned setup-terraform,
+# and fmt + init (no backend) + validate. No cloud credentials are used.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      terraform_version:
+        description: 'Terraform version constraint for setup-terraform. Pin an exact version or range for reproducible CI (see setup-terraform docs); "latest" always resolves to the newest release.'
+        type: string
+        default: 'latest'
+      working_directory:
+        type: string
+        default: '.'
+      timeout_minutes:
+        type: number
+        default: 15
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  terraform:
+    name: terraform
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Explicit, and not redundant with the workflow-level default above:
+        # a job-level `defaults.run` replaces the workflow-level one rather than
+        # merging with it, so declaring working-directory here silently drops the
+        # shell. On Linux nothing changes because bash is the default anyway; on
+        # Windows every run step becomes PowerShell and bash syntax stops working.
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+
+      - name: Format check
+        run: terraform fmt -check -recursive
+
+      - name: Init (no backend)
+        run: terraform init -backend=false -input=false
+
+      - name: Validate
+        run: |
+          terraform validate
+          echo "Terraform fmt + validate passed." >> "$GITHUB_STEP_SUMMARY"
