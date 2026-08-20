@@ -1,0 +1,65 @@
+schema_version: 1
+
+repository:
+  id: "repo_01M0EZ7TH5BMPKW742FYQT0776"
+  display_name: "ci-workflows"
+  roles: ["project", "module"]
+  lifecycle: "active"
+
+provider:
+  type: "github"
+  installation: "installation:github-opennetwork"
+  repository_id: 1335305145
+  owner: "NDDev-OpenNetwork"
+  name: "ci-workflows"
+
+classification:
+  portfolios: ["portfolio:opennetwork-projects"]
+  visibility_contract: "public"
+  data_classification: "public"
+
+product:
+  purpose: "Reusable, hosted-runner-safe GitHub Actions workflows and public release contracts."
+  capabilities:
+    - "Reusable least-privilege workflow building blocks"
+    - "Hosted-only public CI routing"
+    - "Pinned action and tool identities"
+  entrypoints:
+    - change: "Reusable workflows"
+      path: ".github/workflows"
+    - change: "Machine-readable capability catalog"
+      path: "catalog"
+    - change: "Contract validators"
+      path: "scripts"
+
+policy:
+  profiles: ["repository-default", "public-module", "ci-workflows"]
+  rollout_ring: "standard"
+
+git:
+  default_branch: "main"
+  integration: "pull-request"
+  branch_model: "task-branches"
+  handoff_pr: "preferred"
+  cleanup: "merged-only"
+
+verification:
+  commands:
+    lint: ["actionlint"]
+    test: ["python3 -I -B scripts/validate_all.py --tier core"]
+  required: ["lint", "test"]
+
+agent:
+  context_profile: "project-default"
+  generated_agents: false
+  serena: {enabled: false, provenance_required: false}
+
+module:
+  contract: "public"
+  consumption: ["git-submodule"]
+  compatibility: "commit-contract"
+  pin_policy: "default-branch-commit"
+  publication: {registry: "none", github_release: "required"}
+
+release:
+  mode: "bundle"
