@@ -19,6 +19,14 @@ PLATFORMS = {"linux", "macos", "windows"}
 BACKENDS = {"self-hosted", "github-hosted-standard"}
 VISIBILITIES = {"public", "private", "internal"}
 KNOWN_CAPABILITIES = {"container-runtime"}
+FLEET_CONTRACT = {
+    "repository": "NDDev-OpenNetwork/github-actions",
+    "minimum_contract_version": 2,
+    "worker_kind": "incus-container",
+    "ephemeral": True,
+    "jobs_per_worker": 1,
+    "executed_worker_disposition": "destroy",
+}
 
 
 def reusable_workflows() -> set[str]:
@@ -102,10 +110,15 @@ def load_contract(path: Path = CONTRACT) -> tuple[dict[str, dict[str, Any]], lis
 def load_mapping(path: Path) -> tuple[dict[str, dict[str, Any]], list[str]]:
     problems: list[str] = []
     doc = strict_load(path)
-    if set(doc) != {"schema", "routes"}:
+    if set(doc) != {"schema", "fleet_contract", "routes"}:
         problems.append(f"{path}: unexpected or missing top-level keys")
     if doc.get("schema") != "nddev-ci-runner-map/v1":
         problems.append(f"{path}: unsupported schema {doc.get('schema')!r}")
+    if doc.get("fleet_contract") != FLEET_CONTRACT:
+        problems.append(
+            f"{path}: fleet_contract must be the current public container contract "
+            f"{FLEET_CONTRACT!r}"
+        )
     result: dict[str, dict[str, Any]] = {}
     routes = doc.get("routes") or {}
     for platform, classes in routes.items():

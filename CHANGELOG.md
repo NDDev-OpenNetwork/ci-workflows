@@ -7,6 +7,13 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Bound the NDDev private runner mapping to public fleet contract v2: one-job
+  ephemeral Incus containers, destroy-after-use lifecycle, and explicit class
+  labels. Amsterdam is documented as a bastion/application host rather than an
+  Actions execution target.
+
 ## [0.1.1] - 2026-08-16
 
 First release of `ci-workflows` as an open-source library under
