@@ -2,7 +2,7 @@
   "schema_version": 1,
   "python": {
     "major_minor": "3.13",
-    "subject_count": 61,
+    "subject_count": 62,
     "launcher": "scripts/check_python_execution_contract.py",
     "launcher_prefix": [
       ".venv/bin/python",
@@ -96,7 +96,6 @@
       }
     },
     "invocation_document_exemptions": {
-      ".gds/repository.yaml": "Canonical GDS repository metadata records a verification command for orchestration; it is not an executable contributor instruction or workflow.",
       "catalog/scorecard-evidence.yml": "Historical evidence record of a command as it was actually run. Rewriting it to the current launcher form would falsify the receipt."
     },
     "source_classes": {
@@ -298,6 +297,7 @@
       "check_harden_runner_contract.py",
       "check_maintenance_report_contract.py",
       "check_merge_group.py",
+      "check_module_verification.py",
       "check_monorepo_routing.py",
       "check_permissions.py",
       "check_pinned_actions.py",
@@ -421,6 +421,9 @@
     ],
     "check_merge_group.py": [
       "_workflow_yaml"
+    ],
+    "check_module_verification.py": [
+      "_strict_yaml"
     ],
     "check_monorepo_routing.py": [
       "_workflow_yaml",
@@ -551,6 +554,7 @@
       "check_harden_runner_contract",
       "check_maintenance_report_contract",
       "check_merge_group",
+      "check_module_verification",
       "check_monorepo_routing",
       "check_permissions",
       "check_pinned_actions",

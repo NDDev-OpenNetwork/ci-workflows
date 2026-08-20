@@ -13,6 +13,10 @@ The project follows Semantic Versioning.
   ephemeral Incus containers, destroy-after-use lifecycle, and explicit class
   labels. Amsterdam is documented as a bastion/application host rather than an
   Actions execution target.
+- Made the GDS module verification lane hermetic with checksum-pinned `uv`,
+  Python 3.13.14, hash-locked dependencies and the repository package launcher,
+  so a clean consumer checkout can verify the exact pin without ambient Python
+  packages.
 
 ## [0.1.1] - 2026-08-16
 
