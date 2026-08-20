@@ -2,13 +2,7 @@
   "name": "Push hygiene (generated artifacts)",
   "target": "push",
   "enforcement": "evaluate",
-  "bypass_actors": [
-    {
-      "actor_id": 5,
-      "actor_type": "RepositoryRole",
-      "bypass_mode": "always"
-    }
-  ],
+  "bypass_actors": [],
   "conditions": {},
   "rules": [
     {
