@@ -1,6 +1,6 @@
 # Private security suite with zero GitHub Actions compute meter.
 # Replace `private-ci` with an isolated ephemeral runner label registered only
-# to private repositories. Destroy the VM after one job; cost control must not
+# to private repositories. Destroy the worker after one job; cost control must not
 # expose a persistent trusted machine to pull-request code. Self-hosted
 # infrastructure still has its own cost; this promise covers only GitHub
 # Actions runner-minute metering.

@@ -45,22 +45,11 @@ Dependabot bump would have flipped it.
   decision the library may not make for its consumers, so the rule closed the
   exposure at the caller and the generic contract stayed wrong-by-default.
 
-  **Superseded 2026-08-12, and corrected the same day: `amsterdam` is still
-  live.** This paragraph first claimed the label had been retired and that every
-  caller inheriting it now queued against a runner that would never appear. That
-  was wrong. The fleet that owns those runners reports them online and carrying a
-  large share of the estate's CI, `github-device-sync`'s own included. The
-  counts belong to the control plane and are deliberately not repeated here — a
-  public library states the durable rule, not somebody's job totals. A GitHub
-  App fleet does exist alongside it in
-  `modules/github-actions`, with a per-class taxonomy (`nddev-linux-fast`,
-  `-standard`, `-integration`), but it has not replaced anything yet.
-
-  So the cost objection is **not** void, and it is worth being precise about
-  what actually changed: nothing about the estate's runners. Only this library
-  stopped shipping a private label as its default, and all 39 defaults moved to
-  `ubuntu-latest`. An estate caller that wants the fleet still passes the label
-  and still lands on hardware that is running today.
+  **Updated 2026-08-20:** `amsterdam` is retired from Actions execution and is
+  now a bastion/application host. Private Linux work uses explicit Drakkars
+  classes (`nddev-linux-fast`, `-standard`, `-integration`) backed by one-job
+  ephemeral Incus containers. The public library still defaults all reusables
+  to `ubuntu-latest`; an estate caller selects a private class explicitly.
 
   Note what the fix is *not* justified by. It is not "the estate went hosted" —
   it did not. It is the original decision, unchanged: a public library must not
@@ -75,8 +64,8 @@ Dependabot bump would have flipped it.
   regardless of this rule. Making that safe needs ephemeral runners or fork-PR
   approval for all external contributors, neither of which this library controls.
 
-  **Update 2026-08-12:** the estate's replacement fleet is ephemeral by
-  construction — every job gets a fresh VM, runs once, and the VM is destroyed
+  **Update 2026-08-20:** the estate fleet is ephemeral by construction — every
+  job gets a fresh Incus container, runs once, and the container is destroyed
   without being reused after it has executed workflow code. That is the first of
   the two conditions above. It does not make this library's default safe, which
   is a separate question about resolvability, but it removes the reason a public

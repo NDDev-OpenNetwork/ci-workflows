@@ -248,21 +248,17 @@ silently adopts whatever the next pin says. Name it anyway — and if you run yo
 own fleet you must, because a hosted default will quietly meter you.
 
 That the default is safe today is recent. It was `amsterdam`, a private
-self-hosted label, until August 2026. **That label is still live**, carrying a
-large share of the estate's CI, so what changed is narrower than it might look: the library stopped shipping a private label as a
-default, which was always the rule. A per-class fleet
-(`nddev-linux-fast`/`-standard`/`-integration`) exists alongside it in
-`modules/github-actions` and has not replaced it.
-
-An earlier version of this page said the label had been retired and that
-inheriting callers queued against a runner that no longer existed. That was
-wrong, and it mattered: it made the danger sound historical when the live one is
-the second bullet below. Both ways a stale default bites:
+self-hosted label, until August 2026. Amsterdam is now a bastion/application
+host and not an Actions execution target. Current private Linux execution uses
+the per-class Drakkars labels
+`nddev-linux-fast`/`-standard`/`-integration`, backed by one-job ephemeral Incus
+containers under public fleet contract v2. Both ways a stale private default
+still bite:
 
 - **Outside this estate** the label does not resolve, so the job queues
   forever against a runner that will never appear.
-- **Inside this estate, on a public repository**, `pull_request` executes
-  untrusted fork code — and inheriting the default puts it on trusted private
+- **Inside an estate, on a public repository**, `pull_request` executes
+  untrusted fork code — and a private default puts it on trusted private
   infrastructure. GitHub's own guidance is blunt about this: "forks of your
   public repository can potentially run dangerous code on your self-hosted
   runner machine."

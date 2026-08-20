@@ -2,6 +2,13 @@
 # not a reusable-workflow default. Compile it before dispatch; GitHub will not
 # fall back after a self-hosted label has entered the queue.
 schema: nddev-ci-runner-map/v1
+fleet_contract:
+  repository: NDDev-OpenNetwork/github-actions
+  minimum_contract_version: 2
+  worker_kind: incus-container
+  ephemeral: true
+  jobs_per_worker: 1
+  executed_worker_disposition: destroy
 routes:
   linux:
     hosted:
