@@ -96,6 +96,7 @@
       }
     },
     "invocation_document_exemptions": {
+      ".gds/repository.yaml": "Canonical GDS repository metadata records a verification command for orchestration; it is not an executable contributor instruction or workflow.",
       "catalog/scorecard-evidence.yml": "Historical evidence record of a command as it was actually run. Rewriting it to the current launcher form would falsify the receipt."
     },
     "source_classes": {
