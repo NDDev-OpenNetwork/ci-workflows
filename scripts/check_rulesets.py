@@ -46,12 +46,12 @@ REQUIRED_TAG_RULES = {"deletion", "non_fast_forward", "update", "required_signat
 
 # Bypass actors are real holes in the properties above. Keeping the expected set
 # here means adding one shows up as a validator change, not as a silent edit to
-# a JSON file. Actor id 5 is the repository-admin role: this is a solo-maintained
-# repository, and `docs/08` records the trade-off.
+# a JSON file. Public source and release identities are immutable even to an
+# administrator; recovery uses a reviewed ruleset change, never a bypass.
 EXPECTED_BYPASS_ACTORS = {
-    "branch-main.json": {(5, "RepositoryRole", "always")},
-    "tag-semver.json": {(5, "RepositoryRole", "always")},
-    "push-hygiene.json": {(5, "RepositoryRole", "always")},
+	"branch-main.json": set(),
+	"tag-semver.json": set(),
+	"push-hygiene.json": set(),
 }
 
 
