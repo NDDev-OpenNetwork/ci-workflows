@@ -46,7 +46,7 @@ git:
 verification:
   commands:
     lint: ["actionlint"]
-    test: ["python3 -I -B scripts/validate_all.py --tier core"]
+    test: ["scripts/validate_module.sh"]
   required: ["lint", "test"]
 
 agent:
