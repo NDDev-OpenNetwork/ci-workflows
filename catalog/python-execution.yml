@@ -198,6 +198,13 @@
       "GH_TOKEN",
       "GITHUB_TOKEN"
     ],
+    "render_runtime_evidence.py": [
+      "GITHUB_STEP_SUMMARY",
+      "GUARDS",
+      "PROVES",
+      "RESULTS",
+      "RUN_URL"
+    ],
     "validate_all.py": [
       "GH_TOKEN",
       "GITHUB_TOKEN"
