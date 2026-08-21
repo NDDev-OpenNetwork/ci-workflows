@@ -1,6 +1,6 @@
 # actionlint configuration.
 #
-# One suppression, scoped to three files and three property names.
+# One suppression, scoped to four files and three property names.
 #
 # `job.workflow_repository`, `job.workflow_sha` and `job.workflow_file_path` are
 # real GitHub Actions contexts. They are the only way a called reusable workflow
@@ -36,6 +36,6 @@
 # the three errors have stopped appearing, delete this file and the validator
 # will tell you the glob is stale.
 paths:
-  .github/workflows/{dart-flutter-ci,kotlin-android-ci,qt-ci}.yml:
+  .github/workflows/{dart-flutter-ci,kotlin-android-ci,private-security-bundle,qt-ci}.yml:
     ignore:
       - '^property "workflow_(file_path|repository|sha)" is not defined in object type \{check_run_id: number; container: .+\}$'

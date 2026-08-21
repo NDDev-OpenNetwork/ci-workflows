@@ -1,0 +1,98 @@
+name: private-security-bundle
+
+# One private-fleet placement for the four fast, read-only security gates that
+# previously paid four independent cold-start and queue costs. The workflow
+# source is fetched at job.workflow_sha, so its companion script is exactly the
+# same immutable revision as this called workflow.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Private Linux X64 runner label.'
+        type: string
+        default: 'nddev-linux-standard'
+      gitleaks_config_path:
+        description: 'Optional repository-relative .gitleaks.toml path.'
+        type: string
+        default: ''
+      zizmor_target:
+        description: 'Repository-relative path analyzed by zizmor.'
+        type: string
+        default: '.'
+      osv_lockfile:
+        description: 'Optional repository-relative lockfile; empty scans the repository recursively.'
+        type: string
+        default: ''
+
+permissions: {}
+
+jobs:
+  security-bundle:
+    name: actionlint + zizmor + OSV + gitleaks
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Validate runner and called-workflow identity
+        shell: bash
+        env:
+          WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          WORKFLOW_SHA: ${{ job.workflow_sha }}
+          BUNDLE_RUNNER_OS: ${{ runner.os }}
+          BUNDLE_RUNNER_ARCH: ${{ runner.arch }}
+        run: |
+          set -euo pipefail
+          test "$WORKFLOW_REPOSITORY" = NDDev-OpenNetwork/ci-workflows
+          [[ "$WORKFLOW_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$BUNDLE_RUNNER_OS" = Linux
+          test "$BUNDLE_RUNNER_ARCH" = X64
+
+      - name: Isolate global Git config
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          isolated_config="$RUNNER_TEMP/nddev-ci-global.gitconfig"
+          : > "$isolated_config"
+          printf 'GIT_CONFIG_GLOBAL=%s\n' "$isolated_config" >> "$GITHUB_ENV"
+
+      - name: Checkout caller with full ref history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch exact called-workflow implementation
+        shell: bash
+        env:
+          WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          WORKFLOW_SHA: ${{ job.workflow_sha }}
+        run: |
+          set -euo pipefail
+          source_root="$RUNNER_TEMP/nddev-security-bundle-source"
+          git init --quiet "$source_root"
+          git -C "$source_root" remote add origin \
+            "https://github.com/${WORKFLOW_REPOSITORY}.git"
+          git -C "$source_root" -c protocol.version=2 fetch --quiet --depth=1 \
+            origin "$WORKFLOW_SHA"
+          git -C "$source_root" checkout --quiet --detach FETCH_HEAD
+          test "$(git -C "$source_root" rev-parse HEAD)" = "$WORKFLOW_SHA"
+          printf 'NDDEV_SECURITY_BUNDLE_SCRIPT=%s\n' \
+            "$source_root/scripts/run_private_security_bundle.sh" >> "$GITHUB_ENV"
+
+      - name: Set up pinned uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          version: 0.11.30
+          enable-cache: false
+
+      - name: Run consolidated security gates
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITLEAKS_CONFIG_PATH: ${{ inputs.gitleaks_config_path }}
+          ZIZMOR_TARGET: ${{ inputs.zizmor_target }}
+          OSV_LOCKFILE: ${{ inputs.osv_lockfile }}
+        run: "$NDDEV_SECURITY_BUNDLE_SCRIPT"

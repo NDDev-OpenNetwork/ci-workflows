@@ -19,6 +19,9 @@ The project follows Semantic Versioning.
 
 ### Changed
 
+- Added a private-only consolidated security reusable that runs actionlint,
+  zizmor, OSV-Scanner, and gitleaks in one ephemeral job, eliminating three
+  independent cold placements per security wave.
 - Replaced the private-era release promotion payload with
   `nddev-public-release-promotion/v2`: a signed annotated tag now binds the
   exact public commit to public CI, contract and security evidence without any

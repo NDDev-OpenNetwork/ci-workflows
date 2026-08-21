@@ -248,6 +248,33 @@ capabilities:
     sources:
       - "https://github.com/rhysd/actionlint"
 
+  - id: private-security-bundle
+    name: Consolidated private security bundle
+    cluster: security-scanning
+    status: preview
+    public_oss: unavailable
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/private-security-bundle.yml
+    example: examples/nddev/security-private-selfhosted.yml
+    required_permissions:
+      - "contents: read"
+    required_settings:
+      - "Linux X64 ephemeral private runner"
+    risks:
+      - "Private repositories only; a public fork must never reach a self-hosted runner"
+      - "Four gates share one failure domain, but the script executes and summarizes every gate before returning failure"
+      - "The called workflow fetches its implementation from job.workflow_repository at exact job.workflow_sha outside the caller workspace"
+      - "Downloaded actionlint, OSV-Scanner, and gitleaks artifacts are checksum-pinned; zizmor is uvx version-pinned"
+    deprecations: null
+    last_verified: "2026-08-21"
+    sources:
+      - "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-context"
+      - "https://github.com/rhysd/actionlint"
+      - "https://github.com/woodruffw/zizmor"
+      - "https://github.com/google/osv-scanner"
+      - "https://github.com/gitleaks/gitleaks"
+
   - id: zizmor
     name: zizmor workflow security scanner
     cluster: security-scanning

@@ -33,6 +33,7 @@
 | `.github/workflows/node-ci.yml` | `node-ci` | ga |
 | `.github/workflows/osv-scan.yml` | `osv-scanner-sca` | ga |
 | `.github/workflows/pr-hygiene.yml` | `pr-hygiene` | ga |
+| `.github/workflows/private-security-bundle.yml` | `private-security-bundle` | preview |
 | `.github/workflows/private-static.yml` | `private-static-validation` | ga |
 | `.github/workflows/public-codeql.yml` | `codeql-code-scanning` | ga |
 | `.github/workflows/public-dependency-review.yml` | `dependency-review` | ga |
@@ -62,4 +63,4 @@
 | `.github/workflows/zizmor-sarif.yml` | `zizmor` | ga |
 
 ---
-Source data verified through: 2026-08-13
+Source data verified through: 2026-08-21
