@@ -28,6 +28,9 @@ The project follows Semantic Versioning.
   first publication attempt remains intentionally unreleased after its
   tag-date preflight failed; this version carries the corrected public-native
   promotion graph forward without moving or deleting the signed tag.
+- Made promotion evidence self-verifying: the renderer derives canonical
+  digests from exact public run/job API payloads, and the release gate fetches
+  and recomputes them before authorization.
 
 ## [0.1.1] - 2026-08-21
 

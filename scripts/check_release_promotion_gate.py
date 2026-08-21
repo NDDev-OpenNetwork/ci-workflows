@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import copy
 import datetime as dt
+import hashlib
 import json
 import os
 import subprocess
@@ -17,6 +18,7 @@ from ci_workflows_tools._workflow_yaml import WORKFLOWS_DIR, load_yaml
 from ci_workflows_tools.check_python_execution_contract import clean_environment
 
 WORKFLOW = WORKFLOWS_DIR / "release-promotion-gate.yml"
+RENDERER = WORKFLOW.parents[2] / "scripts" / "render-public-promotion-record.sh"
 NOW = dt.datetime(2026, 8, 5, 12, 0, tzinfo=dt.timezone.utc)
 PUBLIC_REPOSITORY = "NDDev-OpenNetwork/nddev-example-app"
 PUBLIC_SHA = "1" * 40
@@ -50,13 +52,55 @@ def _timestamp(value: dt.datetime) -> str:
 
 def _evidence(role: str) -> dict[str, Any]:
     index = {"public-ci": 1, "public-contract": 2, "public-security": 3}[role]
+    payload = _evidence_payload(role)
+    canonical = json.dumps(
+        payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True
+    )
     return {
-        "digest": "sha256:" + str(index + 3) * 64,
-        "observed_at": _timestamp(NOW - dt.timedelta(hours=1)),
+        "digest": "sha256:" + hashlib.sha256(canonical.encode()).hexdigest(),
+        "observed_at": payload["completed_at"] if role == "public-contract" else payload["updated_at"],
         "public_commit": PUBLIC_SHA,
         "result": "success",
         "role": role,
-        "source": f"https://github.com/NDDev-OpenNetwork/nddev-example-app/actions/runs/{index}",
+        "source": (
+            f"https://github.com/NDDev-OpenNetwork/nddev-example-app/actions/runs/{index}/job/22"
+            if role == "public-contract"
+            else f"https://github.com/NDDev-OpenNetwork/nddev-example-app/actions/runs/{index}"
+        ),
+    }
+
+
+def _evidence_payload(role: str) -> dict[str, Any]:
+    index = {"public-ci": 1, "public-contract": 2, "public-security": 3}[role]
+    source = (
+        f"https://github.com/{PUBLIC_REPOSITORY}/actions/runs/{index}/job/22"
+        if role == "public-contract"
+        else f"https://github.com/{PUBLIC_REPOSITORY}/actions/runs/{index}"
+    )
+    if role == "public-contract":
+        return {
+            "completed_at": _timestamp(NOW - dt.timedelta(hours=1)),
+            "conclusion": "success",
+            "head_sha": PUBLIC_SHA,
+            "html_url": source,
+            "id": 22,
+            "name": "static validators",
+            "run_id": 2,
+            "started_at": _timestamp(NOW - dt.timedelta(hours=1, minutes=2)),
+            "status": "completed",
+        }
+    return {
+        "conclusion": "success",
+        "created_at": _timestamp(NOW - dt.timedelta(hours=1, minutes=3)),
+        "event": "push",
+        "head_sha": PUBLIC_SHA,
+        "html_url": source,
+        "id": index,
+        "name": "ci" if role == "public-ci" else "codeql",
+        "run_attempt": 1,
+        "status": "completed",
+        "updated_at": _timestamp(NOW - dt.timedelta(hours=1)),
+        "workflow_id": 100 + index,
     }
 
 
@@ -125,10 +169,17 @@ def _run(program: str, record: dict[str, Any], *, verified: bool = True) -> subp
         root = Path(raw)
         ref_path = root / "ref.json"
         tag_path = root / "tag.json"
+        evidence_dir = root / "evidence"
+        evidence_dir.mkdir()
         ref_path.write_text(json.dumps(ref), encoding="utf-8")
         tag_path.write_text(json.dumps(tag), encoding="utf-8")
+        for role in ("public-ci", "public-contract", "public-security"):
+            (evidence_dir / f"{role}.json").write_text(
+                json.dumps(_evidence_payload(role)), encoding="utf-8"
+            )
         env = clean_environment({
                 "PROMOTION_NOW": _timestamp(NOW),
+                "PROMOTION_EVIDENCE_DIR": str(evidence_dir),
                 "PROMOTION_REF_JSON": str(ref_path),
                 "PROMOTION_TAG_JSON": str(tag_path),
                 "PUBLIC_REPOSITORY": PUBLIC_REPOSITORY,
@@ -151,8 +202,55 @@ def _mutate(record: dict[str, Any], mutation: Callable[[dict[str, Any]], None]) 
     return changed
 
 
+def _check_renderer() -> list[str]:
+    with tempfile.TemporaryDirectory(prefix="release-promotion-renderer-") as raw:
+        root = Path(raw)
+        bin_dir = root / "bin"
+        bin_dir.mkdir()
+        payloads = {
+            f"repos/{PUBLIC_REPOSITORY}/actions/runs/1": _evidence_payload("public-ci"),
+            f"repos/{PUBLIC_REPOSITORY}/actions/jobs/22": _evidence_payload("public-contract"),
+            f"repos/{PUBLIC_REPOSITORY}/actions/runs/3": _evidence_payload("public-security"),
+        }
+        gh = bin_dir / "gh"
+        gh.write_text(
+            f"#!{sys.executable}\n"
+            "import json, sys\n"
+            f"payloads = {payloads!r}\n"
+            "if len(sys.argv) != 3 or sys.argv[1] != 'api' or sys.argv[2] not in payloads:\n"
+            "    raise SystemExit(2)\n"
+            "print(json.dumps(payloads[sys.argv[2]]))\n",
+            encoding="utf-8",
+        )
+        gh.chmod(0o755)
+        record = _record()
+        command = [
+            str(RENDERER), "1.2.3", PUBLIC_REPOSITORY, PUBLIC_SHA,
+            record["generated_at"], record["expires_at"],
+            record["evidence"][0]["source"], record["evidence"][1]["source"],
+            record["evidence"][2]["source"],
+        ]
+        env = clean_environment({
+            "PATH": f"{bin_dir}:/usr/bin:/bin",
+            "TMPDIR": str(root),
+        })
+        result = subprocess.run(
+            command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            env=env, check=False,
+        )
+        if result.returncode != 0:
+            return [f"public promotion renderer failed: {result.stderr.strip()}"]
+        try:
+            rendered = json.loads(result.stdout)
+        except json.JSONDecodeError as exc:
+            return [f"public promotion renderer returned invalid JSON: {exc}"]
+        if rendered != record:
+            return ["public promotion renderer did not derive the expected API-bound record"]
+    return []
+
+
 def check() -> list[str]:
-    problems: list[str] = []
+    problems: list[str] = _check_renderer()
     try:
         workflow = load_yaml(WORKFLOW)
         program = _program(workflow)
@@ -201,6 +299,24 @@ def check() -> list[str]:
         (
             "failed evidence",
             _mutate(_record(), lambda r: r["evidence"][0].__setitem__("result", "failure")),
+            True,
+        ),
+        (
+            "fabricated evidence digest",
+            _mutate(
+                _record(),
+                lambda r: r["evidence"][0].__setitem__("digest", "sha256:" + "9" * 64),
+            ),
+            True,
+        ),
+        (
+            "fabricated evidence timestamp",
+            _mutate(
+                _record(),
+                lambda r: r["evidence"][0].__setitem__(
+                    "observed_at", _timestamp(NOW - dt.timedelta(hours=2))
+                ),
+            ),
             True,
         ),
         (
