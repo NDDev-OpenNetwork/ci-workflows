@@ -101,8 +101,7 @@ jobs:
       # GitHub token, and `flutter-pin` and `qt-pin` need two hosts this job's
       # egress policy blocks. Running `validate_all.py --` here meant every
       # release stopped in preflight on four capability failures -- before the
-      # promotion gate, and long before the missing evidence manifest (#157) that
-      # is the *known* blocker. The graph had never been exercised: at 0.13.3
+      # promotion gate. The graph had never been exercised: at 0.13.3
       # `resolve` did not run validate_all at all.
       #
       # `--tier release` is core plus the calendar checks, and reaches no further

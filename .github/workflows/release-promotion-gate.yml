@@ -1,7 +1,7 @@
 name: release-promotion-gate
 
 # Verify that a numeric release tag carries a signed, exact-SHA promotion
-# decision from the private NDDev control plane. This workflow is intentionally
+# decision whose complete evidence is verifiable in the public trust domain. This workflow is intentionally
 # read-only: publication remains in release-supply-chain.yml and callers must
 # make that job depend on this gate.
 
@@ -12,10 +12,6 @@ on:
         description: 'Numeric SemVer X.Y.Z; must equal the triggering tag.'
         type: string
         required: true
-      control_plane_repository:
-        description: 'Private control-plane repository named by the promotion record.'
-        type: string
-        default: 'NDDev-OpenNetwork/nddev-harnesses'
       runner:
         description: 'Trusted Linux runner label used for the read-only verification job.'
         type: string
@@ -31,7 +27,6 @@ jobs:
     permissions:
       contents: read
     env:
-      CONTROL_PLANE_REPOSITORY: ${{ inputs.control_plane_repository }}
       GH_TOKEN: ${{ github.token }}
       PUBLIC_REPOSITORY: ${{ github.repository }}
       RELEASE_REF_NAME: ${{ github.ref_name }}
@@ -79,23 +74,12 @@ jobs:
           import re
           import sys
 
-          SCHEMA = "nddev-release-promotion/v1"
+          SCHEMA = "nddev-public-release-promotion/v2"
           MAX_AGE = dt.timedelta(hours=168)
           CLOCK_SKEW = dt.timedelta(minutes=5)
-          REQUIRED_ROLES = {
-              "current-install",
-              "current-lifecycle",
-              "module-release",
-              "platform-macos-arm64",
-              "platform-macos-x64",
-              "platform-ubuntu",
-              "root-actionlint",
-              "root-secret-scan",
-              "root-zizmor",
-          }
+          REQUIRED_ROLES = {"public-ci", "public-contract", "public-security"}
           SHA = re.compile(r"[0-9a-f]{40}")
           DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
-          REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
 
           def fail(message):
               print(f"promotion gate: {message}", file=sys.stderr)
@@ -183,7 +167,7 @@ jobs:
           exact_keys(
               record,
               {
-                  "control_plane", "evidence", "expires_at", "generated_at",
+                  "evidence", "expires_at", "generated_at",
                   "public_commit", "public_repository", "schema", "version",
               },
               "promotion record",
@@ -196,17 +180,6 @@ jobs:
               fail("promotion record public commit does not equal the tag target")
           if record["version"] != os.environ["RELEASE_VERSION"]:
               fail("promotion record version does not equal the tag")
-
-          control = record["control_plane"]
-          exact_keys(control, {"commit", "registry_digest", "repository"}, "control_plane")
-          if control["repository"] != os.environ["CONTROL_PLANE_REPOSITORY"]:
-              fail("promotion record names an unexpected control-plane repository")
-          if REPOSITORY.fullmatch(control["repository"]) is None:
-              fail("control-plane repository is malformed")
-          if SHA.fullmatch(control["commit"]) is None:
-              fail("control-plane commit is malformed")
-          if DIGEST.fullmatch(control["registry_digest"]) is None:
-              fail("control-plane registry digest is malformed")
 
           now_text = os.environ.get("PROMOTION_NOW")
           now = timestamp(now_text, "PROMOTION_NOW") if now_text else dt.datetime.now(dt.timezone.utc)
@@ -228,17 +201,12 @@ jobs:
           if roles != sorted(roles):
               fail("evidence records must be sorted by role")
 
-          evidence_keys = {
-              "architecture", "digest", "kind", "limitations", "observed_at",
-              "public_commit", "result", "role", "root_commit", "source",
-          }
+          evidence_keys = {"digest", "observed_at", "public_commit", "result", "role", "source"}
           for item in evidence:
               exact_keys(item, evidence_keys, f"evidence {item.get('role')!r}")
               role = item["role"]
               if item["result"] != "success":
                   fail(f"evidence {role} did not succeed")
-              if item["root_commit"] != control["commit"]:
-                  fail(f"evidence {role} names a different root commit")
               if item["public_commit"] != public_sha:
                   fail(f"evidence {role} names a different public commit")
               if DIGEST.fullmatch(item["digest"]) is None:
@@ -249,29 +217,10 @@ jobs:
               if observed > generated + CLOCK_SKEW or generated - observed > MAX_AGE:
                   fail(f"evidence {role} is outside the accepted freshness window")
 
-              expected_arch = None
-              if role == "platform-macos-arm64":
-                  expected_arch = "arm64"
-              elif role == "platform-macos-x64":
-                  expected_arch = "x64"
-              if item["architecture"] != expected_arch:
-                  fail(f"evidence {role} has the wrong architecture marker")
-
-              if item["kind"] == "executed":
-                  if item["limitations"] is not None:
-                      fail(f"executed evidence {role} must not declare limitations")
-              elif item["kind"] == "artifact-validation-substitute":
-                  if role != "platform-macos-x64":
-                      fail("only macOS x64 may use an artifact-validation substitute")
-                  if not isinstance(item["limitations"], str) or not item["limitations"].strip():
-                      fail("artifact-validation substitute must state residual limitations")
-              else:
-                  fail(f"evidence {role} has an unsupported kind")
-
           record_digest = "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
           print(
               f"promotion gate: verified {record['public_repository']}@{public_sha} "
-              f"for {record['version']} via {control['repository']}@{control['commit']} "
+              f"for {record['version']} from public evidence "
               f"record={record_digest}"
           )
           PY

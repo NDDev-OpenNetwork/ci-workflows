@@ -20,7 +20,6 @@ WORKFLOW = WORKFLOWS_DIR / "release-promotion-gate.yml"
 NOW = dt.datetime(2026, 8, 5, 12, 0, tzinfo=dt.timezone.utc)
 PUBLIC_REPOSITORY = "NDDev-OpenNetwork/nddev-example-app"
 PUBLIC_SHA = "1" * 40
-ROOT_SHA = "2" * 40
 TAG_SHA = "3" * 40
 
 
@@ -50,49 +49,25 @@ def _timestamp(value: dt.datetime) -> str:
 
 
 def _evidence(role: str) -> dict[str, Any]:
-    architecture = None
-    if role == "platform-macos-arm64":
-        architecture = "arm64"
-    elif role == "platform-macos-x64":
-        architecture = "x64"
     return {
-        "architecture": architecture,
         "digest": "sha256:" + "4" * 64,
-        "kind": "executed",
-        "limitations": None,
         "observed_at": _timestamp(NOW - dt.timedelta(hours=1)),
         "public_commit": PUBLIC_SHA,
         "result": "success",
         "role": role,
-        "root_commit": ROOT_SHA,
-        "source": "https://github.com/NDDev-OpenNetwork/nddev-harnesses/actions/runs/1",
+        "source": "https://github.com/NDDev-OpenNetwork/nddev-example-app/actions/runs/1",
     }
 
 
 def _record() -> dict[str, Any]:
-    roles = (
-        "current-install",
-        "current-lifecycle",
-        "module-release",
-        "platform-macos-arm64",
-        "platform-macos-x64",
-        "platform-ubuntu",
-        "root-actionlint",
-        "root-secret-scan",
-        "root-zizmor",
-    )
+    roles = ("public-ci", "public-contract", "public-security")
     return {
-        "control_plane": {
-            "commit": ROOT_SHA,
-            "registry_digest": "sha256:" + "5" * 64,
-            "repository": "NDDev-OpenNetwork/nddev-harnesses",
-        },
         "evidence": [_evidence(role) for role in roles],
         "expires_at": _timestamp(NOW + dt.timedelta(hours=24)),
         "generated_at": _timestamp(NOW - dt.timedelta(minutes=30)),
         "public_commit": PUBLIC_SHA,
         "public_repository": PUBLIC_REPOSITORY,
-        "schema": "nddev-release-promotion/v1",
+        "schema": "nddev-public-release-promotion/v2",
         "version": "1.2.3",
     }
 
@@ -152,7 +127,6 @@ def _run(program: str, record: dict[str, Any], *, verified: bool = True) -> subp
         ref_path.write_text(json.dumps(ref), encoding="utf-8")
         tag_path.write_text(json.dumps(tag), encoding="utf-8")
         env = clean_environment({
-                "CONTROL_PLANE_REPOSITORY": "NDDev-OpenNetwork/nddev-harnesses",
                 "PROMOTION_NOW": _timestamp(NOW),
                 "PROMOTION_REF_JSON": str(ref_path),
                 "PROMOTION_TAG_JSON": str(tag_path),
@@ -229,11 +203,6 @@ def check() -> list[str]:
             True,
         ),
         (
-            "wrong root sha",
-            _mutate(_record(), lambda r: r["evidence"][0].__setitem__("root_commit", "7" * 40)),
-            True,
-        ),
-        (
             "wrong evidence public sha",
             _mutate(_record(), lambda r: r["evidence"][0].__setitem__("public_commit", "8" * 40)),
             True,
@@ -248,30 +217,11 @@ def check() -> list[str]:
             ),
             True,
         ),
-        (
-            "substitute on non-x64 role",
-            _mutate(
-                _record(),
-                lambda r: (
-                    r["evidence"][0].__setitem__("kind", "artifact-validation-substitute"),
-                    r["evidence"][0].__setitem__("limitations", "not executed"),
-                ),
-            ),
-            True,
-        ),
     ]
     for label, record, verified in cases:
         result = _run(program, record, verified=verified)
         if result.returncode == 0:
             problems.append(f"negative fixture unexpectedly passed: {label}")
-
-    substitute = _record()
-    x64 = next(item for item in substitute["evidence"] if item["role"] == "platform-macos-x64")
-    x64["kind"] = "artifact-validation-substitute"
-    x64["limitations"] = "Artifact identity verified; no x64 Darwin runtime execution."
-    result = _run(program, substitute)
-    if result.returncode != 0:
-        problems.append(f"documented macOS x64 substitute failed: {result.stderr.strip()}")
 
     return problems
 

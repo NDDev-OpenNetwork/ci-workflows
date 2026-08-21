@@ -9,6 +9,11 @@ The project follows Semantic Versioning.
 
 ### Changed
 
+- Replaced the private-era release promotion payload with
+  `nddev-public-release-promotion/v2`: a signed annotated tag now binds the
+  exact public commit to public CI, contract and security evidence without any
+  private repository read, and the repository ships the canonical record
+  renderer.
 - Bound the NDDev private runner mapping to public fleet contract v2: one-job
   ephemeral Incus containers, destroy-after-use lifecycle, and explicit class
   labels. Amsterdam is documented as a bastion/application host rather than an

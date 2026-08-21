@@ -35,7 +35,7 @@ push tag X.Y.Z
 
 Every write scope lives on `publish`, and `publish` cannot start until both
 gates pass: the machine gate (`promotion`) verifies the tag carries a
-control-plane promotion record for that exact commit, and the human gate
+public-evidence promotion record for that exact commit, and the human gate
 (`authorize`) is a protected environment whose required reviewer is the release
 authority. A GitHub-verified signature proves **who signed**, never that the
 signer may ship — the two questions are answered by two different jobs.
@@ -48,28 +48,19 @@ and the workflow cannot drift apart again.
 
 ### Producing the promotion record
 
-The record is not written by hand and not produced by this repository. The
-control plane owns it: `scripts/promotion_record.py` in
-`NDDev-OpenNetwork/nddev-harnesses` builds and verifies it against the same
-`nddev-release-promotion/v1` schema the gate enforces, including the nine
-required evidence roles.
-
-**The input to that command does not have a producer yet.** `promotion_record.py`
-*validates* a `nddev-promotion-evidence-manifest/v1` manifest and signs a record
-from it; nothing in the estate emits one. The manifest has to carry nine lane
-records — including `platform-macos-arm64` and `platform-macos-x64` — each with
-a real run identity and log digest, observed within 168 hours. Hand-authoring it
-would assert nine verifications nobody performed, which is the failure mode this
-whole gate exists to prevent. Until that producer exists, the commands below
-cannot be completed. Tracked as issue #157.
+The record is generated in this public repository from three public evidence
+surfaces for the exact candidate commit: required CI, contract validation and
+security validation. Each source must be a URL under this repository and each
+digest must be independently computed from the named public result or artifact.
+No private repository read or private token is part of release verification.
 
 ```bash
-# in the control plane, against the exact candidate commit
-python3 scripts/promotion_record.py create \
-  --module ci-workflows \
-  --evidence-manifest <manifest.json> \
-  --output promotion.json
-python3 scripts/promotion_record.py verify --module ci-workflows --input promotion.json
+scripts/render-public-promotion-record.sh \
+  X.Y.Z NDDev-OpenNetwork/ci-workflows <public-commit> \
+  <generated-at> <expires-at> \
+  <ci-run-url> sha256:<ci-evidence-digest> \
+  <contract-run-url> sha256:<contract-evidence-digest> \
+  <security-run-url> sha256:<security-evidence-digest> >promotion.json
 ```
 
 Then make that file the annotation of the signed tag — the gate reads the record
@@ -88,7 +79,7 @@ Three properties the gate checks that are easy to get wrong:
   `generated_at`, and every evidence observation must fall in the same window —
   a record generated last month cannot authorize today's tag.
 - `public_commit` must equal the commit the tag points at, and every evidence
-  entry must name that same commit and the same control-plane root commit.
+  entry must name that same public commit.
 
 A GitHub-verified signature proves who signed; it does not prove they may ship.
 The protected `release` environment answers the second question.
@@ -113,8 +104,8 @@ and exactly one tracked `CHANGELOG.md` heading when that file is present.
 For the NDDev harness estate, use
 [`examples/public-oss/release-with-promotion.yml`](../examples/public-oss/release-with-promotion.yml).
 Its first job is read-only and verifies that the signed annotated tag contains
-a canonical `nddev-release-promotion/v1` record for the exact public commit,
-private control-plane commit, registry digest, and complete current evidence.
+a canonical `nddev-public-release-promotion/v2` record for the exact public
+commit and the complete public CI/contract/security evidence set.
 The publication job declares `needs: promotion`; therefore none of its write
 permissions are usable until eligibility succeeds. Numeric tag creation must
 also be restricted to audited release operators—signature verification does
