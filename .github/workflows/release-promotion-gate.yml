@@ -25,7 +25,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 10
     permissions:
-      actions: read
+      actions: read  # fetch exact public run/job evidence bound into the signed promotion record
       contents: read
     env:
       GH_TOKEN: ${{ github.token }}
