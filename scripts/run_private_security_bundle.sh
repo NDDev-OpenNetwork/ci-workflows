@@ -17,6 +17,7 @@ test "${RUNNER_ARCH:?}" = X64
 test -n "${GITHUB_WORKSPACE:?}"
 test -n "${RUNNER_TEMP:?}"
 test -n "${GH_TOKEN:?}"
+readonly zizmor_sarif="${ZIZMOR_SARIF_PATH:?}"
 readonly zizmor_target="${ZIZMOR_TARGET:-.}"
 readonly osv_lockfile="${OSV_LOCKFILE:-}"
 [[ "$zizmor_target" != /* && "$zizmor_target" != *..* ]]
@@ -25,6 +26,7 @@ if [[ -n "$osv_lockfile" ]]; then
   [[ "$osv_lockfile" != /* && "$osv_lockfile" != *..* ]]
   test -f "$GITHUB_WORKSPACE/$osv_lockfile"
 fi
+printf '{"version":"2.1.0","runs":[]}\n' > "$zizmor_sarif"
 
 tool_root="$(mktemp -d "${RUNNER_TEMP}/nddev-security-bundle.XXXXXXXX")"
 cleanup() { find "$tool_root" -depth -delete; }
@@ -71,9 +73,14 @@ run_gate() {
   printf '::endgroup::\n'
 }
 
+run_zizmor() {
+  uvx "zizmor@${zizmor_version}" --persona pedantic --min-severity low \
+    --format sarif "$zizmor_target" > "$zizmor_sarif"
+}
+
 cd "$GITHUB_WORKSPACE"
 run_gate actionlint actionlint -color
-run_gate zizmor uvx "zizmor@${zizmor_version}" --persona pedantic --min-severity low "$zizmor_target"
+run_gate zizmor run_zizmor
 if [[ -n "$osv_lockfile" ]]; then
   run_gate osv-scanner osv-scanner scan source --lockfile="$osv_lockfile"
 else

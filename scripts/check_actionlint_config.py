@@ -35,7 +35,7 @@ from ci_workflows_tools._strict_yaml import strict_load
 from ci_workflows_tools._workflow_yaml import WORKFLOWS_DIR, workflow_files
 
 CONFIG = Path(__file__).resolve().parent.parent / ".github/actionlint.yaml"
-EXPECTED_GLOB = ".github/workflows/{dart-flutter-ci,kotlin-android-ci,private-security-bundle,qt-ci}.yml"
+EXPECTED_GLOB = ".github/workflows/{dart-flutter-ci,kotlin-android-ci,nddev-security-bundle,qt-ci}.yml"
 SUPPRESSED = ("workflow_file_path", "workflow_repository", "workflow_sha")
 # actionlint's own model of the `job` context, as of v1.7.12.
 MODELLED = ("check_run_id", "container", "services", "status")
