@@ -28,10 +28,10 @@ an operating system this table does not list for it.
 | `.github/workflows/kotlin-android-ci.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/monorepo-changed-paths.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/mutation-testing.yml` | `linux-shell` | linux | shell only |
+| `.github/workflows/nddev-security-bundle.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/node-ci.yml` | `portable-shell` | linux, macos, windows | shell only |
 | `.github/workflows/osv-scan.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/pr-hygiene.yml` | `linux-shell` | linux | shell only |
-| `.github/workflows/private-security-bundle.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/private-static.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/public-codeql.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/public-dependency-review.yml` | `linux-shell` | linux | shell only |

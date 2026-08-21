@@ -14,9 +14,19 @@ concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  security-bundle:
+  secret-scan:
     permissions: { contents: read }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/private-security-bundle.yml@<sha>
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@<sha>
+    with:
+      runner: private-ci
+  actionlint:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/actionlint.yml@<sha>
+    with:
+      runner: private-ci
+  zizmor:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/zizmor-no-sarif.yml@<sha>
     with:
       runner: private-ci
   validate:
