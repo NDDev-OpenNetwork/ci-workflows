@@ -719,6 +719,10 @@
       }
     },
     "check_release_promotion_gate.py": {
+      "_check_renderer": {
+        "count": 1,
+        "profile": "shell-fixture"
+      },
       "_run": {
         "count": 1,
         "profile": "isolated-python-fixture"

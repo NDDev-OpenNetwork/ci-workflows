@@ -25,6 +25,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 10
     permissions:
+      actions: read
       contents: read
     env:
       GH_TOKEN: ${{ github.token }}
@@ -73,6 +74,8 @@ jobs:
           import pathlib
           import re
           import sys
+          import urllib.error
+          import urllib.request
 
           SCHEMA = "nddev-public-release-promotion/v2"
           MAX_AGE = dt.timedelta(hours=168)
@@ -108,6 +111,78 @@ jobs:
               if parsed.tzinfo != dt.timezone.utc:
                   fail(f"{label} must use UTC")
               return parsed
+
+          def fetch_evidence(role, source, repository):
+              source_pattern = re.compile(
+                  rf"https://github\.com/{re.escape(repository)}/actions/runs/"
+                  r"(?P<run>[1-9][0-9]*)(?:/job/(?P<job>[1-9][0-9]*))?"
+              )
+              match = source_pattern.fullmatch(source)
+              if match is None:
+                  fail(f"evidence {role} source is not an exact public run or job URL")
+              fixture_dir = os.environ.get("PROMOTION_EVIDENCE_DIR")
+              if fixture_dir:
+                  fixture = pathlib.Path(fixture_dir, f"{role}.json")
+                  if fixture.is_symlink() or not fixture.is_file():
+                      fail(f"evidence {role} fixture must be a regular non-symlink file")
+                  try:
+                      return json.loads(fixture.read_text(encoding="utf-8")), match.group("job") is not None
+                  except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                      fail(f"cannot read evidence {role} fixture: {exc}")
+              api_path = (
+                  f"actions/jobs/{match.group('job')}" if match.group("job")
+                  else f"actions/runs/{match.group('run')}"
+              )
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{repository}/{api_path}",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      return json.load(response), match.group("job") is not None
+              except (KeyError, OSError, urllib.error.HTTPError, json.JSONDecodeError) as exc:
+                  fail(f"cannot fetch evidence {role}: {exc}")
+
+          def verified_evidence(role, source, repository, public_sha):
+              payload, is_job = fetch_evidence(role, source, repository)
+              if not isinstance(payload, dict):
+                  fail(f"evidence {role} API payload must be an object")
+              if payload.get("status") != "completed" or payload.get("conclusion") != "success":
+                  fail(f"evidence {role} is not a completed successful check")
+              if payload.get("head_sha") != public_sha or payload.get("html_url") != source:
+                  fail(f"evidence {role} does not bind the exact public commit and URL")
+              if role == "public-contract":
+                  if not is_job or payload.get("name") != "static validators":
+                      fail("public-contract evidence must be the successful static validators job")
+                  fields = (
+                      "completed_at", "conclusion", "head_sha", "html_url", "id",
+                      "name", "run_id", "started_at", "status",
+                  )
+                  observed_at = payload.get("completed_at")
+              else:
+                  expected_name = "ci" if role == "public-ci" else None
+                  if is_job or payload.get("event") != "push" or payload.get("run_attempt") != 1:
+                      fail(f"evidence {role} must be a first-attempt push workflow run")
+                  if expected_name and payload.get("name") != expected_name:
+                      fail("public-ci evidence must be the successful ci workflow run")
+                  if role == "public-security" and payload.get("name") not in {"codeql", "gitleaks", "scorecard"}:
+                      fail("public-security evidence must be a supported security workflow run")
+                  fields = (
+                      "conclusion", "created_at", "event", "head_sha", "html_url", "id",
+                      "name", "run_attempt", "status", "updated_at", "workflow_id",
+                  )
+                  observed_at = payload.get("updated_at")
+              canonical_payload = {field: payload.get(field) for field in fields}
+              if any(value is None for value in canonical_payload.values()):
+                  fail(f"evidence {role} API payload is incomplete")
+              canonical = json.dumps(
+                  canonical_payload, ensure_ascii=True, separators=(",", ":"), sort_keys=True
+              )
+              return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest(), observed_at
 
           ref = read_json("PROMOTION_REF_JSON")
           tag = read_json("PROMOTION_TAG_JSON")
@@ -217,9 +292,13 @@ jobs:
                   fail(f"evidence {role} digest is malformed")
               if not isinstance(item["source"], str) or not item["source"].strip():
                   fail(f"evidence {role} source must be non-empty")
-              expected_source_prefix = f"https://github.com/{os.environ['PUBLIC_REPOSITORY']}/actions/runs/"
-              if not item["source"].startswith(expected_source_prefix):
-                  fail(f"evidence {role} source is outside the public repository")
+              verified_digest, verified_observed_at = verified_evidence(
+                  role, item["source"], os.environ["PUBLIC_REPOSITORY"], public_sha
+              )
+              if item["digest"] != verified_digest:
+                  fail(f"evidence {role} digest does not match the public API payload")
+              if item["observed_at"] != verified_observed_at:
+                  fail(f"evidence {role} observed_at does not match the public API payload")
               observed = timestamp(item["observed_at"], f"evidence {role} observed_at")
               if observed > generated + CLOCK_SKEW or generated - observed > MAX_AGE:
                   fail(f"evidence {role} is outside the accepted freshness window")

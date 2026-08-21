@@ -49,18 +49,19 @@ and the workflow cannot drift apart again.
 ### Producing the promotion record
 
 The record is generated in this public repository from three public evidence
-surfaces for the exact candidate commit: required CI, contract validation and
-security validation. Each source must be a URL under this repository and each
-digest must be independently computed from the named public result or artifact.
-No private repository read or private token is part of release verification.
+surfaces for the exact candidate commit: the completed `ci` push run, its
+successful `static validators` job, and one completed security push run. The
+renderer fetches each public GitHub API payload and computes its canonical
+digest; the promotion gate independently fetches the same payload, verifies the
+commit, result, workflow/job identity, URL and completion timestamp, and
+recomputes the digest. No private repository read or private token is part of
+release verification.
 
 ```bash
 scripts/render-public-promotion-record.sh \
   X.Y.Z NDDev-OpenNetwork/ci-workflows <public-commit> \
   <generated-at> <expires-at> \
-  <ci-run-url> sha256:<ci-evidence-digest> \
-  <contract-run-url> sha256:<contract-evidence-digest> \
-  <security-run-url> sha256:<security-evidence-digest> >promotion.json
+  <ci-run-url> <static-validators-job-url> <security-run-url> >promotion.json
 ```
 
 Then make that file the annotation of the signed tag — the gate reads the record
@@ -80,6 +81,8 @@ Three properties the gate checks that are easy to get wrong:
   a record generated last month cannot authorize today's tag.
 - `public_commit` must equal the commit the tag points at, and every evidence
   entry must name that same public commit.
+- Evidence digests and timestamps are not operator assertions: both are
+  reproduced from the public GitHub API response during release authorization.
 
 A GitHub-verified signature proves who signed; it does not prove they may ship.
 The protected `release` environment answers the second question.
