@@ -20,12 +20,18 @@ test -n "${GH_TOKEN:?}"
 readonly zizmor_sarif="${ZIZMOR_SARIF_PATH:?}"
 readonly zizmor_target="${ZIZMOR_TARGET:-.}"
 readonly osv_lockfile="${OSV_LOCKFILE:-}"
+readonly gitleaks_scan_scope="${GITLEAKS_SCAN_SCOPE:-ref-history}"
 [[ "$zizmor_target" != /* && "$zizmor_target" != *..* ]]
 test -e "$GITHUB_WORKSPACE/$zizmor_target"
 if [[ -n "$osv_lockfile" ]]; then
   [[ "$osv_lockfile" != /* && "$osv_lockfile" != *..* ]]
   test -f "$GITHUB_WORKSPACE/$osv_lockfile"
 fi
+case "$gitleaks_scan_scope" in
+  ref-history) readonly gitleaks_log_opts=HEAD ;;
+  all-refs) readonly gitleaks_log_opts=--all ;;
+  *) echo "GITLEAKS_SCAN_SCOPE must be ref-history or all-refs" >&2; exit 2 ;;
+esac
 printf '{"version":"2.1.0","runs":[]}\n' > "$zizmor_sarif"
 
 tool_root="$(mktemp -d "${RUNNER_TEMP}/nddev-security-bundle.XXXXXXXX")"
@@ -53,7 +59,7 @@ tar -xzf "$tool_root/gitleaks.tar.gz" -C "$tool_root/bin" gitleaks
 chmod 0700 "$tool_root/bin/gitleaks"
 test "$(gitleaks version)" = "$gitleaks_version"
 
-gitleaks_args=(detect --source "$GITHUB_WORKSPACE" --redact --no-banner --exit-code 1 --log-opts HEAD)
+gitleaks_args=(detect --source "$GITHUB_WORKSPACE" --redact --no-banner --exit-code 1 --log-opts "$gitleaks_log_opts")
 if [[ -n "${GITLEAKS_CONFIG_PATH:-}" ]]; then
   [[ "$GITLEAKS_CONFIG_PATH" != /* && "$GITLEAKS_CONFIG_PATH" != *..* ]]
   test -f "$GITHUB_WORKSPACE/$GITLEAKS_CONFIG_PATH"

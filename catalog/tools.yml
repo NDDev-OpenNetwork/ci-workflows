@@ -40,6 +40,7 @@ tools:
     used_by:
       - .github/workflows/actionlint.yml
       - .github/workflows/nddev-security-bundle.yml
+      - .github/workflows/private-security-bundle-free.yml
     last_verified: "2026-07-04"
 
   - id: zizmor
@@ -50,6 +51,7 @@ tools:
     pin: null
     used_by:
       - .github/workflows/nddev-security-bundle.yml
+      - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/zizmor-sarif.yml
       - .github/workflows/zizmor-no-sarif.yml
     last_verified: "2026-07-04"
@@ -63,6 +65,7 @@ tools:
     binary_release: "linux_x64 size:8230402 sha256:551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
     used_by:
       - .github/workflows/nddev-security-bundle.yml
+      - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/secret-scan.yml
     last_verified: "2026-08-13"
 
@@ -195,6 +198,7 @@ tools:
       - .github/workflows/osv-scan.yml
       - .github/workflows/pr-hygiene.yml
       - .github/workflows/nddev-security-bundle.yml
+      - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/private-static.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-dependency-review.yml
@@ -411,6 +415,7 @@ tools:
     used_by:
       - .github/workflows/osv-scan.yml
       - .github/workflows/nddev-security-bundle.yml
+      - .github/workflows/private-security-bundle-free.yml
     last_verified: "2026-08-15"
 
   - id: semgrep
@@ -497,6 +502,7 @@ tools:
       - .github/workflows/ci.yml
       - .github/workflows/maintenance.yml
       - .github/workflows/nddev-security-bundle.yml
+      - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/private-static.yml
       - .github/workflows/python-ci.yml
       - .github/workflows/qt-ci.yml

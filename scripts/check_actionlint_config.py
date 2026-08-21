@@ -5,7 +5,7 @@
 current release, and the one `actionlint.yml` pins — models the `job` context as
 `{check_run_id, container, services, status}` and therefore reports
 `job.workflow_repository`, `job.workflow_sha` and `job.workflow_file_path` as
-undefined. Those three are real, and four reusables need them to name themselves
+undefined. Those three are real, and five reusables need them to name themselves
 rather than their caller.
 
 A suppression is a hole in a gate, so it gets a gate of its own. This validator
@@ -35,7 +35,7 @@ from ci_workflows_tools._strict_yaml import strict_load
 from ci_workflows_tools._workflow_yaml import WORKFLOWS_DIR, workflow_files
 
 CONFIG = Path(__file__).resolve().parent.parent / ".github/actionlint.yaml"
-EXPECTED_GLOB = ".github/workflows/{dart-flutter-ci,kotlin-android-ci,nddev-security-bundle,qt-ci}.yml"
+EXPECTED_GLOB = ".github/workflows/{dart-flutter-ci,kotlin-android-ci,nddev-security-bundle,private-security-bundle-free,qt-ci}.yml"
 SUPPRESSED = ("workflow_file_path", "workflow_repository", "workflow_sha")
 # actionlint's own model of the `job` context, as of v1.7.12.
 MODELLED = ("check_run_id", "container", "services", "status")
