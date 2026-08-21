@@ -200,6 +200,10 @@ jobs:
               fail(f"evidence roles must equal exactly {sorted(REQUIRED_ROLES)}")
           if roles != sorted(roles):
               fail("evidence records must be sorted by role")
+          sources = [item["source"] for item in evidence]
+          digests = [item["digest"] for item in evidence]
+          if len(set(sources)) != len(REQUIRED_ROLES) or len(set(digests)) != len(REQUIRED_ROLES):
+              fail("each evidence role must carry an independent source and digest")
 
           evidence_keys = {"digest", "observed_at", "public_commit", "result", "role", "source"}
           for item in evidence:
@@ -213,6 +217,9 @@ jobs:
                   fail(f"evidence {role} digest is malformed")
               if not isinstance(item["source"], str) or not item["source"].strip():
                   fail(f"evidence {role} source must be non-empty")
+              expected_source_prefix = f"https://github.com/{os.environ['PUBLIC_REPOSITORY']}/actions/runs/"
+              if not item["source"].startswith(expected_source_prefix):
+                  fail(f"evidence {role} source is outside the public repository")
               observed = timestamp(item["observed_at"], f"evidence {role} observed_at")
               if observed > generated + CLOCK_SKEW or generated - observed > MAX_AGE:
                   fail(f"evidence {role} is outside the accepted freshness window")
