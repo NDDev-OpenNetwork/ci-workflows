@@ -22,6 +22,7 @@ HARDEN_RUNNER = (
 HARDENED_WORKFLOWS = {
     "ci.yml",
     "maintenance.yml",
+    "nddev-security-bundle.yml",
     "public-codeql.yml",
     "public-dependency-review.yml",
     "public-scorecard-json.yml",

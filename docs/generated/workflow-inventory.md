@@ -30,10 +30,10 @@
 | `.github/workflows/maintenance.yml` | internal | internal |
 | `.github/workflows/monorepo-changed-paths.yml` | `monorepo-changed-paths` | ga |
 | `.github/workflows/mutation-testing.yml` | `mutation-testing` | ga |
+| `.github/workflows/nddev-security-bundle.yml` | `nddev-security-bundle` | preview |
 | `.github/workflows/node-ci.yml` | `node-ci` | ga |
 | `.github/workflows/osv-scan.yml` | `osv-scanner-sca` | ga |
 | `.github/workflows/pr-hygiene.yml` | `pr-hygiene` | ga |
-| `.github/workflows/private-security-bundle.yml` | `private-security-bundle` | preview |
 | `.github/workflows/private-static.yml` | `private-static-validation` | ga |
 | `.github/workflows/public-codeql.yml` | `codeql-code-scanning` | ga |
 | `.github/workflows/public-dependency-review.yml` | `dependency-review` | ga |

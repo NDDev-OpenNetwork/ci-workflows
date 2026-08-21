@@ -39,7 +39,7 @@ tools:
     pin: null
     used_by:
       - .github/workflows/actionlint.yml
-      - .github/workflows/private-security-bundle.yml
+      - .github/workflows/nddev-security-bundle.yml
     last_verified: "2026-07-04"
 
   - id: zizmor
@@ -49,7 +49,7 @@ tools:
     current_version: "1.26.1"
     pin: null
     used_by:
-      - .github/workflows/private-security-bundle.yml
+      - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/zizmor-sarif.yml
       - .github/workflows/zizmor-no-sarif.yml
     last_verified: "2026-07-04"
@@ -62,7 +62,7 @@ tools:
     pin: "zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
     binary_release: "linux_x64 size:8230402 sha256:551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
     used_by:
-      - .github/workflows/private-security-bundle.yml
+      - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/secret-scan.yml
     last_verified: "2026-08-13"
 
@@ -96,6 +96,7 @@ tools:
     used_by:
       - .github/workflows/ci.yml
       - .github/workflows/maintenance.yml
+      - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-dependency-review.yml
       - .github/workflows/public-scorecard-json.yml
@@ -112,6 +113,7 @@ tools:
     current_version: "v4.37.5"
     pin: "github/codeql-action@d1ba80a13dd99fba24a470575428917156a28b43"
     used_by:
+      - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-scorecard.yml
       - .github/workflows/zizmor-sarif.yml
@@ -192,7 +194,7 @@ tools:
       - .github/workflows/node-ci.yml
       - .github/workflows/osv-scan.yml
       - .github/workflows/pr-hygiene.yml
-      - .github/workflows/private-security-bundle.yml
+      - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/private-static.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-dependency-review.yml
@@ -408,7 +410,7 @@ tools:
     pin: null
     used_by:
       - .github/workflows/osv-scan.yml
-      - .github/workflows/private-security-bundle.yml
+      - .github/workflows/nddev-security-bundle.yml
     last_verified: "2026-08-15"
 
   - id: semgrep
@@ -494,7 +496,7 @@ tools:
     used_by:
       - .github/workflows/ci.yml
       - .github/workflows/maintenance.yml
-      - .github/workflows/private-security-bundle.yml
+      - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/private-static.yml
       - .github/workflows/python-ci.yml
       - .github/workflows/qt-ci.yml

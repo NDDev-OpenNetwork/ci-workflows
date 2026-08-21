@@ -198,7 +198,7 @@ capabilities:
     cluster: security-scanning
     status: ga
     public_oss: free
-    private_free: free
+    private_free: unavailable
     private_paid: available
     workflow: .github/workflows/secret-scan.yml
     example: examples/private-free/security.yml
@@ -210,7 +210,9 @@ capabilities:
       container: ["container-runtime"]
       binary: []
     required_permissions:
+      - "actions: read"
       - "contents: read"
+      - "security-events: write"
     required_settings: []
     risks:
       - "Digest-pinned container image must be bumped by Dependabot to stay current"
@@ -248,14 +250,14 @@ capabilities:
     sources:
       - "https://github.com/rhysd/actionlint"
 
-  - id: private-security-bundle
+  - id: nddev-security-bundle
     name: Consolidated private security bundle
     cluster: security-scanning
     status: preview
     public_oss: unavailable
     private_free: free
     private_paid: available
-    workflow: .github/workflows/private-security-bundle.yml
+    workflow: .github/workflows/nddev-security-bundle.yml
     example: examples/nddev/security-private-selfhosted.yml
     required_permissions:
       - "contents: read"
@@ -263,6 +265,7 @@ capabilities:
       - "Linux X64 ephemeral private runner"
     risks:
       - "Private repositories only; a public fork must never reach a self-hosted runner"
+      - "Requires GitHub Code Security because zizmor SARIF upload is preserved; private-free callers keep the no-SARIF workflows"
       - "Four gates share one failure domain, but the script executes and summarizes every gate before returning failure"
       - "The called workflow fetches its implementation from job.workflow_repository at exact job.workflow_sha outside the caller workspace"
       - "Downloaded actionlint, OSV-Scanner, and gitleaks artifacts are checksum-pinned; zizmor is uvx version-pinned"

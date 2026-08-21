@@ -53,7 +53,7 @@ jobs:
       runner: nddev-linux-standard
   security-bundle:
     permissions: { contents: read }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/private-security-bundle.yml@<sha>
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/nddev-security-bundle.yml@<sha>
     with:
       runner: nddev-linux-standard
   dependency-review:
