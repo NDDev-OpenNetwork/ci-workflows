@@ -198,7 +198,7 @@ capabilities:
     cluster: security-scanning
     status: ga
     public_oss: free
-    private_free: unavailable
+    private_free: free
     private_paid: available
     workflow: .github/workflows/secret-scan.yml
     example: examples/private-free/security.yml
@@ -210,9 +210,7 @@ capabilities:
       container: ["container-runtime"]
       binary: []
     required_permissions:
-      - "actions: read"
       - "contents: read"
-      - "security-events: write"
     required_settings: []
     risks:
       - "Digest-pinned container image must be bumped by Dependabot to stay current"
@@ -255,12 +253,14 @@ capabilities:
     cluster: security-scanning
     status: preview
     public_oss: unavailable
-    private_free: free
+    private_free: unavailable
     private_paid: available
     workflow: .github/workflows/nddev-security-bundle.yml
     example: examples/nddev/security-private-selfhosted.yml
     required_permissions:
+      - "actions: read"
       - "contents: read"
+      - "security-events: write"
     required_settings:
       - "Linux X64 ephemeral private runner"
     risks:
@@ -271,6 +271,33 @@ capabilities:
       - "Downloaded actionlint, OSV-Scanner, and gitleaks artifacts are checksum-pinned; zizmor is uvx version-pinned"
     deprecations: null
     last_verified: "2026-08-21"
+    sources:
+      - "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-context"
+      - "https://github.com/rhysd/actionlint"
+      - "https://github.com/woodruffw/zizmor"
+      - "https://github.com/google/osv-scanner"
+      - "https://github.com/gitleaks/gitleaks"
+
+  - id: private-security-bundle-free
+    name: Consolidated private-free security bundle
+    cluster: security-scanning
+    status: preview
+    public_oss: unavailable
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/private-security-bundle-free.yml
+    example: examples/private-free/security-selfhosted.yml
+    required_permissions:
+      - "contents: read"
+    required_settings:
+      - "Linux X64 ephemeral private runner"
+    risks:
+      - "Private repositories only; public forks must never reach self-hosted capacity"
+      - "zizmor findings remain an enforced log gate but are intentionally not uploaded to code scanning"
+      - "Four gates share one failure domain, but every gate executes before aggregate failure"
+      - "Called-workflow implementation is fetched at exact job.workflow_sha outside the caller workspace"
+    deprecations: null
+    last_verified: "2026-08-22"
     sources:
       - "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-context"
       - "https://github.com/rhysd/actionlint"

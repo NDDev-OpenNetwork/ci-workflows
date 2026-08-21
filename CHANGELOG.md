@@ -19,6 +19,9 @@ The project follows Semantic Versioning.
 
 ### Changed
 
+- Added a no-SARIF consolidated private-free security bundle so actionlint,
+  zizmor, OSV-Scanner, and gitleaks share one ephemeral placement without paid
+  code-scanning permissions.
 - Added a private-only consolidated security reusable that runs actionlint,
   zizmor, OSV-Scanner, and gitleaks in one ephemeral job, eliminating three
   independent cold placements per security wave.

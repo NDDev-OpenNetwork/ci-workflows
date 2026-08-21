@@ -55,6 +55,7 @@ groups:
       - .github/workflows/osv-scan.yml
       - .github/workflows/pr-hygiene.yml
       - .github/workflows/nddev-security-bundle.yml
+      - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/private-static.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-dependency-review.yml
