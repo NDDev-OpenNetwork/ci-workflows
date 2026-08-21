@@ -7,6 +7,14 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-21
+
+### Fixed
+
+- Granted the release caller the same read-only Actions scope required by its
+  reusable promotion gate, and added a static transitive-permission check so a
+  tag cannot fail during workflow startup before evidence verification.
+
 ## [0.1.2] - 2026-08-21
 
 ### Changed

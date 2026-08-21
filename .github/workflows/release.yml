@@ -177,6 +177,7 @@ jobs:
     name: Verify release promotion
     needs: resolve
     permissions:
+      actions: read  # allow the reusable gate to fetch exact public run/job evidence
       contents: read
     uses: ./.github/workflows/release-promotion-gate.yml
     with:
