@@ -19,8 +19,10 @@ for digest in "${ci_digest}" "${contract_digest}" "${security_digest}"; do
   [[ ${digest} =~ ^sha256:[0-9a-f]{64}$ ]]
 done
 for source in "${ci_source}" "${contract_source}" "${security_source}"; do
-  [[ ${source} == https://github.com/${repository}/* ]]
+  [[ ${source} == https://github.com/${repository}/actions/runs/* ]]
 done
+[[ ${ci_source} != "${contract_source}" && ${ci_source} != "${security_source}" && ${contract_source} != "${security_source}" ]]
+[[ ${ci_digest} != "${contract_digest}" && ${ci_digest} != "${security_digest}" && ${contract_digest} != "${security_digest}" ]]
 
 jq -S -c -n \
   --arg schema nddev-public-release-promotion/v2 \

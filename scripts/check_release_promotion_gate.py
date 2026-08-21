@@ -49,13 +49,14 @@ def _timestamp(value: dt.datetime) -> str:
 
 
 def _evidence(role: str) -> dict[str, Any]:
+    index = {"public-ci": 1, "public-contract": 2, "public-security": 3}[role]
     return {
-        "digest": "sha256:" + "4" * 64,
+        "digest": "sha256:" + str(index + 3) * 64,
         "observed_at": _timestamp(NOW - dt.timedelta(hours=1)),
         "public_commit": PUBLIC_SHA,
         "result": "success",
         "role": role,
-        "source": "https://github.com/NDDev-OpenNetwork/nddev-example-app/actions/runs/1",
+        "source": f"https://github.com/NDDev-OpenNetwork/nddev-example-app/actions/runs/{index}",
     }
 
 
@@ -200,6 +201,22 @@ def check() -> list[str]:
         (
             "failed evidence",
             _mutate(_record(), lambda r: r["evidence"][0].__setitem__("result", "failure")),
+            True,
+        ),
+        (
+            "duplicate evidence source",
+            _mutate(
+                _record(),
+                lambda r: r["evidence"][1].__setitem__("source", r["evidence"][0]["source"]),
+            ),
+            True,
+        ),
+        (
+            "cross-repository evidence source",
+            _mutate(
+                _record(),
+                lambda r: r["evidence"][0].__setitem__("source", "https://github.com/other/repo/actions/runs/1"),
+            ),
             True,
         ),
         (
