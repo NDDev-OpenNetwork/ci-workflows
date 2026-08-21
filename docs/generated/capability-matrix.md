@@ -65,6 +65,7 @@
 | OpenSSF Scorecard SARIF (`ossf-scorecard`) | security-scanning | ga | free | unavailable | unavailable | `.github/workflows/public-scorecard.yml` | `examples/public-oss/scorecard-sarif.yml` |
 | OpenSSF Scorecard read-only SARIF analysis (`ossf-scorecard-analysis`) | security-scanning | ga | conditional | unavailable | unavailable | `.github/workflows/public-scorecard-analysis.yml` | `examples/public-oss/scorecard-analysis.yml` |
 | OpenSSF Scorecard JSON artifact (`ossf-scorecard-json`) | security-scanning | ga | free | unavailable | unavailable | `.github/workflows/public-scorecard-json.yml` | `examples/public-oss/scorecard.yml` |
+| Consolidated private security bundle (`private-security-bundle`) | security-scanning | preview | unavailable | free | available | `.github/workflows/private-security-bundle.yml` | `examples/nddev/security-private-selfhosted.yml` |
 | Rust supply-chain checks (cargo-deny + cargo-audit + cargo-machete) (`rust-supply-chain`) | security-scanning | ga | free | free | available | `.github/workflows/rust-supply-chain.yml` | `examples/security/rust-supply-chain.yml` |
 | Semgrep OSS SAST (`semgrep-sast`) | security-scanning | ga | free | free | available | `.github/workflows/semgrep-ci.yml` | `examples/security/semgrep.yml` |
 | zizmor workflow security scanner (`zizmor`) | security-scanning | ga | free | unavailable | available | `.github/workflows/zizmor-sarif.yml` | `-` |
@@ -80,4 +81,4 @@
 | SLSA build provenance (`slsa-build-provenance`) | supply-chain | ga | free | paid | conditional | `.github/workflows/release-supply-chain.yml` | `-` |
 
 ---
-Source data verified through: 2026-08-13
+Source data verified through: 2026-08-21

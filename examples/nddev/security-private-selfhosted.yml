@@ -33,11 +33,9 @@
 # entity and its scale sets are rolled out. Until then this file documents the
 # intended routing; a caller that needs to run today names a hosted runner.
 #
-# The class is not cosmetic. `secret-scan` runs gitleaks as a digest-pinned
-# container, so it needs the class that has a Docker daemon; on
-# `nddev-linux-standard` it fails at `docker run`. Everything else here is a
-# scanner that uploads SARIF, so it needs repository-scoped credentials and
-# belongs on `nddev-linux-standard` rather than the credential-free fast class.
+# The consolidated bundle runs checksum-verified Linux binaries and therefore
+# needs no Docker daemon. actionlint, zizmor, OSV-Scanner and gitleaks share one
+# checkout and one ephemeral standard worker instead of four cold placements.
 name: security
 on:
   push: { branches: [main] }
@@ -53,28 +51,13 @@ jobs:
     with:
       languages: '["python","actions"]'
       runner: nddev-linux-standard
-  secret-scan:
+  security-bundle:
     permissions: { contents: read }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@<sha>
-    with:
-      runner: nddev-linux-integration  # gitleaks runs as a container
-  actionlint:
-    permissions: { contents: read }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/actionlint.yml@<sha>
-    with:
-      runner: nddev-linux-standard
-  zizmor:
-    permissions: { actions: read, contents: read, security-events: write }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/zizmor-sarif.yml@<sha>
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/private-security-bundle.yml@<sha>
     with:
       runner: nddev-linux-standard
   dependency-review:
     permissions: { contents: read, pull-requests: write }
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-dependency-review.yml@<sha>
-    with:
-      runner: nddev-linux-standard
-  osv-scan:
-    permissions: { contents: read }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/osv-scan.yml@<sha>
     with:
       runner: nddev-linux-standard
