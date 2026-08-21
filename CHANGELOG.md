@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-21
+
 ### Changed
 
 - Replaced the private-era release promotion payload with
@@ -22,8 +24,12 @@ The project follows Semantic Versioning.
   Python 3.13.14, hash-locked dependencies and the repository package launcher,
   so a clean consumer checkout can verify the exact pin without ambient Python
   packages.
+- Reconciled the public release ledger with the immutable `0.1.1` tag. That
+  first publication attempt remains intentionally unreleased after its
+  tag-date preflight failed; this version carries the corrected public-native
+  promotion graph forward without moving or deleting the signed tag.
 
-## [0.1.1] - 2026-08-16
+## [0.1.1] - 2026-08-21
 
 First release of `ci-workflows` as an open-source library under
 `NDDev-OpenNetwork`. The version line starts here: consumers pin these workflows
