@@ -18,6 +18,7 @@ from ci_workflows_tools._workflow_yaml import WORKFLOWS_DIR, load_yaml
 from ci_workflows_tools.check_python_execution_contract import clean_environment
 
 WORKFLOW = WORKFLOWS_DIR / "release-promotion-gate.yml"
+RELEASE_WORKFLOW = WORKFLOWS_DIR / "release.yml"
 RENDERER = WORKFLOW.parents[2] / "scripts" / "render-public-promotion-record.sh"
 NOW = dt.datetime(2026, 8, 5, 12, 0, tzinfo=dt.timezone.utc)
 PUBLIC_REPOSITORY = "NDDev-OpenNetwork/nddev-example-app"
@@ -253,9 +254,22 @@ def check() -> list[str]:
     problems: list[str] = _check_renderer()
     try:
         workflow = load_yaml(WORKFLOW)
+        release_workflow = load_yaml(RELEASE_WORKFLOW)
         program = _program(workflow)
     except (OSError, ValueError, TypeError) as exc:
         return [str(exc)]
+
+    called_permissions = workflow.get("jobs", {}).get("promotion", {}).get("permissions", {})
+    caller_permissions = release_workflow.get("jobs", {}).get("promotion", {}).get("permissions", {})
+    levels = {None: 0, "none": 0, "read": 1, "write": 2}
+    if not isinstance(called_permissions, dict) or not isinstance(caller_permissions, dict):
+        problems.append("promotion caller and reusable job permissions must be mappings")
+    else:
+        for scope, required in called_permissions.items():
+            if levels.get(caller_permissions.get(scope), -1) < levels.get(required, -1):
+                problems.append(
+                    f"release promotion caller does not grant reusable scope {scope}: {required}"
+                )
 
     positive = _run(program, _record())
     if positive.returncode != 0:
