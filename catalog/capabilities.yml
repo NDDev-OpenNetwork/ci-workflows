@@ -293,9 +293,10 @@ capabilities:
       - "Linux X64 ephemeral private runner"
     risks:
       - "Private repositories only; public forks must never reach self-hosted capacity"
-      - "zizmor findings remain an enforced log gate but are intentionally not uploaded to code scanning"
+      - "SARIF remains an artifact rather than a code-scanning upload because private-free repositories have no security-events entitlement"
       - "Four gates share one failure domain, but every gate executes before aggregate failure"
       - "Called-workflow implementation is fetched at exact job.workflow_sha outside the caller workspace"
+      - "Gitleaks evidence is fully redacted before the always-uploaded one-day artifact is created"
     deprecations: null
     last_verified: "2026-08-22"
     sources:

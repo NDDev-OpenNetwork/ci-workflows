@@ -27,6 +27,10 @@ on:
         description: 'Optional repository-relative lockfile; empty scans recursively.'
         type: string
         default: ''
+      evidence_artifact_name:
+        description: 'Artifact name for redacted machine-readable security evidence.'
+        type: string
+        default: 'private-security-evidence'
 
 permissions: {}
 
@@ -98,4 +102,21 @@ jobs:
           ZIZMOR_TARGET: ${{ inputs.zizmor_target }}
           OSV_LOCKFILE: ${{ inputs.osv_lockfile }}
           ZIZMOR_SARIF_PATH: ${{ runner.temp }}/private-security-zizmor.sarif
+          OSV_SARIF_PATH: ${{ runner.temp }}/private-security-osv.sarif
+          GITLEAKS_SARIF_PATH: ${{ runner.temp }}/private-security-gitleaks.sarif
+          ACTIONLINT_LOG_PATH: ${{ runner.temp }}/private-security-actionlint.log
         run: "$PRIVATE_SECURITY_BUNDLE_SCRIPT"
+
+      - name: Upload redacted security evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: ${{ inputs.evidence_artifact_name }}
+          path: |
+            ${{ runner.temp }}/private-security-actionlint.log
+            ${{ runner.temp }}/private-security-zizmor.sarif
+            ${{ runner.temp }}/private-security-osv.sarif
+            ${{ runner.temp }}/private-security-gitleaks.sarif
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 9

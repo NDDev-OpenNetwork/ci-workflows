@@ -9,6 +9,9 @@ The project follows Semantic Versioning.
 
 ### Changed
 
+- Strengthened the consolidated private-free security bundle without adding a
+  placement: actionlint logs plus Zizmor, OSV and fully redacted Gitleaks SARIF
+  are always retained as a one-day artifact, including on aggregate failure.
 - Made preservation of started jobs a library invariant. All self-workflows and
   consumer examples now use `cancel-in-progress: false`; the executable
   workflow contract rejects future cancellation expressions, and the

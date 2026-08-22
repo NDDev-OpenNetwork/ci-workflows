@@ -100,6 +100,18 @@ For a zero-GitHub-meter caller, use
 [`examples/private-free/security-selfhosted.yml`](../examples/private-free/security-selfhosted.yml)
 and replace its placeholder runner label with a private, isolated fleet label.
 
+## Consolidated private-fleet security
+
+`private-security-bundle-free.yml` runs actionlint, zizmor, OSV-Scanner and
+Gitleaks in one private Linux placement. All four gates execute before the job
+aggregates failure. The job always uploads one-day evidence containing the
+actionlint log plus Zizmor, OSV and fully redacted Gitleaks SARIF reports; it
+does not require or attempt a paid code-scanning upload.
+
+Use this workflow when placement latency and fleet contention cost more than
+the limited failure-domain isolation of four separate jobs. Public fork code
+must remain on GitHub-hosted runners and must never call this private lane.
+
 ## actionlint (`actionlint.yml`)
 
 Lints workflow YAML for syntax errors, expression typos, and deprecated usage.
