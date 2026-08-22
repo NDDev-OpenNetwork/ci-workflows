@@ -12,6 +12,9 @@ The project follows Semantic Versioning.
 - Strengthened the consolidated private-free security bundle without adding a
   placement: actionlint logs plus Zizmor, OSV and fully redacted Gitleaks SARIF
   are always retained as a one-day artifact, including on aggregate failure.
+- Completed the no-cancel invariant for queued work: every self-workflow and
+  example now uses a run-id-unique concurrency group, because GitHub retains
+  only one pending run in a shared group even when cancellation is false.
 - Made preservation of started jobs a library invariant. All self-workflows and
   consumer examples now use `cancel-in-progress: false`; the executable
   workflow contract rejects future cancellation expressions, and the

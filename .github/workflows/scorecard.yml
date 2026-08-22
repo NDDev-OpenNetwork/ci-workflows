@@ -10,7 +10,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: scorecard-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

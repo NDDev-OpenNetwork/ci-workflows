@@ -5,7 +5,7 @@ on:
   pull_request: { branches: [main] }
 permissions: {}
 concurrency:
-  group: rust-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 jobs:
   rust:

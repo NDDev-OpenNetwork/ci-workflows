@@ -26,7 +26,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: maintenance-${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

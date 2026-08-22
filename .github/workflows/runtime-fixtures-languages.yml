@@ -39,7 +39,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: runtime-fixtures-languages-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

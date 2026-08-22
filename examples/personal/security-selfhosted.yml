@@ -31,7 +31,7 @@ on:
   workflow_dispatch:
 permissions: {}
 concurrency:
-  group: security-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 jobs:
   secret-scan:
