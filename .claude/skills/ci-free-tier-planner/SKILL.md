@@ -4,8 +4,6 @@ description: Select and continuously verify zero-cost or bounded-cost CI for pub
   fact ledger, normalized resource units, plan gates, and no-surprise-spend controls. Use for CI provider/tier architecture
   and budgeting.
 license: AGPL-3.0-or-later
-compatibility: Codex and Agent Skills compatible; OpenCode discovers .agents/skills. Generate .claude/skills mirrors for Claude
-  Code.
 metadata:
   version: 1.0.0
   owner: NDDev
@@ -134,7 +132,8 @@ Recommended default:
 - use included GitHub minutes for high-signal PR gates;
 - use OSS scanners in pass/fail or artifact mode when private SARIF/product UI is gated;
 - use attestation-free checksummed release on Free/Pro/Team; attest only on GHEC or via a separately modeled external signing system;
-- aggressively cancel superseded runs, bound matrices, and retain artifacts briefly;
+- avoid duplicate triggers before execution, never cancel a started job, bound
+  matrices, and retain artifacts briefly;
 - use self-hosted capacity only with a real isolation/operations budget;
 - external providers may spread quota but add secret, data, maintenance, and semantic complexity.
 

@@ -20,7 +20,7 @@ concurrency:
   # Cancel superseded PR iterations, but never a queued merge-group candidate
   # or a main push: cancelling those makes branch protection observe a
   # partial-cancel status instead of a decisive result.
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   # Blocking tier. Every check here is a property of the tree in hand, so it can

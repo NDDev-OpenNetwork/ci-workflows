@@ -9,6 +9,11 @@ The project follows Semantic Versioning.
 
 ### Changed
 
+- Made preservation of started jobs a library invariant. All self-workflows and
+  consumer examples now use `cancel-in-progress: false`; the executable
+  workflow contract rejects future cancellation expressions, and the
+  performance skills optimize duplicate work before execution instead of
+  erasing in-flight evidence.
 - Added opt-in preinstalled-toolchain paths to Go and Java CI. Immutable
   ephemeral runners verify exact baked Go/gofmt and Java/Maven commands and
   skip redundant setup-action downloads; hosted callers keep existing setup.

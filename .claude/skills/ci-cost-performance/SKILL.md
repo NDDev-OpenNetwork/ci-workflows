@@ -3,10 +3,8 @@ name: ci-cost-performance
 description: Optimize CI latency, throughput, cache behavior, matrices, artifacts, runner capacity, and spend without weakening
   correctness or trust boundaries. Use for slow, queued, expensive, or quota-constrained pipelines.
 license: AGPL-3.0-or-later
-compatibility: Codex and Agent Skills compatible; OpenCode discovers .agents/skills. Generate .claude/skills mirrors for Claude
-  Code.
 metadata:
-  version: 1.1.0
+  version: 1.2.0
   owner: NDDev
   status: proposed
   reviewed_at: '2026-08-01'
@@ -20,7 +18,10 @@ Reduce feedback time and normalized resource consumption while preserving test s
 
 ## Measurement contract
 
-Record over a representative window:
+Record from unmodified real project runs over a representative window. Do not
+create synthetic, canary, soak, burst, or benchmark fleet traffic merely to
+measure the platform; artifact construction may verify its own output but is
+not runtime evidence for the fleet.
 
 - event volume and duplicate/superseded runs;
 - queue time, setup time, execution time, critical path, p50/p95/p99;
@@ -42,7 +43,10 @@ Use the job DAG and actual durations. Optimize the longest dependency chain firs
 
 ### 2. Eliminate waste before adding capacity
 
-- Cancel superseded branch/PR runs with correct concurrency groups.
+- Do not cancel a job once it has started. Preserve its result as evidence and
+  let newer work queue or run in parallel. Remove duplicate triggers, collapse
+  redundant DAG nodes, and route work before execution instead of erasing an
+  in-flight result with `cancel-in-progress`.
 - Avoid duplicate push and pull-request execution for the same commit unless each has a distinct trust contract.
 - Use path routing only when it fails closed and handles merge base, force push, rename/delete, root commit, and unusual filenames.
 - Remove dead matrix cells and duplicate scanners.
@@ -59,6 +63,13 @@ Use the job DAG and actual durations. Optimize the longest dependency chain firs
 ### 4. Make caches correct first
 
 Cache keys include dependency lock digest, tool/runtime version, OS, architecture, and behavior-changing config. Measure whether cache transfer costs more than rebuild. Never share less-trusted caches into privileged jobs. Avoid caching build outputs whose correctness depends on hidden environment state.
+
+On immutable ephemeral runners, a locally warm cache does not exist. Verify
+that every enabled language cache resolves the actual lock file (including a
+monorepo subdirectory), and record hit/miss, restore/save duration, bytes and
+trust/ref scope from real job telemetry. Compiler caches such as `sccache` do
+not replace package/module caches such as `GOMODCACHE`, pnpm store, Bun cache,
+uv cache, Cargo registry or Maven repository.
 
 ### 5. Control artifacts and logs
 
@@ -109,6 +120,8 @@ Return baseline metrics, bottleneck proof, proposed change, expected model, expe
 - hiding slow tests on an optional schedule;
 - comparing credits to minutes without resource class;
 - claiming savings from one warm run.
+- cancelling an in-flight run and counting the missing result as saved time;
+- claiming a compiler cache also covers dependency downloads.
 
 ## Primary reference anchors
 

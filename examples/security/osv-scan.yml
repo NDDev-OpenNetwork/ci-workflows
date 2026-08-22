@@ -6,7 +6,7 @@ on:
 permissions: {}
 concurrency:
   group: osv-scan-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   osv-scan:
     permissions: { contents: read }

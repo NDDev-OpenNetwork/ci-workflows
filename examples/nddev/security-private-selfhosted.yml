@@ -43,7 +43,7 @@ on:
 permissions: {}
 concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   codeql:
     permissions: { actions: read, contents: read, security-events: write }

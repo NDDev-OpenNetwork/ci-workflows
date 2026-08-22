@@ -6,7 +6,7 @@ on:
 permissions: {}
 concurrency:
   group: java-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   java:
     permissions: { contents: read }

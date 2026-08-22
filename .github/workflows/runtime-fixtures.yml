@@ -40,7 +40,7 @@ permissions: {}
 
 concurrency:
   group: runtime-fixtures-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # required-gate — the workflow-lint lane, including its Linux X64 runner guard

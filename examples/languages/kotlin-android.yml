@@ -6,7 +6,7 @@ on:
 permissions: {}
 concurrency:
   group: kotlin-android-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   kotlin-android:
     permissions: { contents: read }

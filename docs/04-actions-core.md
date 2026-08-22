@@ -100,7 +100,9 @@ Cancel superseded runs and serialize releases with a `concurrency` group.
 ```yaml
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true     # false for releases — never cancel a publish
+  # Preserve every started job as evidence. Remove duplicate triggers before
+  # execution instead of cancelling an in-flight result.
+  cancel-in-progress: false
 ```
 
 ## Matrix
