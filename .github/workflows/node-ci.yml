@@ -26,6 +26,14 @@ on:
         description: 'Expected npm version bundled with the selected Node.js release.'
         type: string
         default: '11.17.0'
+      cache:
+        description: 'Optional setup-node cache backend: empty, npm, pnpm, or yarn.'
+        type: string
+        default: ''
+      cache_dependency_path:
+        description: 'Optional dependency lockfile/glob used to derive the Node cache key.'
+        type: string
+        default: ''
       bun_version:
         description: 'Exact Bun version.'
         type: string
@@ -85,6 +93,8 @@ jobs:
           BUN_VERSION: ${{ inputs.bun_version }}
           PNPM_VERSION: ${{ inputs.pnpm_version }}
           YARN_VERSION: ${{ inputs.yarn_version }}
+          CACHE: ${{ inputs.cache }}
+          CACHE_DEPENDENCY_PATH: ${{ inputs.cache_dependency_path }}
         run: |
           set -euo pipefail
           case "$PACKAGE_MANAGER" in bun|npm|pnpm|yarn) ;; *)
@@ -95,6 +105,18 @@ jobs:
             [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           done
           [[ "$PREINSTALLED" == true || "$PREINSTALLED" == false ]]
+          case "$CACHE" in ''|npm|pnpm|yarn) ;; *)
+            echo "unsupported Node cache backend: $CACHE" >&2
+            exit 2
+          esac
+          if [[ -n "$CACHE" && "$CACHE" != "$PACKAGE_MANAGER" ]]; then
+            echo "cache '$CACHE' must match package_manager '$PACKAGE_MANAGER'" >&2
+            exit 2
+          fi
+          if [[ -n "$CACHE_DEPENDENCY_PATH" && -z "$CACHE" ]]; then
+            echo 'cache_dependency_path requires an explicit cache backend' >&2
+            exit 2
+          fi
 
       - name: Set up Bun
         if: ${{ inputs.package_manager == 'bun' && !inputs.use_preinstalled_toolchain }}
@@ -107,6 +129,8 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: ${{ inputs.node_version }}
+          cache: ${{ inputs.cache }}
+          cache-dependency-path: ${{ inputs.cache_dependency_path }}
 
       - name: Activate hosted pnpm or Yarn
         if: ${{ !inputs.use_preinstalled_toolchain && (inputs.package_manager == 'pnpm' || inputs.package_manager == 'yarn') }}

@@ -15,3 +15,6 @@ jobs:
       runner: ubuntu-latest
       package_manager: bun
       test_command: 'bun test'
+      # npm/pnpm/Yarn callers may set cache to the same package_manager and
+      # cache_dependency_path to the repository's lockfile. Bun owns no
+      # setup-node cache and must leave both inputs empty.

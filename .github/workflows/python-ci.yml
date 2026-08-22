@@ -21,6 +21,14 @@ on:
         description: 'Exact major.minor or major.minor.patch Python version.'
         type: string
         default: '3.13'
+      cache:
+        description: "Optional setup-python cache backend for pip callers: empty or 'pip'."
+        type: string
+        default: ''
+      cache_dependency_path:
+        description: 'Optional dependency file/glob used to derive the pip cache key.'
+        type: string
+        default: ''
       uv_version:
         description: 'Exact uv version.'
         type: string
@@ -70,6 +78,8 @@ jobs:
           PYTHON_VERSION: ${{ inputs.python_version }}
           UV_VERSION: ${{ inputs.uv_version }}
           INSTALL_COMMAND: ${{ inputs.install_command }}
+          CACHE: ${{ inputs.cache }}
+          CACHE_DEPENDENCY_PATH: ${{ inputs.cache_dependency_path }}
         run: |
           set -euo pipefail
           case "$PACKAGE_MANAGER" in uv|pip) ;; *)
@@ -79,6 +89,18 @@ jobs:
           [[ "$PYTHON_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
           [[ "$UV_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           [[ "$PREINSTALLED" == true || "$PREINSTALLED" == false ]]
+          case "$CACHE" in ''|pip) ;; *)
+            echo "unsupported Python cache backend: $CACHE" >&2
+            exit 2
+          esac
+          if [[ "$PACKAGE_MANAGER" != pip && -n "$CACHE" ]]; then
+            echo 'Python cache is supported only for package_manager=pip; uv owns its cache through setup-uv' >&2
+            exit 2
+          fi
+          if [[ -n "$CACHE_DEPENDENCY_PATH" && -z "$CACHE" ]]; then
+            echo 'cache_dependency_path requires cache=pip' >&2
+            exit 2
+          fi
           if [[ "$PACKAGE_MANAGER" == pip && -z "$INSTALL_COMMAND" ]]; then
             echo 'pip requires an explicit install_command; dependency locking is project-owned' >&2
             exit 2
@@ -98,6 +120,8 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: ${{ inputs.python_version }}
+          cache: ${{ inputs.cache }}
+          cache-dependency-path: ${{ inputs.cache_dependency_path }}
 
       - name: Verify resolved toolchain
         env:

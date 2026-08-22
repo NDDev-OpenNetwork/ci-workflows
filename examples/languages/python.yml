@@ -17,3 +17,5 @@ jobs:
       python_version: '3.13'
       install_command: 'uv sync --frozen'
       test_command: 'uv run pytest'
+      # pip callers may instead set cache: pip and point this at their lock or
+      # hashed requirements file. uv callers use setup-uv's own cache.
