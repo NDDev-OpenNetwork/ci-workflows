@@ -240,6 +240,7 @@ tools:
       - .github/workflows/maintenance.yml
       - .github/workflows/mutation-testing.yml
       - .github/workflows/private-static.yml
+      - .github/workflows/python-ci.yml
       - .github/workflows/release.yml
       - .github/workflows/runtime-fixtures.yml
       - .github/workflows/runtime-fixtures-event-write.yml

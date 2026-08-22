@@ -68,6 +68,19 @@ jobs:
       install_command: "uv pip install -e . pytest"
       test_command: "python -m pytest -q"
 
+  fixture-python-pip:
+    name: fixture / python-ci / pip
+    permissions:
+      contents: read
+    uses: ./.github/workflows/python-ci.yml
+    with:
+      runner: ubuntu-latest
+      package_manager: pip
+      python_version: '3.13'
+      working_directory: tests/fixtures/python
+      install_command: 'python -m pip install -e . pytest'
+      test_command: 'python -m pytest -q'
+
   # supporting — Node lane under bun.
   fixture-node-ci:
     name: fixture / node-ci
@@ -685,6 +698,7 @@ jobs:
       - observe-qt-ci
       - fixture-go-ci
       - fixture-python-ci
+      - fixture-python-pip
       - fixture-node-ci
       - fixture-node-package-managers
       - fixture-rust-ci
@@ -737,7 +751,7 @@ jobs:
           RESULTS: ${{ toJSON(needs) }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           PROVES: >-
-            {"fixture-go-ci":"go-ci.yml","fixture-python-ci":"python-ci.yml","fixture-node-ci":"node-ci.yml","fixture-node-package-managers":"node-ci.yml","fixture-rust-ci":"rust-ci.yml","fixture-cpp-ci":"cpp-ci.yml","fixture-terraform-ci":"terraform-ci.yml","fixture-sql-ci":"sql-ci.yml","fixture-docs-quality":"docs-quality.yml","fixture-hadolint":"hadolint-ci.yml","fixture-web-ci":"web-ci.yml","fixture-container-ci":"container-ci.yml","fixture-cross-platform-smoke":"cross-platform-smoke.yml","fixture-java-ci":"java-ci.yml","fixture-dotnet-ci":"dotnet-ci.yml","fixture-swift-ci":"swift-ci.yml","fixture-mutation-testing":"mutation-testing.yml","fixture-r-ci":"r-ci.yml","fixture-benchmark-compare":"benchmark-compare.yml","fixture-dart-flutter-ci":"dart-flutter-ci.yml","fixture-kotlin-android-ci":"kotlin-android-ci.yml","fixture-qt-ci":"qt-ci.yml","fixture-go-ci-os":"go-ci.yml","fixture-python-ci-os":"python-ci.yml","fixture-rust-ci-os":"rust-ci.yml","fixture-dotnet-ci-os":"dotnet-ci.yml","fixture-java-ci-os":"java-ci.yml","fixture-node-ci-os":"node-ci.yml","fixture-terraform-ci-os":"terraform-ci.yml","fixture-sql-ci-os":"sql-ci.yml","fixture-web-ci-os":"web-ci.yml"}
+            {"fixture-go-ci":"go-ci.yml","fixture-python-ci":"python-ci.yml","fixture-python-pip":"python-ci.yml","fixture-node-ci":"node-ci.yml","fixture-node-package-managers":"node-ci.yml","fixture-rust-ci":"rust-ci.yml","fixture-cpp-ci":"cpp-ci.yml","fixture-terraform-ci":"terraform-ci.yml","fixture-sql-ci":"sql-ci.yml","fixture-docs-quality":"docs-quality.yml","fixture-hadolint":"hadolint-ci.yml","fixture-web-ci":"web-ci.yml","fixture-container-ci":"container-ci.yml","fixture-cross-platform-smoke":"cross-platform-smoke.yml","fixture-java-ci":"java-ci.yml","fixture-dotnet-ci":"dotnet-ci.yml","fixture-swift-ci":"swift-ci.yml","fixture-mutation-testing":"mutation-testing.yml","fixture-r-ci":"r-ci.yml","fixture-benchmark-compare":"benchmark-compare.yml","fixture-dart-flutter-ci":"dart-flutter-ci.yml","fixture-kotlin-android-ci":"kotlin-android-ci.yml","fixture-qt-ci":"qt-ci.yml","fixture-go-ci-os":"go-ci.yml","fixture-python-ci-os":"python-ci.yml","fixture-rust-ci-os":"rust-ci.yml","fixture-dotnet-ci-os":"dotnet-ci.yml","fixture-java-ci-os":"java-ci.yml","fixture-node-ci-os":"node-ci.yml","fixture-terraform-ci-os":"terraform-ci.yml","fixture-sql-ci-os":"sql-ci.yml","fixture-web-ci-os":"web-ci.yml"}
           GUARDS: >-
             {"fixture-dart-flutter-ci":["observe-dart-flutter-ci"],"fixture-kotlin-android-ci":["observe-kotlin-android-ci"],"fixture-qt-ci":["observe-qt-ci"]}
         run: |
