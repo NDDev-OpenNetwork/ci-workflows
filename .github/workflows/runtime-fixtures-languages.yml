@@ -77,6 +77,8 @@ jobs:
       runner: ubuntu-latest
       package_manager: pip
       python_version: '3.13'
+      cache: pip
+      cache_dependency_path: tests/fixtures/python/pyproject.toml
       working_directory: tests/fixtures/python
       install_command: 'python -m pip install -e . pytest'
       test_command: 'python -m pytest -q'
@@ -99,10 +101,16 @@ jobs:
       matrix:
         include:
           - package_manager: npm
+            cache: ''
+            cache_dependency_path: ''
             test_command: '[[ "$(node --version)" == "v24.19.0" ]] && [[ "$(npm --version)" == "11.17.0" ]]'
           - package_manager: pnpm
+            cache: ''
+            cache_dependency_path: ''
             test_command: '[[ "$(node --version)" == "v24.19.0" ]] && [[ "$(pnpm --version)" == "11.22.0" ]]'
           - package_manager: yarn
+            cache: ''
+            cache_dependency_path: ''
             test_command: '[[ "$(node --version)" == "v24.19.0" ]] && [[ "$(yarn --version)" == "4.18.0" ]]'
     permissions:
       contents: read
@@ -110,6 +118,8 @@ jobs:
     with:
       runner: ubuntu-latest
       package_manager: ${{ matrix.package_manager }}
+      cache: ${{ matrix.cache }}
+      cache_dependency_path: ${{ matrix.cache_dependency_path }}
       working_directory: tests/fixtures/node
       install_command: ':'
       test_command: ${{ matrix.test_command }}

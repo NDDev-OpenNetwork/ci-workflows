@@ -1008,6 +1008,7 @@ capabilities:
     required_settings: []
     risks:
       - "pip callers must provide an explicit install command because dependency locking is project-owned"
+      - "pip cache keys are caller-owned and must name the exact lock or hashed requirements path"
       - "Preinstalled mode is safe only on immutable ephemeral runners whose Python and uv versions match"
       - "Private-repo runner minutes are metered beyond the included free allotment"
     deprecations: null
@@ -1029,6 +1030,7 @@ capabilities:
     required_settings: []
     risks:
       - "Unknown package managers fail before dependency installation; supported values are npm, pnpm, Yarn and Bun"
+      - "setup-node caching is opt-in and the cache backend must match npm, pnpm, or Yarn; Bun callers leave it empty"
       - "Preinstalled mode is safe only on immutable ephemeral runners whose baked versions match the requested contract"
       - "Private-repo runner minutes are metered beyond the included free allotment"
     deprecations: null

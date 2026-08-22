@@ -7,6 +7,9 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Added validated opt-in dependency cache inputs to `python-ci.yml` pip callers
+  and `node-ci.yml` npm/pnpm/Yarn callers. Cache backends must match the package
+  manager and dependency paths cannot be supplied without enabling a cache.
 - Treat OSV Scanner's exact `No package sources found` result as a successful
   empty inventory while preserving failure for vulnerabilities and all other
   errors. The first MyAttention consolidation ring exposed this in an
