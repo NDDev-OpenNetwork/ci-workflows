@@ -12,6 +12,10 @@ on:
       go_version:
         type: string
         default: '1.24'
+      use_preinstalled_toolchain:
+        description: 'Verify an exact baked Go version instead of running setup-go. Use only on immutable ephemeral runners.'
+        type: boolean
+        default: false
       working_directory:
         type: string
         default: '.'
@@ -65,10 +69,26 @@ jobs:
           fetch-depth: ${{ inputs.fetch_depth }}
 
       - name: Set up Go
+        if: ${{ !inputs.use_preinstalled_toolchain }}
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e  # v7.0.0
         with:
           go-version: ${{ inputs.go_version }}
           cache: ${{ inputs.cache }}
+
+      - name: Verify Go toolchain
+        env:
+          GO_VERSION: ${{ inputs.go_version }}
+          PREINSTALLED: ${{ inputs.use_preinstalled_toolchain }}
+        run: |
+          set -euo pipefail
+          actual=$(go env GOVERSION)
+          if [[ "$PREINSTALLED" == true ]]; then
+            [[ "$GO_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+            [[ "$actual" == "go$GO_VERSION" ]]
+          else
+            [[ "$actual" == "go$GO_VERSION" || "$actual" == "go$GO_VERSION".* ]]
+          fi
+          gofmt </dev/null >/dev/null
 
       - name: Build
         if: ${{ inputs.build_command != '' }}
