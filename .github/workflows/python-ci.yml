@@ -1,8 +1,7 @@
 name: python-ci
 
-# Reusable Python CI for BOTH tiers: pinned astral-sh/setup-uv with dependency
-# caching, a uv-managed Python toolchain, and caller-provided install/test
-# commands passed via env (no `${{ inputs.* }}` inline in run:).
+# Reusable Python CI for uv and pip. Hosted callers receive exact setup actions;
+# immutable ephemeral callers may verify and reuse a baked interpreter/toolchain.
 
 on:
   workflow_call:
@@ -10,20 +9,29 @@ on:
       runner:
         type: string
         default: 'ubuntu-latest'
+      package_manager:
+        description: 'One of uv or pip.'
+        type: string
+        default: 'uv'
+      use_preinstalled_toolchain:
+        description: 'Verify baked commands instead of setup actions. Use only on immutable ephemeral runners.'
+        type: boolean
+        default: false
       python_version:
+        description: 'Exact major.minor or major.minor.patch Python version.'
         type: string
         default: '3.13'
+      uv_version:
+        description: 'Exact uv version.'
+        type: string
+        default: '0.11.30'
       working_directory:
         type: string
         default: '.'
-      uv_version:
-        description: 'Exact astral-sh/uv version to pin.'
-        type: string
-        default: '0.11.30'
       install_command:
-        description: 'Dependency install command (bash). Empty to skip.'
+        description: 'Dependency install command (bash). Empty selects uv sync --frozen; pip callers must be explicit.'
         type: string
-        default: 'uv sync --frozen'
+        default: ''
       test_command:
         description: 'Test/verify command (bash).'
         type: string
@@ -40,18 +48,13 @@ defaults:
 
 jobs:
   python:
-    name: python (${{ inputs.python_version }})
+    name: python (${{ inputs.package_manager }}, ${{ inputs.python_version }})
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
     permissions:
       contents: read
     defaults:
       run:
-        # Explicit, and not redundant with the workflow-level default above:
-        # a job-level `defaults.run` replaces the workflow-level one rather than
-        # merging with it, so declaring working-directory here silently drops the
-        # shell. On Linux nothing changes because bash is the default anyway; on
-        # Windows every run step becomes PowerShell and bash syntax stops working.
         shell: bash
         working-directory: ${{ inputs.working_directory }}
     steps:
@@ -60,36 +63,73 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up uv
+      - name: Validate toolchain contract
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
+          PREINSTALLED: ${{ inputs.use_preinstalled_toolchain }}
+          PYTHON_VERSION: ${{ inputs.python_version }}
+          UV_VERSION: ${{ inputs.uv_version }}
+          INSTALL_COMMAND: ${{ inputs.install_command }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in uv|pip) ;; *)
+            echo "unsupported package_manager: $PACKAGE_MANAGER" >&2
+            exit 2
+          esac
+          [[ "$PYTHON_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
+          [[ "$UV_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$PREINSTALLED" == true || "$PREINSTALLED" == false ]]
+          if [[ "$PACKAGE_MANAGER" == pip && -z "$INSTALL_COMMAND" ]]; then
+            echo 'pip requires an explicit install_command; dependency locking is project-owned' >&2
+            exit 2
+          fi
+
+      - name: Set up uv and Python
+        if: ${{ inputs.package_manager == 'uv' && !inputs.use_preinstalled_toolchain }}
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
         with:
           version: ${{ inputs.uv_version }}
           enable-cache: true
-          # python-version sets UV_PYTHON; activate-environment creates a venv
-          # on that interpreter and puts it on PATH for every later step. Both
-          # are needed. A previous version ran `uv python install` on its own,
-          # which downloaded the requested Python and then left it unused: the
-          # caller's install and test commands resolved `python` from PATH and
-          # got the runner's system interpreter instead. The first fixture run
-          # caught it — the job announced "Python 3.13 tests passed" while
-          # pytest had run on the image's 3.12.
           python-version: ${{ inputs.python_version }}
           activate-environment: true
 
-      - name: Install dependencies
-        if: ${{ inputs.install_command != '' }}
+      - name: Set up Python for pip
+        if: ${{ inputs.package_manager == 'pip' && !inputs.use_preinstalled_toolchain }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Verify resolved toolchain
         env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
+          PYTHON_VERSION: ${{ inputs.python_version }}
+          UV_VERSION: ${{ inputs.uv_version }}
+        run: |
+          set -euo pipefail
+          actual_python=$(python -c 'import platform; print(platform.python_version())')
+          [[ "$actual_python" == "$PYTHON_VERSION" || "$actual_python" == "$PYTHON_VERSION".* ]]
+          case "$PACKAGE_MANAGER" in
+            uv) [[ "$(uv --version)" == "uv $UV_VERSION"* ]] ;;
+            pip) python -m pip --version >/dev/null ;;
+          esac
+
+      - name: Install dependencies
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
           INSTALL_COMMAND: ${{ inputs.install_command }}
-        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+        run: |
+          set -euo pipefail
+          if [[ -n "$INSTALL_COMMAND" ]]; then
+            bash -euo pipefail -c "$INSTALL_COMMAND"
+          else
+            uv sync --frozen
+          fi
 
       - name: Run tests
         env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
           TEST_COMMAND: ${{ inputs.test_command }}
-          PY_VERSION: ${{ inputs.python_version }}
         run: |
           bash -euo pipefail -c "$TEST_COMMAND"
-          # Report the interpreter that actually ran, not the one that was
-          # requested. Printing the input was how the inert python_version
-          # stayed invisible for so long.
-          echo "Tests passed on $(python -V 2>&1) (requested ${PY_VERSION})." \
-            >> "$GITHUB_STEP_SUMMARY"
+          printf 'Python CI passed with %s on %s.\n' \
+            "$PACKAGE_MANAGER" "$(python -V 2>&1)" >> "$GITHUB_STEP_SUMMARY"

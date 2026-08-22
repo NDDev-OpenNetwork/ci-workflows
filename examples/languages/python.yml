@@ -13,6 +13,7 @@ jobs:
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/python-ci.yml@<sha>
     with:
       runner: ubuntu-latest
+      package_manager: uv
       python_version: '3.13'
       install_command: 'uv sync --frozen'
       test_command: 'uv run pytest'

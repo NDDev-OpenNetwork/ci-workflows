@@ -9,6 +9,10 @@ The project follows Semantic Versioning.
 
 ### Changed
 
+- Expanded `python-ci.yml` to an explicit uv-or-pip contract. Hosted callers
+  receive the appropriate pinned setup action; immutable ephemeral callers may
+  verify baked commands. pip fails closed without a project-owned install
+  command instead of guessing dependency or lockfile policy.
 - Expanded `node-ci.yml` from a Bun-only lane to a fail-closed npm, pnpm, Yarn
   and Bun contract. Hosted callers receive exact setup; immutable ephemeral
   callers can verify and reuse baked toolchains, avoiding repeated downloads.
