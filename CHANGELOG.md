@@ -7,6 +7,10 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Treat OSV Scanner's exact `No package sources found` result as a successful
+  empty inventory while preserving failure for vulnerabilities and all other
+  errors. The first MyAttention consolidation ring exposed this in an
+  observability-schema repository with no package manager files.
 - Fixed `nddev-security-bundle.yml` to supply all four evidence paths required
   by the shared scanner and upload the redacted one-day evidence bundle. The
   first public-product consumer ring exposed the missing OSV, Gitleaks and
