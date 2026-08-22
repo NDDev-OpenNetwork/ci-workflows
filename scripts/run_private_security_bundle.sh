@@ -94,13 +94,30 @@ run_actionlint() {
 }
 
 run_osv() {
+  local output status
+  set +e
   if [[ -n "$osv_lockfile" ]]; then
-    osv-scanner scan source --lockfile="$osv_lockfile" --format sarif \
-      --output-file "$osv_sarif"
+    output=$(osv-scanner scan source --lockfile="$osv_lockfile" --format sarif \
+      --output-file "$osv_sarif" 2>&1)
+    status=$?
   else
-    osv-scanner scan source --recursive . --format sarif \
-      --output-file "$osv_sarif"
+    output=$(osv-scanner scan source --recursive . --format sarif \
+      --output-file "$osv_sarif" 2>&1)
+    status=$?
   fi
+  set -e
+  printf '%s\n' "$output"
+  if (( status == 0 )); then
+    return 0
+  fi
+  # An empty infrastructure/schema repository has nothing OSV can resolve.
+  # The fail-safe empty SARIF was created before the scan, so this exact
+  # scanner result is a successful zero-package inventory. Vulnerabilities and
+  # every operational failure retain their original non-zero status.
+  if grep -Fq 'No package sources found' <<<"$output"; then
+    return 0
+  fi
+  return "$status"
 }
 
 cd "$GITHUB_WORKSPACE"
