@@ -13,5 +13,5 @@ jobs:
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/node-ci.yml@<sha>
     with:
       runner: ubuntu-latest
-      install_command: 'bun install --frozen-lockfile'
+      package_manager: bun
       test_command: 'bun test'

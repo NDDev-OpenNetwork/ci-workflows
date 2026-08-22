@@ -1006,7 +1006,8 @@ capabilities:
       - "contents: read"
     required_settings: []
     risks:
-      - "Workflow is present on disk and validated by generated workflow inventory"
+      - "Unknown package managers fail before dependency installation; supported values are npm, pnpm, Yarn and Bun"
+      - "Preinstalled mode is safe only on immutable ephemeral runners whose baked versions match the requested contract"
       - "Private-repo runner minutes are metered beyond the included free allotment"
     deprecations: null
     last_verified: "2026-07-04"
@@ -1028,9 +1029,10 @@ capabilities:
     risks:
       - "Workflow is present on disk and validated by generated workflow inventory"
     deprecations: null
-    last_verified: "2026-07-04"
+    last_verified: "2026-08-22"
     sources:
       - "https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs"
+      - "https://nodejs.org/api/corepack.html"
 
   - id: go-ci
     name: Go CI

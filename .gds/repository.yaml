@@ -48,6 +48,7 @@ verification:
     lint: ["actionlint"]
     test: ["scripts/validate_module.sh"]
   required: ["lint", "test"]
+  required_contexts: ["ci-gate"]
 
 agent:
   context_profile: "project-default"

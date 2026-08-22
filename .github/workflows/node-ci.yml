@@ -1,8 +1,8 @@
 name: node-ci
 
-# Reusable JavaScript/TypeScript CI for BOTH tiers: pinned oven-sh/setup-bun
-# with its built-in dependency cache, and caller-provided install/test commands
-# passed via env.
+# Reusable JavaScript/TypeScript CI for npm, pnpm, Yarn and Bun. Hosted callers
+# get exact setup actions; ephemeral private callers may verify and reuse the
+# immutable baked toolchain instead of downloading it for every job.
 
 on:
   workflow_call:
@@ -10,17 +10,41 @@ on:
       runner:
         type: string
         default: 'ubuntu-latest'
+      package_manager:
+        description: 'One of bun, npm, pnpm or yarn.'
+        type: string
+        default: 'bun'
+      use_preinstalled_toolchain:
+        description: 'Verify exact baked commands instead of setup actions. Use only on immutable ephemeral runners.'
+        type: boolean
+        default: false
+      node_version:
+        description: 'Exact Node.js version for npm, pnpm and Yarn.'
+        type: string
+        default: '24.19.0'
+      npm_version:
+        description: 'Expected npm version bundled with the selected Node.js release.'
+        type: string
+        default: '11.17.0'
       bun_version:
-        description: 'Exact oven-sh/bun version to pin.'
+        description: 'Exact Bun version.'
         type: string
         default: '1.3.14'
+      pnpm_version:
+        description: 'Exact pnpm version.'
+        type: string
+        default: '11.22.0'
+      yarn_version:
+        description: 'Exact Yarn version.'
+        type: string
+        default: '4.18.0'
       working_directory:
         type: string
         default: '.'
       install_command:
-        description: 'Dependency install command (bash).'
+        description: 'Override install command (bash). Empty selects the manager-safe frozen default.'
         type: string
-        default: 'bun install --frozen-lockfile'
+        default: ''
       test_command:
         description: 'Test/verify command (bash).'
         type: string
@@ -37,18 +61,13 @@ defaults:
 
 jobs:
   node:
-    name: node (bun ${{ inputs.bun_version }})
+    name: node (${{ inputs.package_manager }})
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
     permissions:
       contents: read
     defaults:
       run:
-        # Explicit, and not redundant with the workflow-level default above:
-        # a job-level `defaults.run` replaces the workflow-level one rather than
-        # merging with it, so declaring working-directory here silently drops the
-        # shell. On Linux nothing changes because bash is the default anyway; on
-        # Windows every run step becomes PowerShell and bash syntax stops working.
         shell: bash
         working-directory: ${{ inputs.working_directory }}
     steps:
@@ -57,21 +76,98 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Validate toolchain contract
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
+          PREINSTALLED: ${{ inputs.use_preinstalled_toolchain }}
+          NODE_VERSION: ${{ inputs.node_version }}
+          NPM_VERSION: ${{ inputs.npm_version }}
+          BUN_VERSION: ${{ inputs.bun_version }}
+          PNPM_VERSION: ${{ inputs.pnpm_version }}
+          YARN_VERSION: ${{ inputs.yarn_version }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in bun|npm|pnpm|yarn) ;; *)
+            echo "unsupported package_manager: $PACKAGE_MANAGER" >&2
+            exit 2
+          esac
+          for version in "$NODE_VERSION" "$NPM_VERSION" "$BUN_VERSION" "$PNPM_VERSION" "$YARN_VERSION"; do
+            [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          done
+          [[ "$PREINSTALLED" == true || "$PREINSTALLED" == false ]]
+
       - name: Set up Bun
+        if: ${{ inputs.package_manager == 'bun' && !inputs.use_preinstalled_toolchain }}
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2.2.0
         with:
           bun-version: ${{ inputs.bun_version }}
 
-      - name: Install dependencies
-        if: ${{ inputs.install_command != '' }}
+      - name: Set up Node.js
+        if: ${{ inputs.package_manager != 'bun' && !inputs.use_preinstalled_toolchain }}
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Activate hosted pnpm or Yarn
+        if: ${{ !inputs.use_preinstalled_toolchain && (inputs.package_manager == 'pnpm' || inputs.package_manager == 'yarn') }}
         env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
+          PNPM_VERSION: ${{ inputs.pnpm_version }}
+          YARN_VERSION: ${{ inputs.yarn_version }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            pnpm) corepack prepare "pnpm@$PNPM_VERSION" --activate ;;
+            yarn) corepack prepare "yarn@$YARN_VERSION" --activate ;;
+          esac
+
+      - name: Verify resolved toolchain
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
+          NODE_VERSION: ${{ inputs.node_version }}
+          NPM_VERSION: ${{ inputs.npm_version }}
+          BUN_VERSION: ${{ inputs.bun_version }}
+          PNPM_VERSION: ${{ inputs.pnpm_version }}
+          YARN_VERSION: ${{ inputs.yarn_version }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            bun) [[ "$(bun --version)" == "$BUN_VERSION" ]] ;;
+            npm)
+              [[ "$(node --version)" == "v$NODE_VERSION" ]]
+              [[ "$(npm --version)" == "$NPM_VERSION" ]]
+              ;;
+            pnpm)
+              [[ "$(node --version)" == "v$NODE_VERSION" ]]
+              [[ "$(pnpm --version)" == "$PNPM_VERSION" ]]
+              ;;
+            yarn)
+              [[ "$(node --version)" == "v$NODE_VERSION" ]]
+              [[ "$(yarn --version)" == "$YARN_VERSION" ]]
+              ;;
+          esac
+
+      - name: Install dependencies
+        env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
           INSTALL_COMMAND: ${{ inputs.install_command }}
-        run: bash -euo pipefail -c "$INSTALL_COMMAND"
+        run: |
+          set -euo pipefail
+          if [[ -n "$INSTALL_COMMAND" ]]; then
+            bash -euo pipefail -c "$INSTALL_COMMAND"
+            exit 0
+          fi
+          case "$PACKAGE_MANAGER" in
+            bun) bun install --frozen-lockfile ;;
+            npm) npm ci ;;
+            pnpm) pnpm install --frozen-lockfile ;;
+            yarn) yarn install --immutable ;;
+          esac
 
       - name: Run tests
         env:
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
           TEST_COMMAND: ${{ inputs.test_command }}
-          BUN_VER: ${{ inputs.bun_version }}
         run: |
           bash -euo pipefail -c "$TEST_COMMAND"
-          echo "Bun ${BUN_VER} tests passed." >> "$GITHUB_STEP_SUMMARY"
+          printf 'Node CI passed with %s.\n' "$PACKAGE_MANAGER" >> "$GITHUB_STEP_SUMMARY"
