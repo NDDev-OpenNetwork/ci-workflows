@@ -6,7 +6,7 @@ on:
 permissions: {}
 concurrency:
   group: hadolint-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   hadolint:
     permissions: { contents: read }

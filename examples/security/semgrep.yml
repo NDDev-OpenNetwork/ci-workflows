@@ -6,7 +6,7 @@ on:
 permissions: {}
 concurrency:
   group: semgrep-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   semgrep:
     permissions: { contents: read }

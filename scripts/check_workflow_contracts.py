@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 import shlex
 import sys
+from pathlib import Path
 
 from ci_workflows_tools._runners import is_standard_hosted, resolve_runner_labels
 from ci_workflows_tools._workflow_yaml import SELF_WORKFLOWS, get_on, is_reusable, load_yaml, workflow_files
@@ -228,12 +229,30 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
     problems += _balanced_caller_commands()
     problems += _runner_selftest()
     problems += _job_defaults_pin_the_shell()
+    problems += _started_runs_are_preserved()
     return problems
 
 
 BARE_BASH_C = re.compile(r'\bbash -c "(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)"')
 # Inputs whose value is handed to a shell by the reusable that receives it.
 COMMAND_INPUT = re.compile(r"(^|_)commands?$")
+
+
+def _started_runs_are_preserved() -> list[str]:
+    """Concurrency may queue work, but must never erase an in-flight result."""
+    problems: list[str] = []
+    paths = [*workflow_files(), *sorted(Path("examples").rglob("*.yml"))]
+    for path in paths:
+        workflow = load_yaml(path)
+        concurrency = workflow.get("concurrency")
+        if concurrency is None:
+            continue
+        if not isinstance(concurrency, dict) or concurrency.get("cancel-in-progress") is not False:
+            problems.append(
+                f"{path}: concurrency must set cancel-in-progress to literal false; "
+                "a newer ref must not erase a started job and its evidence"
+            )
+    return problems
 
 
 def _balanced_caller_commands() -> list[str]:

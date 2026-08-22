@@ -6,7 +6,7 @@ on:
 permissions: {}
 concurrency:
   group: python-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   python:
     permissions: { contents: read }

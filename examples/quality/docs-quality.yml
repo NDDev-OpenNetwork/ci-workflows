@@ -6,7 +6,7 @@ on:
 permissions: {}
 concurrency:
   group: docs-quality-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   docs-quality:
     permissions: { contents: read }
