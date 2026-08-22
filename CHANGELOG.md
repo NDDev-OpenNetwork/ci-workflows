@@ -7,6 +7,13 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Expanded `node-ci.yml` from a Bun-only lane to a fail-closed npm, pnpm, Yarn
+  and Bun contract. Hosted callers receive exact setup; immutable ephemeral
+  callers can verify and reuse baked toolchains, avoiding repeated downloads.
+  Empty install commands select each manager's frozen-lockfile default.
+
 ## [0.1.3] - 2026-08-21
 
 ### Fixed

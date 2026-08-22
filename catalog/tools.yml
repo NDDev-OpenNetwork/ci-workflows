@@ -479,6 +479,7 @@ tools:
       - .github/workflows/benchmark.yml
       - .github/workflows/benchmark-compare.yml
       - .github/workflows/mutation-testing.yml
+      - .github/workflows/node-ci.yml
     last_verified: "2026-07-25"
 
   - id: cache
