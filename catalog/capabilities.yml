@@ -1052,6 +1052,7 @@ capabilities:
       - "Workflow is present on disk and validated by generated workflow inventory"
       - "Checkout is shallow by default; ancestry-aware checks must set fetch_depth to 0"
       - "setup-go caching defaults on; warm self-hosted callers with independently owned caches should set cache to false"
+      - "Preinstalled mode requires an exact patch version and an immutable ephemeral runner with matching Go and gofmt"
     deprecations: null
     last_verified: "2026-07-13"
     sources:
@@ -1091,6 +1092,7 @@ capabilities:
     required_settings: []
     risks:
       - "Workflow is present on disk and validated by generated workflow inventory"
+      - "Preinstalled mode requires an immutable ephemeral runner with matching Java and Maven commands"
     deprecations: null
     last_verified: "2026-07-04"
     sources:

@@ -12,6 +12,10 @@ on:
       java_version:
         type: string
         default: '21'
+      use_preinstalled_toolchain:
+        description: 'Verify baked Java and Maven instead of running setup-java. Use only on immutable ephemeral runners.'
+        type: boolean
+        default: false
       distribution:
         type: string
         default: 'temurin'
@@ -59,11 +63,26 @@ jobs:
           persist-credentials: false
 
       - name: Set up Java
+        if: ${{ !inputs.use_preinstalled_toolchain }}
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961  # v5.7.0
         with:
           java-version: ${{ inputs.java_version }}
           distribution: ${{ inputs.distribution }}
           cache: ${{ inputs.cache }}
+
+      - name: Verify Java toolchain
+        env:
+          JAVA_VERSION: ${{ inputs.java_version }}
+          PREINSTALLED: ${{ inputs.use_preinstalled_toolchain }}
+        run: |
+          set -euo pipefail
+          actual=$(java -XshowSettings:properties -version 2>&1 | awk -F'= ' '/java.version =/{print $2; exit}')
+          [[ -n "$actual" ]]
+          if [[ "$PREINSTALLED" == true ]]; then
+            [[ "$JAVA_VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]
+          fi
+          [[ "$actual" == "$JAVA_VERSION" || "$actual" == "$JAVA_VERSION".* ]]
+          mvn --version >/dev/null
 
       - name: Build and test
         env:

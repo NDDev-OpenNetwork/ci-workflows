@@ -9,6 +9,9 @@ The project follows Semantic Versioning.
 
 ### Changed
 
+- Added opt-in preinstalled-toolchain paths to Go and Java CI. Immutable
+  ephemeral runners verify exact baked Go/gofmt and Java/Maven commands and
+  skip redundant setup-action downloads; hosted callers keep existing setup.
 - Expanded `python-ci.yml` to an explicit uv-or-pip contract. Hosted callers
   receive the appropriate pinned setup action; immutable ephemeral callers may
   verify baked commands. pip fails closed without a project-owned install
