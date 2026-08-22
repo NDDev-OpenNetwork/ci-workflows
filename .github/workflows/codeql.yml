@@ -14,7 +14,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

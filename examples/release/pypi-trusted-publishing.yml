@@ -7,7 +7,7 @@ on:
     tags: ["v*"]
 permissions: {}
 concurrency:
-  group: release-pypi-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 jobs:
   build:

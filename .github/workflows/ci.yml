@@ -16,7 +16,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   # Cancel superseded PR iterations, but never a queued merge-group candidate
   # or a main push: cancelling those makes branch protection observe a
   # partial-cancel status instead of a decisive result.

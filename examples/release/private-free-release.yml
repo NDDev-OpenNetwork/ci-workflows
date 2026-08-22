@@ -8,7 +8,7 @@ on:
     tags: ["[0-9]+.[0-9]+.[0-9]+"]
 permissions: {}
 concurrency:
-  group: release-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 jobs:
   publish:

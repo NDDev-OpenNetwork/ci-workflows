@@ -15,7 +15,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: runtime-fixtures-event-write-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

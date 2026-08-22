@@ -18,9 +18,16 @@ test -n "${GITHUB_WORKSPACE:?}"
 test -n "${RUNNER_TEMP:?}"
 test -n "${GH_TOKEN:?}"
 readonly zizmor_sarif="${ZIZMOR_SARIF_PATH:?}"
+readonly osv_sarif="${OSV_SARIF_PATH:?}"
+readonly gitleaks_sarif="${GITLEAKS_SARIF_PATH:?}"
+readonly actionlint_log="${ACTIONLINT_LOG_PATH:?}"
 readonly zizmor_target="${ZIZMOR_TARGET:-.}"
 readonly osv_lockfile="${OSV_LOCKFILE:-}"
 readonly gitleaks_scan_scope="${GITLEAKS_SCAN_SCOPE:-ref-history}"
+printf '{"version":"2.1.0","runs":[]}\n' > "$zizmor_sarif"
+printf '{"version":"2.1.0","runs":[]}\n' > "$osv_sarif"
+printf '{"version":"2.1.0","runs":[]}\n' > "$gitleaks_sarif"
+: > "$actionlint_log"
 [[ "$zizmor_target" != /* && "$zizmor_target" != *..* ]]
 test -e "$GITHUB_WORKSPACE/$zizmor_target"
 if [[ -n "$osv_lockfile" ]]; then
@@ -32,8 +39,6 @@ case "$gitleaks_scan_scope" in
   all-refs) readonly gitleaks_log_opts=--all ;;
   *) echo "GITLEAKS_SCAN_SCOPE must be ref-history or all-refs" >&2; exit 2 ;;
 esac
-printf '{"version":"2.1.0","runs":[]}\n' > "$zizmor_sarif"
-
 tool_root="$(mktemp -d "${RUNNER_TEMP}/nddev-security-bundle.XXXXXXXX")"
 cleanup() { find "$tool_root" -depth -delete; }
 trap cleanup EXIT
@@ -59,7 +64,7 @@ tar -xzf "$tool_root/gitleaks.tar.gz" -C "$tool_root/bin" gitleaks
 chmod 0700 "$tool_root/bin/gitleaks"
 test "$(gitleaks version)" = "$gitleaks_version"
 
-gitleaks_args=(detect --source "$GITHUB_WORKSPACE" --redact --no-banner --exit-code 1 --log-opts "$gitleaks_log_opts")
+gitleaks_args=(detect --source "$GITHUB_WORKSPACE" --redact=100 --no-banner --exit-code 1 --log-opts "$gitleaks_log_opts" --report-format sarif --report-path "$gitleaks_sarif")
 if [[ -n "${GITLEAKS_CONFIG_PATH:-}" ]]; then
   [[ "$GITLEAKS_CONFIG_PATH" != /* && "$GITLEAKS_CONFIG_PATH" != *..* ]]
   test -f "$GITHUB_WORKSPACE/$GITLEAKS_CONFIG_PATH"
@@ -84,15 +89,32 @@ run_zizmor() {
     --format sarif "$zizmor_target" > "$zizmor_sarif"
 }
 
+run_actionlint() {
+  actionlint -color 2>&1 | tee "$actionlint_log"
+}
+
+run_osv() {
+  if [[ -n "$osv_lockfile" ]]; then
+    osv-scanner scan source --lockfile="$osv_lockfile" --format sarif \
+      --output-file "$osv_sarif"
+  else
+    osv-scanner scan source --recursive . --format sarif \
+      --output-file "$osv_sarif"
+  fi
+}
+
 cd "$GITHUB_WORKSPACE"
-run_gate actionlint actionlint -color
+run_gate actionlint run_actionlint
 run_gate zizmor run_zizmor
-if [[ -n "$osv_lockfile" ]]; then
-  run_gate osv-scanner osv-scanner scan source --lockfile="$osv_lockfile"
-else
-  run_gate osv-scanner osv-scanner scan source --recursive .
-fi
+run_gate osv-scanner run_osv
 run_gate gitleaks gitleaks "${gitleaks_args[@]}"
+
+for report in "$zizmor_sarif" "$osv_sarif" "$gitleaks_sarif"; do
+  if ! jq -e '(.version == "2.1.0") and (.runs | type == "array")' "$report" >/dev/null; then
+    failed+=("evidence-integrity")
+    printf 'invalid SARIF evidence: %s\n' "$report" >&2
+  fi
+done
 
 {
   echo '## Consolidated private security bundle'

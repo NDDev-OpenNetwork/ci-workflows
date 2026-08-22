@@ -239,7 +239,7 @@ COMMAND_INPUT = re.compile(r"(^|_)commands?$")
 
 
 def _started_runs_are_preserved() -> list[str]:
-    """Concurrency may queue work, but must never erase an in-flight result."""
+    """Every queued or started run must retain its own concurrency identity."""
     problems: list[str] = []
     paths = [*workflow_files(), *sorted(Path("examples").rglob("*.yml"))]
     for path in paths:
@@ -247,10 +247,17 @@ def _started_runs_are_preserved() -> list[str]:
         concurrency = workflow.get("concurrency")
         if concurrency is None:
             continue
-        if not isinstance(concurrency, dict) or concurrency.get("cancel-in-progress") is not False:
+        group = concurrency.get("group") if isinstance(concurrency, dict) else None
+        if (
+            not isinstance(concurrency, dict)
+            or concurrency.get("cancel-in-progress") is not False
+            or not isinstance(group, str)
+            or "github.run_id" not in group
+        ):
             problems.append(
-                f"{path}: concurrency must set cancel-in-progress to literal false; "
-                "a newer ref must not erase a started job and its evidence"
+                f"{path}: concurrency must use github.run_id and set "
+                "cancel-in-progress to literal false; GitHub retains only one "
+                "pending run in a shared group, so ref grouping can erase evidence"
             )
     return problems
 

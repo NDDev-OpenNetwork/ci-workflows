@@ -6,7 +6,7 @@ on:
   pull_request: { branches: [main] }
 permissions: {}
 concurrency:
-  group: coverage-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 jobs:
   coverage:

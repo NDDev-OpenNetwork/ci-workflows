@@ -7,7 +7,7 @@ on:
     tags: ["v*"]
 permissions: {}
 concurrency:
-  group: release-npm-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 jobs:
   publish:
