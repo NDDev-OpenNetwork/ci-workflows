@@ -7,6 +7,11 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Fixed `nddev-security-bundle.yml` to supply all four evidence paths required
+  by the shared scanner and upload the redacted one-day evidence bundle. The
+  first public-product consumer ring exposed the missing OSV, Gitleaks and
+  actionlint paths in real private PR jobs.
+
 ### Changed
 
 - Strengthened the consolidated private-free security bundle without adding a

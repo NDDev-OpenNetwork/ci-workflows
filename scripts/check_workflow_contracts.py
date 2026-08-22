@@ -47,6 +47,37 @@ isolated_config="$RUNNER_TEMP/nddev-ci-global.gitconfig"
 printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
 """
     workflow_root = workflow_files()[0].parent
+
+    # The consolidated scanner requires four output paths before it can create
+    # empty fail-safe evidence. Changing the shared script without wiring every
+    # caller broke the first public-product consumer ring at shell expansion,
+    # before any scanner ran. Hold the paid/private bundle to the same complete
+    # evidence contract as the free bundle.
+    nddev_bundle = load_yaml(workflow_root / "nddev-security-bundle.yml")
+    bundle_steps = (nddev_bundle.get("jobs", {}).get("security-bundle", {}).get("steps", []) or [])
+    scan_steps = [step for step in bundle_steps if isinstance(step, dict) and step.get("name") == "Run consolidated security gates"]
+    required_evidence_env = {
+        "ZIZMOR_SARIF_PATH",
+        "OSV_SARIF_PATH",
+        "GITLEAKS_SARIF_PATH",
+        "ACTIONLINT_LOG_PATH",
+    }
+    if len(scan_steps) != 1 or not required_evidence_env.issubset(set((scan_steps[0].get("env") or {}).keys())):
+        problems.append(
+            "nddev-security-bundle.yml: consolidated scan must supply all four "
+            "actionlint/Zizmor/OSV/Gitleaks evidence paths"
+        )
+    evidence_uploads = [
+        step for step in bundle_steps
+        if isinstance(step, dict)
+        and step.get("name") == "Upload redacted security evidence"
+        and str(step.get("uses", "")).startswith("actions/upload-artifact@")
+    ]
+    if len(evidence_uploads) != 1 or (evidence_uploads[0].get("with") or {}).get("retention-days") != 1:
+        problems.append(
+            "nddev-security-bundle.yml: redacted evidence must upload exactly once with one-day retention"
+        )
+
     for filename in sorted(isolated_checkout_workflows):
         workflow = load_yaml(workflow_root / filename)
         jobs = workflow.get("jobs", {}) or {}
