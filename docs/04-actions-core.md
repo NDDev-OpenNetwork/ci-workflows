@@ -95,13 +95,13 @@ mirror them in the caller job. Common mappings:
 
 ## Concurrency
 
-Cancel superseded runs and serialize releases with a `concurrency` group.
+Declare concurrency without letting a newer run replace accepted work.
 
 ```yaml
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  # Preserve every started job as evidence. Remove duplicate triggers before
-  # execution instead of cancelling an in-flight result.
+  group: ci-${{ github.workflow }}-${{ github.run_id }}
+  # Preserve queued and running jobs. Remove duplicate triggers at design time
+  # instead of replacing an accepted result.
   cancel-in-progress: false
 ```
 

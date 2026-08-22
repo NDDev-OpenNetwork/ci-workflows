@@ -51,8 +51,9 @@ A PR that misses any of them will not be merged.
    level and grant only the exact scopes a job needs (e.g.
    `contents: read`, `security-events: write`). Never rely on the default token
    scope.
-3. **`concurrency`** on every workflow, to cancel superseded runs, e.g.
-   `group: <workflow>-${{ github.ref }}` with `cancel-in-progress: true`.
+3. **Lossless `concurrency`** on every workflow. Use a run-unique group such as
+   `group: <workflow>-${{ github.run_id }}` with `cancel-in-progress: false` so
+   a newer commit cannot replace either a queued or a running accepted run.
 4. **`timeout-minutes`** on every job. No unbounded jobs.
 5. **`persist-credentials: false`** on every read-only `actions/checkout`.
    Only opt in to credential persistence when a later step provably needs to
