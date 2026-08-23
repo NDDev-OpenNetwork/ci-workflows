@@ -5,6 +5,13 @@ on:
 
 permissions: {}
 
+# zizmor's `concurrency-limits` rule reports a workflow with no concurrency
+# block. This fixture exists to be a workflow zizmor has nothing to say about,
+# so it carries one: the fixture's name is the assertion.
+concurrency:
+  group: clean-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   clean:
     runs-on: ubuntu-latest
