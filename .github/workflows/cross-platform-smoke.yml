@@ -7,9 +7,27 @@ on:
   workflow_call:
     inputs:
       os_list:
-        description: 'JSON array of runner labels.'
+        description: >-
+          JSON array of matrix entries. Each entry names the platform being
+          covered and becomes part of the check name `smoke (<entry>)`, which a
+          caller may have pinned as a required status context. Where the job
+          actually runs is `runner_overrides`, so a caller can move execution
+          without renaming a protected context.
         type: string
         default: '["ubuntu-latest","macos-latest","windows-latest"]'
+      runner_overrides:
+        description: >-
+          Optional JSON array of matrix `include` entries that say where an
+          `os_list` entry executes, each an object with `os` (the entry) and
+          `runner` (a label string or array of labels). GitHub merges an
+          include entry into the combination whose keys it matches, so `runner`
+          is simply absent for entries nobody overrode and the default `[]`
+          leaves every existing caller byte-identical. Point this at a private
+          fleet only from a repository whose forked pull requests cannot reach
+          it — for a public caller that is remote code execution on your own
+          hardware.
+        type: string
+        default: '[]'
       python_version:
         type: string
         default: '3.13'
@@ -62,7 +80,11 @@ permissions: {}
 jobs:
   smoke:
     name: smoke (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    # The check name stays bound to the matrix entry while execution follows
+    # `runner`, so a protected caller can relocate a job without renaming the
+    # context its ruleset requires. `runner` is contributed by a matrix include
+    # entry and is null for any entry nobody overrode, which falls back here.
+    runs-on: ${{ matrix.runner || matrix.os }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
     permissions:
       contents: read
@@ -70,6 +92,9 @@ jobs:
       fail-fast: false
       matrix:
         os: ${{ fromJSON(inputs.os_list) }}
+        # An include entry merges into the combination it matches on `os`,
+        # contributing `runner` without adding combinations of its own.
+        include: ${{ fromJSON(inputs.runner_overrides) }}
     steps:
       - name: Reject caller-supplied ref on a privileged event
         shell: bash
