@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
 import sys
@@ -283,7 +282,7 @@ def verify_sarif_contract(sarif_log: Any, consumer: dict[str, Any]) -> list[str]
         }
         if actual_tool != consumer["sarif_tool"]:
             problems.append(f"Scorecard SARIF run {index} tool identity drifted")
-    if sorted(observed, key=lambda item: str(item)) != sorted(consumer["sarif_categories"]):
+    if sorted(observed, key=str) != sorted(consumer["sarif_categories"]):
         problems.append(
             f"Scorecard SARIF category multiset is {observed!r}, "
             f"expected {consumer['sarif_categories']!r}"
