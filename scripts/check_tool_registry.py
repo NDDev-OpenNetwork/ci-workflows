@@ -25,7 +25,6 @@ from __future__ import annotations
 import sys
 import re
 from collections import defaultdict
-from pathlib import Path
 
 from ci_workflows_tools._strict_yaml import strict_load
 from ci_workflows_tools._workflow_yaml import REPO_ROOT, load_yaml, workflow_files

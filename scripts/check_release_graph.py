@@ -20,7 +20,6 @@ It also runs negative fixtures: each way of breaking the chain must be rejected.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from typing import Any
 
 from ci_workflows_tools._strict_yaml import strict_loads
