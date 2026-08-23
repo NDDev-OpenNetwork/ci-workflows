@@ -173,6 +173,68 @@ workflow file in the repository.
 <a id="always-name-the-runner"></a>
 ### Always name the runner — the default belongs to the pin
 
+Every reusable here defaults its runner to `ubuntu-latest`, and that default is
+a property of the ref you pinned, not a promise. Move the pin and the default
+moves with it; a caller that never wrote the label down inherits whatever the
+new revision decided, on a line that did not appear in its own diff.
+
+Write the label in the caller:
+
+```yaml
+uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/cross-platform-smoke.yml@<sha>
+with:
+  os_list: '["ubuntu-latest"]'
+```
+
+The cost of naming it is one line. The cost of omitting it is a runner change
+that arrives with a version bump and is attributed to the bump.
+
+<a id="move-execution-without-renaming-the-check"></a>
+### Moving execution without renaming a required check
+
+`cross-platform-smoke.yml` takes two separate inputs because a matrix entry is
+two different facts wearing one name:
+
+| Input | Answers | Appears in |
+| --- | --- | --- |
+| `os_list` | which platforms are covered | the check name, `smoke (<entry>)` |
+| `runner_overrides` | where each entry executes | nothing a ruleset can see |
+
+While every caller is GitHub-hosted the two coincide, and the distinction is
+invisible. They come apart the moment a runner class becomes unavailable: if
+`smoke (ubuntu-latest)` is a required status context on a protected branch,
+moving the job to self-hosted hardware by editing `os_list` renames the context
+to `smoke (<new label>)`, the required one never reports, and the branch stops
+merging — including the pull request that would fix it.
+
+`runner_overrides` says where an entry executes, leaving the entry — and
+therefore the check name — untouched:
+
+```yaml
+with:
+  os_list: '["ubuntu-latest","macos-latest"]'
+  runner_overrides: '[{"os":"ubuntu-latest","runner":["self-hosted","linux","x64"]}]'
+```
+
+`smoke (ubuntu-latest)` still reports under that exact name; only the machine
+changed.
+
+It is a list of matrix `include` entries rather than a map because that is
+GitHub's own mechanism: an include entry whose keys match a combination
+contributes its remaining keys to that combination and adds no combinations of
+its own. So `runner` is simply absent for anything nobody overrode, `runs-on`
+falls back to the entry, and the default `[]` leaves every existing caller
+byte-identical. Reading the runner from a computed index instead would work and
+zizmor rejects it as obfuscation, correctly: a reader cannot see which runner a
+job gets without evaluating an expression in their head.
+
+**Point this at private hardware only from a repository whose forked pull
+requests cannot reach it.** A public repository routed to a private fleet turns
+any fork's pull request into code execution on that hardware — the property
+`scripts/_runners.py` exists to protect. Self-hosted routing belongs to private
+callers; public ones stay on standard hosted runners, which are unmetered
+anyway.
+
 ## What a workflow needs from the machine
 
 Choosing a runner is choosing a machine, and permissions do not tell you what
