@@ -1048,7 +1048,7 @@ capabilities:
     cluster: actions-core
     status: ga
     public_oss: free
-    private_free: available
+    private_free: free
     private_paid: available
     workflow: .github/workflows/gds-anchor-contract.yml
     example: examples/nddev/gds-anchor-contract.yml
