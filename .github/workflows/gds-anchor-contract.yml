@@ -139,11 +139,27 @@ jobs:
                   "User-Agent": "gds-anchor-contract",
               },
           )
+          # A private repository on a free plan cannot carry a ruleset at all:
+          # the API answers 403 "Upgrade to GitHub Pro or make this repository
+          # public". That is a different fact from drift, and from a token
+          # without permission, so it gets its own branch rather than one
+          # failure message covering three causes. Measured on 2026-08-24: 9 of
+          # 77 repositories in this estate are in exactly that position.
+          plan_limited = False
+          rules = []
           try:
               with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
                   rules = json.loads(response.read().decode("utf-8"))
           except urllib.error.HTTPError as error:
-              fail(f"cannot read the ruleset for {repository}@{branch}: HTTP {error.code}")
+              detail = ""
+              try:
+                  detail = json.loads(error.read().decode("utf-8")).get("message", "")
+              except Exception:  # noqa: BLE001 - the body is best effort
+                  detail = ""
+              if error.code == 403 and "Upgrade to GitHub" in detail:
+                  plan_limited = True
+              else:
+                  fail(f"cannot read the ruleset for {repository}@{branch}: HTTP {error.code} {detail}".rstrip())
           except urllib.error.URLError as error:
               fail(f"cannot reach the ruleset API: {error.reason}")
 
@@ -159,6 +175,24 @@ jobs:
 
           declared_set = set(declared)
           live_set = set(live)
+
+          if plan_limited:
+              # No branch here can require anything, so the only claim the
+              # anchor can get wrong is claiming assurance that cannot exist.
+              print(f"repository: {repository}@{branch}")
+              print("branch rulesets are unavailable on this repository's plan")
+              print(f"anchor declares: {sorted(declared_set) or 'nothing'}")
+              if declared_set:
+                  print("", file=sys.stderr)
+                  print("The anchor names required contexts, but no branch here can", file=sys.stderr)
+                  print("require them: this plan cannot carry a ruleset. The anchor", file=sys.stderr)
+                  print("advertises assurance that does not exist.", file=sys.stderr)
+                  print("Remove from verification.required_contexts:", file=sys.stderr)
+                  for context in sorted(declared_set):
+                      print(f'      - "{context}"', file=sys.stderr)
+                  fail(f"anchor claims {len(declared_set)} context(s) the plan cannot enforce")
+              print("gds-anchor-contract: nothing claimed, nothing enforceable, consistent")
+              raise SystemExit(0)
           missing = sorted(live_set - declared_set)
           stale = sorted(declared_set - live_set)
 

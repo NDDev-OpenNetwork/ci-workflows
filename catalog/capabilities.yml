@@ -1057,6 +1057,7 @@ capabilities:
     required_settings: []
     risks:
       - "Reads the caller's live branch ruleset, so a token without permission to read rulesets fails the job rather than passing quietly"
+      - "A private repository on a free plan cannot carry a ruleset; there the contract inverts and fails only when the anchor claims contexts nothing can enforce"
       - "The anchor is parsed without a YAML library; only the inline flow list and the indented block list are accepted"
       - "A repository with no ruleset and no declared contexts agrees trivially, which is correct but says nothing about assurance"
     deprecations: null
