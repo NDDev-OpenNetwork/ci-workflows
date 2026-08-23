@@ -17,9 +17,18 @@ permissions: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.run_id }}
-  # Cancel superseded PR iterations, but never a queued merge-group candidate
-  # or a main push: cancelling those makes branch protection observe a
-  # partial-cancel status instead of a decisive result.
+  # Nothing here is ever cancelled, and that is deliberate. `github.run_id` puts
+  # every run in a group of its own, so no run can be superseded by another, and
+  # `check_workflow_contracts.py` enforces exactly this shape: GitHub retains
+  # only one *pending* run in a shared group, so ref grouping can silently erase
+  # a queued iteration that was never observed. In a repository whose product is
+  # evidence, losing a run is worse than paying for a superseded one.
+  #
+  # This comment used to open "Cancel superseded PR iterations", which the
+  # configuration has never been able to do and the contract forbids. The
+  # trade-off it names is real either way: cancelling a merge-group candidate or
+  # a main push makes branch protection observe a partial-cancel instead of a
+  # decisive result.
   cancel-in-progress: false
 
 jobs:
