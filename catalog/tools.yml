@@ -183,6 +183,7 @@ tools:
       - .github/workflows/dart-flutter-ci.yml
       - .github/workflows/docs-ci.yml
       - .github/workflows/docs-quality.yml
+      - .github/workflows/gds-anchor-contract.yml
       - .github/workflows/dotnet-ci.yml
       - .github/workflows/fuzzing.yml
       - .github/workflows/go-ci.yml

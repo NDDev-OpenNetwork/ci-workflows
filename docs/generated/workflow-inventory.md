@@ -20,6 +20,7 @@
 | `.github/workflows/dotnet-ci.yml` | `dotnet-ci` | ga |
 | `.github/workflows/fuzzing.yml` | `fuzzing` | ga |
 | `.github/workflows/gate.yml` | `gate` | ga |
+| `.github/workflows/gds-anchor-contract.yml` | `gds-anchor-contract` | ga |
 | `.github/workflows/gitleaks.yml` | internal | internal |
 | `.github/workflows/go-ci.yml` | `go-ci` | ga |
 | `.github/workflows/grype-scan.yml` | `grype-sca` | ga |
@@ -64,4 +65,4 @@
 | `.github/workflows/zizmor-sarif.yml` | `zizmor` | ga |
 
 ---
-Source data verified through: 2026-08-23
+Source data verified through: 2026-08-24

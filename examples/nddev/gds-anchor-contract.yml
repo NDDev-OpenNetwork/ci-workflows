@@ -1,0 +1,24 @@
+# Hold this repository's GDS anchor to what its branch really enforces.
+#
+# `.gds/repository.yaml` tells github-device-sync what this repository verifies
+# without executing it. `verification.required_contexts` is the part nothing
+# else can derive: a required context is a check-run name, a command is a
+# command. Left unchecked the two drift, and a reader of the anchor believes a
+# gate that is no longer there — or misses one that is.
+#
+# Add this and the drift becomes a failing check instead of a discovery.
+# Replace @<sha> with a pinned full commit SHA of ci-workflows.
+name: gds-anchor-contract
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  anchor-contract:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/gds-anchor-contract.yml@<sha>
+    with:
+      runner: ubuntu-latest
