@@ -45,18 +45,28 @@ trap cleanup EXIT
 install -d -m 0700 "$tool_root/bin"
 export PATH="$tool_root/bin:$PATH"
 
-curl -fsSL --retry 5 --retry-max-time 120 -o "$tool_root/actionlint.tar.gz" \
+use_or_download() {
+  local supplied=$1 output=$2 url=$3
+  if [[ -n "$supplied" ]]; then
+    [[ "$supplied" == "$RUNNER_TEMP"/* && -f "$supplied" && ! -L "$supplied" ]]
+    install -m 0600 "$supplied" "$output"
+    return
+  fi
+  curl -fsSL --retry 5 --retry-max-time 120 -o "$output" "$url"
+}
+
+use_or_download "${ACTIONLINT_ARCHIVE_PATH:-}" "$tool_root/actionlint.tar.gz" \
   "https://github.com/rhysd/actionlint/releases/download/v${actionlint_version}/actionlint_${actionlint_version}_linux_amd64.tar.gz"
 printf '%s  %s\n' "$actionlint_sha256" "$tool_root/actionlint.tar.gz" | sha256sum -c -
 tar -xzf "$tool_root/actionlint.tar.gz" -C "$tool_root/bin" actionlint
 chmod 0700 "$tool_root/bin/actionlint"
 
-curl -fsSL --retry 5 --retry-max-time 120 -o "$tool_root/osv-scanner" \
+use_or_download "${OSV_SCANNER_PATH:-}" "$tool_root/osv-scanner" \
   "https://github.com/google/osv-scanner/releases/download/v${osv_version}/osv-scanner_linux_amd64"
 printf '%s  %s\n' "$osv_sha256" "$tool_root/osv-scanner" | sha256sum -c -
 install -m 0700 "$tool_root/osv-scanner" "$tool_root/bin/osv-scanner"
 
-curl -fsSL --retry 5 --retry-max-time 120 -o "$tool_root/gitleaks.tar.gz" \
+use_or_download "${GITLEAKS_ARCHIVE_PATH:-}" "$tool_root/gitleaks.tar.gz" \
   "https://github.com/gitleaks/gitleaks/releases/download/v${gitleaks_version}/gitleaks_${gitleaks_version}_linux_x64.tar.gz"
 test "$(wc -c < "$tool_root/gitleaks.tar.gz" | tr -d '[:space:]')" = "$gitleaks_size"
 printf '%s  %s\n' "$gitleaks_sha256" "$tool_root/gitleaks.tar.gz" | sha256sum -c -

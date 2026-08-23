@@ -21,6 +21,10 @@ The project follows Semantic Versioning.
 
 ### Changed
 
+- Routed the consolidated private security bundle's pinned uv, actionlint,
+  OSV-Scanner and gitleaks artifacts through the public immutable tool-cache
+  action. Baked uv is reused without setup; GitHub-hosted and cache-miss jobs
+  retain the same checksum-verified upstream fallback.
 - Strengthened the consolidated private-free security bundle without adding a
   placement: actionlint logs plus Zizmor, OSV and fully redacted Gitleaks SARIF
   are always retained as a one-day artifact, including on aggregate failure.
