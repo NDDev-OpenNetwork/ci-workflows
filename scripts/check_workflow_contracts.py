@@ -48,6 +48,35 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
 """
     workflow_root = workflow_files()[0].parent
 
+    codeql = load_yaml(workflow_root / "public-codeql.yml")
+    codeql_on = get_on(codeql)
+    codeql_call = codeql_on.get("workflow_call", {}) if isinstance(codeql_on, dict) else {}
+    codeql_inputs = codeql_call.get("inputs", {}) if isinstance(codeql_call, dict) else {}
+    dependabot_runner = codeql_inputs.get("dependabot_runner", {}) if isinstance(codeql_inputs, dict) else {}
+    if not isinstance(dependabot_runner, dict) or dependabot_runner.get("type") != "string" or dependabot_runner.get("default") != "ubuntu-latest":
+        problems.append(
+            "public-codeql.yml: dependabot_runner must remain a string with the "
+            "public-safe ubuntu-latest default"
+        )
+    codeql_job = (codeql.get("jobs", {}) or {}).get("codeql", {})
+    expected_codeql_runner = "${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && inputs.dependabot_runner || inputs.runner }}"
+    if codeql_job.get("runs-on") != expected_codeql_runner:
+        problems.append(
+            "public-codeql.yml: runner selection must explicitly isolate "
+            "Dependabot-authored pull requests"
+        )
+    boundary_steps = [
+        step for step in (codeql_job.get("steps", []) or [])
+        if isinstance(step, dict) and step.get("name") == "Record CodeQL trust boundary"
+    ]
+    if len(boundary_steps) != 1 or (boundary_steps[0].get("env") or {}).get("SELECTED_RUNNER") != expected_codeql_runner:
+        problems.append(
+            "public-codeql.yml: selected Dependabot/ordinary runner boundary must "
+            "be emitted as job evidence"
+        )
+    if "pull_request_target" in (workflow_root / "public-codeql.yml").read_text(encoding="utf-8"):
+        problems.append("public-codeql.yml: Dependabot analysis must never use pull_request_target")
+
     # The consolidated scanner requires four output paths before it can create
     # empty fail-safe evidence. Changing the shared script without wiring every
     # caller broke the first public-product consumer ring at shell expansion,

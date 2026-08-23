@@ -82,4 +82,4 @@
 | SLSA build provenance (`slsa-build-provenance`) | supply-chain | ga | free | paid | conditional | `.github/workflows/release-supply-chain.yml` | `-` |
 
 ---
-Source data verified through: 2026-08-22
+Source data verified through: 2026-08-23

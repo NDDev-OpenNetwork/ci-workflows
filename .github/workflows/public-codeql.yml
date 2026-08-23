@@ -50,7 +50,11 @@ on:
         type: number
         default: 14
       runner:
-        description: 'Runner label.'
+        description: 'Runner label for ordinary trusted events.'
+        type: string
+        default: 'ubuntu-latest'
+      dependabot_runner:
+        description: 'Isolated runner label for pull requests authored by dependabot[bot].'
         type: string
         default: 'ubuntu-latest'
       egress_policy:
@@ -63,7 +67,7 @@ permissions: {}
 jobs:
   codeql:
     name: CodeQL (${{ matrix.language }})
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && inputs.dependabot_runner || inputs.runner }}
     timeout-minutes: 20
     permissions:
       actions: read           # upload-sarif reads this workflow run
@@ -78,6 +82,15 @@ jobs:
         uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920  # v2.20.0
         with:
           egress-policy: ${{ inputs.egress_policy }}
+
+      - name: Record CodeQL trust boundary
+        shell: bash
+        env:
+          TRUST_BOUNDARY: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && 'dependabot-untrusted' || 'ordinary' }}
+          SELECTED_RUNNER: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && inputs.dependabot_runner || inputs.runner }}
+        run: |
+          printf "CodeQL trust boundary: \`%s\`\n\nRunner: \`%s\`\n" \
+            "$TRUST_BOUNDARY" "$SELECTED_RUNNER" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Isolate global Git config
         shell: bash
