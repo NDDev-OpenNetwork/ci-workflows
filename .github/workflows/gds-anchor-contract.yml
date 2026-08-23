@@ -1,0 +1,187 @@
+name: gds-anchor-contract
+
+# Holds a repository's GDS anchor to what its branch really enforces.
+#
+# `.gds/repository.yaml` is read across repository boundaries by
+# github-device-sync to reason about a repository without executing it. Its
+# `verification.required_contexts` names the status checks a merge to the
+# default branch actually requires. Nothing derives that from anywhere: a
+# required context is a check-run name, a command is a command.
+#
+# Estate measurement on 2026-08-24: 67 repositories carry an anchor, 62 declare
+# `verification.commands`, and 4 declare `verification.required_contexts`. So
+# the estate says what it verifies and almost never says what its branches
+# enforce, and no reader can tell the difference between "no required checks"
+# and "nobody wrote them down".
+#
+# This is the reusable form of a validator that previously lived in one
+# repository. It is opt-in: a repository gets the contract by calling this,
+# and from then on the anchor and the branch cannot drift apart silently.
+
+permissions: {}
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Runner label. Public callers stay on GitHub-hosted.'
+        type: string
+        default: 'ubuntu-latest'
+      branch:
+        description: 'Branch whose ruleset is authoritative. Defaults to the default branch.'
+        type: string
+        default: ''
+      anchor_path:
+        description: 'Repository-relative path to the GDS anchor.'
+        type: string
+        default: '.gds/repository.yaml'
+      timeout_minutes:
+        type: number
+        default: 10
+
+jobs:
+  anchor-contract:
+    name: gds anchor contract
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Compare the anchor with the live ruleset
+        env:
+          ANCHOR_PATH: ${{ inputs.anchor_path }}
+          TARGET_BRANCH: ${{ inputs.branch }}
+          REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          python3 -I <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          def fail(message):
+              print(f"gds-anchor-contract: {message}", file=sys.stderr)
+              raise SystemExit(1)
+
+          anchor_path = os.environ["ANCHOR_PATH"]
+          repository = os.environ["REPOSITORY"]
+          branch = os.environ.get("TARGET_BRANCH") or os.environ.get("DEFAULT_BRANCH") or "main"
+          token = os.environ.get("GH_TOKEN")
+          if not token:
+              fail("no token available to read the branch ruleset")
+
+          try:
+              raw = open(anchor_path, encoding="utf-8").read()
+          except OSError:
+              fail(f"{anchor_path} is missing; a repository without an anchor has no contract to hold")
+
+          # The anchor is read without a YAML library so this reusable stays
+          # dependency-free on every runner, including the fleet's own images.
+          # Both shapes the estate actually uses are accepted: the inline flow
+          # list `required_contexts: ["a", "b"]` and the indented block list.
+          def unquote(value):
+              value = value.strip()
+              if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                  return value[1:-1]
+              return value
+
+          declared = []
+          found = False
+          inside = False
+          indent = 0
+          for line in raw.splitlines():
+              stripped = line.strip()
+              if not inside:
+                  if not stripped.startswith("required_contexts:"):
+                      continue
+                  found = True
+                  indent = len(line) - len(line.lstrip())
+                  tail = stripped.split(":", 1)[1].strip()
+                  if tail.startswith("["):
+                      if not tail.endswith("]"):
+                          fail("inline required_contexts must close on the same line")
+                      body = tail[1:-1].strip()
+                      if body:
+                          declared = [unquote(item) for item in body.split(",") if item.strip()]
+                      break
+                  if tail:
+                      fail(f"required_contexts must be a list, got {tail!r}")
+                  inside = True
+                  continue
+              if not stripped:
+                  continue
+              current = len(line) - len(line.lstrip())
+              if not stripped.startswith("- ") or current <= indent:
+                  break
+              declared.append(unquote(stripped[2:]))
+
+          if not found:
+              print(f"{anchor_path} declares no verification.required_contexts")
+
+          url = f"https://api.github.com/repos/{repository}/rules/branches/{branch}"
+          request = urllib.request.Request(
+              url,
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "User-Agent": "gds-anchor-contract",
+              },
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
+                  rules = json.loads(response.read().decode("utf-8"))
+          except urllib.error.HTTPError as error:
+              fail(f"cannot read the ruleset for {repository}@{branch}: HTTP {error.code}")
+          except urllib.error.URLError as error:
+              fail(f"cannot reach the ruleset API: {error.reason}")
+
+          live = []
+          for rule in rules:
+              if rule.get("type") != "required_status_checks":
+                  continue
+              parameters = rule.get("parameters") or {}
+              for check in parameters.get("required_status_checks") or []:
+                  context = check.get("context")
+                  if context:
+                      live.append(context)
+
+          declared_set = set(declared)
+          live_set = set(live)
+          missing = sorted(live_set - declared_set)
+          stale = sorted(declared_set - live_set)
+
+          print(f"repository: {repository}@{branch}")
+          print(f"anchor declares: {sorted(declared_set) or 'nothing'}")
+          print(f"branch enforces: {sorted(live_set) or 'nothing'}")
+
+          if not missing and not stale:
+              print("gds-anchor-contract: anchor and branch agree")
+              raise SystemExit(0)
+
+          if missing:
+              print("", file=sys.stderr)
+              print("The branch requires checks the anchor does not record, so every", file=sys.stderr)
+              print("reader of the anchor believes this gate is weaker than it is.", file=sys.stderr)
+              print("Add to verification.required_contexts:", file=sys.stderr)
+              for context in missing:
+                  print(f'      - "{context}"', file=sys.stderr)
+          if stale:
+              print("", file=sys.stderr)
+              print("The anchor advertises assurance the branch no longer requires.", file=sys.stderr)
+              print("Remove from verification.required_contexts:", file=sys.stderr)
+              for context in stale:
+                  print(f'      - "{context}"', file=sys.stderr)
+          fail(f"anchor and branch disagree: {len(missing)} unrecorded, {len(stale)} stale")
+          PY

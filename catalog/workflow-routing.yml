@@ -12,6 +12,7 @@ groups:
     workflows:
       - .github/workflows/cross-platform-smoke.yml
       - .github/workflows/dotnet-ci.yml
+      - .github/workflows/gds-anchor-contract.yml
       - .github/workflows/go-ci.yml
       - .github/workflows/java-ci.yml
       - .github/workflows/node-ci.yml
