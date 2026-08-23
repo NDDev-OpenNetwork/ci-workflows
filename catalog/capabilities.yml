@@ -25,14 +25,18 @@ capabilities:
     required_settings:
       - "Code scanning enabled"
       - "GitHub Advanced Security enabled (required on private repos)"
+      - "Dependabot pull requests use the reviewed dependabot_runner trust boundary"
     risks:
       - "Paid via GHAS on private repositories; keep upload disabled there"
       - "Language autobuild can fail on compiled languages without a build spec"
+      - "Dependabot pull_request events have read-only tokens and no Actions secrets; use pull_request, never pull_request_target, and keep checkout credentials disabled"
     deprecations: null
-    last_verified: "2026-07-04"
+    last_verified: "2026-08-23"
     sources:
       - "https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql"
       - "https://github.com/github/codeql-action"
+      - "https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-on-actions"
+      - "https://docs.github.com/en/code-security/reference/code-scanning/troubleshoot-analysis-errors/resource-not-accessible"
 
   - id: github-code-quality
     name: GitHub Code Quality

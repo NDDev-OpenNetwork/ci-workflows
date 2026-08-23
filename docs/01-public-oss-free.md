@@ -55,10 +55,15 @@ jobs:
     with:
       languages: '["python","actions"]'
       queries: security-and-quality
+      runner: ubuntu-latest
+      dependabot_runner: ubuntu-latest
 ```
 
 Inputs: `languages` (JSON array), `queries` (suite, default
-`security-and-quality`), `runner`, `egress_policy`. See
+`security-and-quality`), `runner`, `dependabot_runner`, `egress_policy`. Public
+callers keep both on `ubuntu-latest`; private GHAS callers may route ordinary
+analysis to a trusted private class and Dependabot pull requests to an isolated
+untrusted class without changing the `CodeQL (<language>)` check identity. See
 [06 Security scanning](06-security-scanning.md#codeql) for language coverage and
 Copilot Autofix.
 

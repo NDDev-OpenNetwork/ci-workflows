@@ -51,6 +51,7 @@ jobs:
     with:
       languages: '["python","actions"]'
       runner: nddev-linux-standard
+      dependabot_runner: nddev-linux-untrusted
   security-bundle:
     permissions: { contents: read }
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/nddev-security-bundle.yml@<sha>

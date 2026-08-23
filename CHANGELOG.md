@@ -7,6 +7,10 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Added explicit Dependabot-safe advanced CodeQL routing. Ordinary private
+  analysis and Dependabot pull requests can use separate reviewed runner
+  classes while preserving stable language check identities and a secretless
+  `pull_request` trust boundary.
 - Added validated opt-in dependency cache inputs to `python-ci.yml` pip callers
   and `node-ci.yml` npm/pnpm/Yarn callers. Cache backends must match the package
   manager and dependency paths cannot be supplied without enabling a cache.

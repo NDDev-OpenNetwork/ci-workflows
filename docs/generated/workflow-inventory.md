@@ -64,4 +64,4 @@
 | `.github/workflows/zizmor-sarif.yml` | `zizmor` | ga |
 
 ---
-Source data verified through: 2026-08-22
+Source data verified through: 2026-08-23

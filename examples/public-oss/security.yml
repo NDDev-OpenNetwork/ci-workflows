@@ -21,6 +21,7 @@ jobs:
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-codeql.yml@<sha>
     with:
       runner: ubuntu-latest
+      dependabot_runner: ubuntu-latest
       languages: '["python","actions"]'
   secret-scan:
     permissions: { contents: read }
