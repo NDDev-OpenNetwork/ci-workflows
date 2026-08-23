@@ -527,6 +527,7 @@ tools:
       - .github/workflows/private-security-bundle-free.yml
     last_verified: "2026-08-23"
     notes: >-
+      Signed tag v1.0.0 resolves to the exact pinned repository commit.
       Checksum-addressed immutable tool artifacts use the caller's injected
       trust-scoped RustFS identity on private runners and the same verified
       upstream fallback on GitHub-hosted runners.
