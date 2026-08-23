@@ -20,6 +20,7 @@ an operating system this table does not list for it.
 | `.github/workflows/dotnet-ci.yml` | `portable-shell` | linux, macos, windows | shell only |
 | `.github/workflows/fuzzing.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/gate.yml` | `linux-shell` | linux | shell only |
+| `.github/workflows/gds-anchor-contract.yml` | `portable-shell` | linux, macos, windows | shell only |
 | `.github/workflows/go-ci.yml` | `portable-shell` | linux, macos, windows | shell only |
 | `.github/workflows/grype-scan.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/hadolint-ci.yml` | `linux-shell` | linux | shell only |

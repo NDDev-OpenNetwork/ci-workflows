@@ -1043,6 +1043,28 @@ capabilities:
       - "https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs"
       - "https://nodejs.org/api/corepack.html"
 
+  - id: gds-anchor-contract
+    name: GDS anchor contract
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: available
+    private_paid: available
+    workflow: .github/workflows/gds-anchor-contract.yml
+    example: examples/nddev/gds-anchor-contract.yml
+    required_permissions:
+      - "contents: read"
+    required_settings: []
+    risks:
+      - "Reads the caller's live branch ruleset, so a token without permission to read rulesets fails the job rather than passing quietly"
+      - "The anchor is parsed without a YAML library; only the inline flow list and the indented block list are accepted"
+      - "A repository with no ruleset and no declared contexts agrees trivially, which is correct but says nothing about assurance"
+    deprecations: null
+    last_verified: "2026-08-24"
+    sources:
+      - "https://docs.github.com/en/rest/repos/rules"
+      - "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets"
+
   - id: go-ci
     name: Go CI
     cluster: actions-core
