@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Any
 
 from ci_workflows_tools._strict_yaml import strict_load
-from ci_workflows_tools._workflow_yaml import load_yaml, workflow_files
+from ci_workflows_tools._workflow_yaml import get_on, load_yaml, workflow_files
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTRACT = ROOT / "catalog/cache-contract.yml"
@@ -122,6 +122,53 @@ def _required_refusal_problems(producers: dict, refusals: list) -> list[str]:
     return problems
 
 
+def _step_caches(producer: dict, step: dict[str, Any]) -> bool:
+    """Whether this step writes a cache, given its producer entry and inputs."""
+    control = producer.get("control")
+    with_inputs = step.get("with") or {}
+    if control is None:
+        return bool(producer.get("default_caches"))
+    if control not in with_inputs:
+        return bool(producer.get("default_caches"))
+    value = with_inputs[control]
+    return str(value).strip().lower() not in {"false", "", "none", "off"}
+
+
+def _caller_ref_cache_problems(producers: dict) -> list[str]:
+    """A workflow whose caller picks the ref must not write a cache.
+
+    `check_privileged_ref_guard.py` already proves such a workflow refuses a
+    caller-supplied ref on a privileged event. That leaves the unprivileged
+    path, where the ref is still lower-trust than the default branch: a cache
+    written there is restored by later runs, including runs of the default
+    branch, so the untrusted ref becomes an input to trusted work.
+
+    Today the property holds by accident -- these workflows happen to use
+    actions that cache only when asked. Nothing stopped a later edit from
+    asking. The existing refusal rule cannot see it, because that rule only
+    fires for actions which cache with no input at all.
+    """
+    problems: list[str] = []
+    for path in workflow_files():
+        workflow = load_yaml(path)
+        on = get_on(workflow)
+        call = on.get("workflow_call") if isinstance(on, dict) else None
+        inputs = call.get("inputs") if isinstance(call, dict) else None
+        if not isinstance(inputs, dict) or "checkout_ref" not in inputs:
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        for job_id, step in _steps(workflow):
+            producer = producers.get(_action(step))
+            if not producer or not _step_caches(producer, step):
+                continue
+            problems.append(
+                f"{relative}: job {job_id!r} exposes `checkout_ref` and runs "
+                f"{_action(step)} with caching on; a workflow whose caller picks "
+                "the ref must refuse the cache, because the entry it writes is "
+                "restored into later runs of a higher-trust ref")
+    return problems
+
+
 def check() -> list[str]:
     problems: list[str] = []
     contract = strict_load(CONTRACT)
@@ -154,6 +201,7 @@ def check() -> list[str]:
             f"catalog/cache-contract.yml declares producer {action}, which no workflow uses")
 
     problems += _required_refusal_problems(producers, refusals)
+    problems += _caller_ref_cache_problems(producers)
 
     for refusal in refusals:
         relative = str(refusal["workflow"])
