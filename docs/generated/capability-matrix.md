@@ -12,7 +12,7 @@
 | Docs quality (links, spelling, markdown) (`docs-quality`) | actions-core | ga | free | free | available | `.github/workflows/docs-quality.yml` | `examples/quality/docs-quality.yml` |
 | .NET CI (`dotnet-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/dotnet-ci.yml` | `examples/languages/dotnet.yml` |
 | Caller-named reporting job for aggregated upstream results (`gate`) | actions-core | ga | free | free | available | `.github/workflows/gate.yml` | `examples/quality/gate-report.yml` |
-| GDS anchor contract (`gds-anchor-contract`) | actions-core | ga | free | available | available | `.github/workflows/gds-anchor-contract.yml` | `examples/nddev/gds-anchor-contract.yml` |
+| GDS anchor contract (`gds-anchor-contract`) | actions-core | ga | free | free | available | `.github/workflows/gds-anchor-contract.yml` | `examples/nddev/gds-anchor-contract.yml` |
 | Go CI (`go-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/go-ci.yml` | `examples/languages/go.yml` |
 | Java CI (`java-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/java-ci.yml` | `examples/languages/java.yml` |
 | Kotlin/Android CI (`kotlin-android-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/kotlin-android-ci.yml` | `examples/languages/kotlin-android.yml` |
