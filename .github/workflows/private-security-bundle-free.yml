@@ -87,11 +87,65 @@ jobs:
           printf 'PRIVATE_SECURITY_BUNDLE_SCRIPT=%s\n' \
             "$source_root/scripts/run_private_security_bundle.sh" >> "$GITHUB_ENV"
 
-      - name: Set up pinned uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+      - name: Detect baked uv
+        id: baked-uv
+        shell: bash
+        run: |
+          set -euo pipefail
+          available=false
+          if command -v uv >/dev/null 2>&1 && [[ "$(uv --version)" == "uv 0.11.30"* ]]; then
+            available=true
+          fi
+          printf 'available=%s\n' "$available" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pinned uv archive
+        if: ${{ steps.baked-uv.outputs.available != 'true' }}
+        id: uv-archive
+        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5  # v1.0.0
         with:
-          version: 0.11.30
-          enable-cache: false
+          url: https://github.com/astral-sh/uv/releases/download/0.11.30/uv-x86_64-unknown-linux-gnu.tar.gz
+          sha256: 04bc7d180d6138bf6dc08387acf507a823f397a98fea55da36b0ccc7fbce3b68
+          output: ${{ runner.temp }}/private-security-tools/uv.tar.gz
+          max-bytes: '67108864'
+
+      - name: Install pinned uv fallback
+        if: ${{ steps.baked-uv.outputs.available != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$RUNNER_TEMP/private-security-tools/uv"
+          tar --extract --gzip --file "$RUNNER_TEMP/private-security-tools/uv.tar.gz" \
+            --directory "$RUNNER_TEMP/private-security-tools/uv"
+          install -d -m 0700 "$RUNNER_TEMP/private-security-tools/bin"
+          install -m 0755 "$RUNNER_TEMP/private-security-tools/uv/uv-x86_64-unknown-linux-gnu/uv" \
+            "$RUNNER_TEMP/private-security-tools/bin/uv"
+          install -m 0755 "$RUNNER_TEMP/private-security-tools/uv/uv-x86_64-unknown-linux-gnu/uvx" \
+            "$RUNNER_TEMP/private-security-tools/bin/uvx"
+          printf '%s\n' "$RUNNER_TEMP/private-security-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Restore actionlint archive
+        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5  # v1.0.0
+        with:
+          url: https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          sha256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+          output: ${{ runner.temp }}/private-security-tools/actionlint.tar.gz
+          max-bytes: '16777216'
+
+      - name: Restore OSV-Scanner binary
+        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5  # v1.0.0
+        with:
+          url: https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_linux_amd64
+          sha256: edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c
+          output: ${{ runner.temp }}/private-security-tools/osv-scanner
+          max-bytes: '268435456'
+
+      - name: Restore gitleaks archive
+        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5  # v1.0.0
+        with:
+          url: https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          sha256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          output: ${{ runner.temp }}/private-security-tools/gitleaks.tar.gz
+          max-bytes: '16777216'
 
       - name: Run consolidated security gates without SARIF upload
         shell: bash
@@ -105,6 +159,9 @@ jobs:
           OSV_SARIF_PATH: ${{ runner.temp }}/private-security-osv.sarif
           GITLEAKS_SARIF_PATH: ${{ runner.temp }}/private-security-gitleaks.sarif
           ACTIONLINT_LOG_PATH: ${{ runner.temp }}/private-security-actionlint.log
+          ACTIONLINT_ARCHIVE_PATH: ${{ runner.temp }}/private-security-tools/actionlint.tar.gz
+          OSV_SCANNER_PATH: ${{ runner.temp }}/private-security-tools/osv-scanner
+          GITLEAKS_ARCHIVE_PATH: ${{ runner.temp }}/private-security-tools/gitleaks.tar.gz
         run: "$PRIVATE_SECURITY_BUNDLE_SCRIPT"
 
       - name: Upload redacted security evidence

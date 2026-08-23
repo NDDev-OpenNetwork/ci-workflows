@@ -506,7 +506,6 @@ tools:
       - .github/workflows/ci.yml
       - .github/workflows/maintenance.yml
       - .github/workflows/nddev-security-bundle.yml
-      - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/private-static.yml
       - .github/workflows/python-ci.yml
       - .github/workflows/qt-ci.yml
@@ -517,6 +516,21 @@ tools:
       - .github/workflows/zizmor-no-sarif.yml
       - .github/workflows/zizmor-sarif.yml
     last_verified: "2026-07-20"
+
+  - id: nddev-tool-cache
+    name: NDDev-OpenNetwork/github-actions/actions/tool-cache
+    homepage: "https://github.com/NDDev-OpenNetwork/github-actions/tree/main/actions/tool-cache"
+    kind: action
+    current_version: "v1.0.0"
+    pin: "NDDev-OpenNetwork/github-actions@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5"
+    used_by:
+      - .github/workflows/private-security-bundle-free.yml
+    last_verified: "2026-08-23"
+    notes: >-
+      Signed tag v1.0.0 resolves to the exact pinned repository commit.
+      Checksum-addressed immutable tool artifacts use the caller's injected
+      trust-scoped RustFS identity on private runners and the same verified
+      upstream fallback on GitHub-hosted runners.
 
   - id: setup-bun
     name: oven-sh/setup-bun
