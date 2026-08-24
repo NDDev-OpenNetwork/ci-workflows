@@ -593,6 +593,7 @@
       "generate_docs",
       "render_runtime_evidence",
       "resolve_profile",
+      "test_sync_action_catalog",
       "validate_catalog",
       "validate_product_facts",
       "validate_profiles"
