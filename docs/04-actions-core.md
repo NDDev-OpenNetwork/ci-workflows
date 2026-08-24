@@ -127,6 +127,28 @@ strategy:
   untrusted triggers (2026-06-26) — see [watchlist-2026.md](watchlist-2026.md).
 - Never cache secrets or credentials.
 
+The executable policy is `catalog/cache-contract.yml`, not this summary. It
+classifies every producer and refusal and fixes these cross-run invariants:
+
+- pull-request writes remain in the merge-ref scope; default-branch fallback is
+  read-only, and low-trust default-context events are restore-only;
+- keys are exact-first and name repository, OS, architecture, tool version and
+  dependency digest; prefix restore requires an explicit reviewed exception;
+- hosted and fleet backends use the same key semantics, while a private backend
+  identity is an additional dimension rather than an invisible alias;
+- a cache hit is never provenance, a miss never changes correctness, and a
+  corrupt entry is discarded and rebuilt;
+- persistent workers do not reuse workspaces or mutable cross-job state. Only
+  immutable images, checksum-verified tool stores and typed tenant-scoped cache
+  backends may remain warm;
+- real cold/warm jobs record hit, key digest, backend, durations and byte counts.
+  Synthetic cache traffic is not an acceptance workload.
+
+Provider facts are checked against GitHub's
+[dependency caching reference](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching):
+idle entries are evicted after seven days, the default repository allowance is
+10 GB, and eviction is least-recently-accessed when capacity is exceeded.
+
 ## Step-level parallel execution
 
 GitHub introduced step-level parallel execution in public preview on

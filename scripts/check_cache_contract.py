@@ -39,6 +39,7 @@ carried a comment saying their explicit `false` changed nothing.
 """
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +50,102 @@ ROOT = Path(__file__).resolve().parent.parent
 CONTRACT = ROOT / "catalog/cache-contract.yml"
 CI = ".github/workflows/ci.yml"
 GATE_JOB = "ci-gate"
+
+EXPECTED_TRUST = {
+    "namespace": "repository",
+    "pull_request_scope": "merge-ref",
+    "default_branch_fallback": "read-only",
+    "low_trust_default_branch_access": "restore-only",
+    "trusted_default_branch_writers": [
+        "push", "workflow_dispatch", "repository_dispatch", "delete",
+        "registry_package", "page_build", "schedule",
+    ],
+    "cache_is_provenance": False,
+    "secrets_allowed": False,
+}
+EXPECTED_KEY_DIMENSIONS = {
+    "repository", "operating-system", "architecture",
+    "tool-or-action-version", "dependency-input-digest",
+}
+EXPECTED_CONDITIONAL_DIMENSIONS = {
+    "target-platform", "build-settings", "private-backend-identity",
+}
+EXPECTED_WARM_STATE = {
+    "immutable-runner-image", "checksum-verified-tool-store",
+    "typed-tenant-scoped-cache-backend",
+}
+EXPECTED_TELEMETRY = {
+    "backend", "key-digest", "hit", "restore-duration", "save-duration",
+    "restored-bytes", "saved-bytes",
+}
+
+
+def _policy_problems(contract: dict[str, Any]) -> list[str]:
+    problems: list[str] = []
+    expected_top = {
+        "schema_version", "trust", "keys", "persistent_runners", "retention",
+        "equivalence", "telemetry", "producers", "refusals",
+    }
+    if set(contract) != expected_top:
+        problems.append(
+            f"cache contract keys must equal {sorted(expected_top)}, got {sorted(contract)}"
+        )
+    if contract.get("schema_version") != 2:
+        problems.append("cache contract schema_version must be 2")
+    if contract.get("trust") != EXPECTED_TRUST:
+        problems.append("cache trust policy drifted from the reviewed GitHub scope model")
+
+    keys = contract.get("keys") or {}
+    if (
+        keys.get("match") != "exact-first"
+        or keys.get("prefix_restore") != "explicit-review-only"
+        or keys.get("cross_os_archive_default") is not False
+        or set(keys.get("required_dimensions") or []) != EXPECTED_KEY_DIMENSIONS
+        or set(keys.get("conditional_dimensions") or []) != EXPECTED_CONDITIONAL_DIMENSIONS
+    ):
+        problems.append("cache key policy is incomplete or permits implicit fallback")
+
+    persistent = contract.get("persistent_runners") or {}
+    if (
+        persistent.get("workspace_reuse") != "forbidden"
+        or persistent.get("mutable_cross_job_state") != "forbidden"
+        or persistent.get("cleanup_authority") != "runner-lifecycle"
+        or persistent.get("residue_is_trusted_input") is not False
+        or set(persistent.get("allowed_warm_state") or []) != EXPECTED_WARM_STATE
+    ):
+        problems.append("persistent-runner residue policy drifted")
+
+    retention = contract.get("retention") or {}
+    expected_retention = {
+        "idle_eviction_days": 7,
+        "default_repository_limit_gb": 10,
+        "eviction_order": "least-recently-accessed",
+        "upload_rate_per_minute": 200,
+        "download_rate_per_minute": 1500,
+        "cache_miss_correctness_effect": "none",
+    }
+    if retention != expected_retention:
+        problems.append("cache retention/rate policy drifted from the reviewed provider facts")
+
+    equivalence = contract.get("equivalence") or {}
+    expected_equivalence = {
+        "hosted_and_fleet_keys_share_semantics": True,
+        "backend_identity_required_for_private_cache": True,
+        "hit_is_authoritative_evidence": False,
+        "miss_may_fail_job": False,
+        "corrupt_entry_action": "discard-and-rebuild",
+    }
+    if equivalence != expected_equivalence:
+        problems.append("hosted/fleet cache equivalence policy drifted")
+
+    telemetry = contract.get("telemetry") or {}
+    if (
+        set(telemetry.get("required") or []) != EXPECTED_TELEMETRY
+        or set(telemetry.get("compare") or []) != {"cold", "warm"}
+        or telemetry.get("synthetic_load_allowed") is not False
+    ):
+        problems.append("cache telemetry policy is incomplete or permits synthetic load")
+    return problems
 
 
 def _steps(workflow: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
@@ -172,6 +269,23 @@ def _caller_ref_cache_problems(producers: dict) -> list[str]:
 def check() -> list[str]:
     problems: list[str] = []
     contract = strict_load(CONTRACT)
+    problems += _policy_problems(contract)
+    adversarial = {
+        "PR writes default scope": ("trust", "pull_request_scope", "default-branch"),
+        "prefix fallback implicit": ("keys", "prefix_restore", "implicit"),
+        "workspace residue trusted": (
+            "persistent_runners", "residue_is_trusted_input", True
+        ),
+        "cache hit treated as evidence": (
+            "equivalence", "hit_is_authoritative_evidence", True
+        ),
+        "synthetic cache load": ("telemetry", "synthetic_load_allowed", True),
+    }
+    for label, (section, field, value) in adversarial.items():
+        candidate = copy.deepcopy(contract)
+        candidate[section][field] = value
+        if not _policy_problems(candidate):
+            problems.append(f"cache policy selftest accepted {label}")
     producers = {str(entry["action"]): entry for entry in contract["producers"]}
     refusals = contract["refusals"]
 
