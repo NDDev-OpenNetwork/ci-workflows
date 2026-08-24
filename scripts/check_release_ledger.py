@@ -17,6 +17,7 @@ the same reason a third party's pricing page cannot block an unrelated bugfix.
 """
 from __future__ import annotations
 
+import datetime as dt
 import re
 import subprocess
 import sys
@@ -48,7 +49,12 @@ KNOWN_UNTAGGED: dict[str, str] = {}
 KNOWN_UNRELEASED_TAGS: dict[str, str] = {
     "0.1.4": "tag target still declared VERSION 0.1.3; preflight rejected run 32620039075",
     "0.1.5": "historical 0.1.4 tag lacked a release heading; preflight rejected run 32748217729",
+    "0.1.7": "timezone-dependent ledger date rejected release run 32764221081",
 }
+
+
+def _utc_date(value: str) -> str:
+    return dt.datetime.fromisoformat(value).astimezone(dt.timezone.utc).date().isoformat()
 
 
 def _headings() -> tuple[list[tuple[int, str, str | None]], list[str]]:
@@ -228,6 +234,8 @@ def _selftest() -> list[str]:
     case("date-mismatch", one, {"1.0.0"}, {}, {"1.0.0": "2026-01-02"},
          ["1.0.0 is dated 2026-01-01 in CHANGELOG.md but its tag is 2026-01-02"])
     case("unknown-tag-date-tolerated", one, {"1.0.0"}, {}, {}, [])
+    if _utc_date("2026-08-25T00:30:00+06:00") != "2026-08-24":
+        problems.append("UTC date selftest accepted a local-midnight rollover")
 
     for version, reason in KNOWN_UNTAGGED.items():
         if not str(reason).strip():
@@ -251,10 +259,15 @@ def check_tags() -> list[str]:
 
     def tag_date(version: str) -> str | None:
         shown = subprocess.run(
-            ["git", "log", "-1", "--format=%ad", "--date=short", version],
+            ["git", "log", "-1", "--format=%aI", version],
             cwd=REPO_ROOT, env=clean_environment(), capture_output=True, text=True, check=False,
         )
-        return shown.stdout.strip() if shown.returncode == 0 else None
+        if shown.returncode != 0 or not shown.stdout.strip():
+            return None
+        try:
+            return _utc_date(shown.stdout.strip())
+        except ValueError:
+            return None
 
     return problems + _reconcile(
         headings, tags, KNOWN_UNTAGGED, tag_date, KNOWN_UNRELEASED_TAGS
