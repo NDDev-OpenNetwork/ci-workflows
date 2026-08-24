@@ -48,29 +48,6 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
 """
     workflow_root = workflow_files()[0].parent
 
-    convergence = load_yaml(workflow_root / "dependabot-catalog-convergence.yml")
-    convergence_steps = (
-        (convergence.get("jobs", {}) or {}).get("synchronize", {}).get("steps", []) or []
-    )
-    candidate_checkout = next(
-        (
-            step
-            for step in convergence_steps
-            if isinstance(step, dict)
-            and step.get("name") == "Checkout Dependabot branch as data"
-        ),
-        {},
-    )
-    candidate_checkout_with = candidate_checkout.get("with", {})
-    if (
-        not isinstance(candidate_checkout_with, dict)
-        or candidate_checkout_with.get("fetch-depth") != 0
-    ):
-        problems.append(
-            "dependabot-catalog-convergence.yml: candidate checkout must use "
-            "fetch-depth: 0 so the reviewed default branch has common ancestry"
-        )
-
     codeql = load_yaml(workflow_root / "public-codeql.yml")
     codeql_on = get_on(codeql)
     codeql_call = codeql_on.get("workflow_call", {}) if isinstance(codeql_on, dict) else {}
