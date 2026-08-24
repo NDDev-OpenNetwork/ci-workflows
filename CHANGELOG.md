@@ -7,7 +7,7 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-## [0.1.7] - 2026-08-24
+## [0.1.8] - 2026-08-25
 
 - Added a trusted default-branch Dependabot catalog synchronizer. Failed
   same-repository Dependabot action bumps are updated in place from a
@@ -27,6 +27,9 @@ The project follows Semantic Versioning.
 - Isolated owner-only side-effect runtime fixtures from Dependabot pull
   requests so real bot commits and repository labels are never mistaken for
   disposable commitlint or label-mutation evidence.
+- Made release-ledger date reconciliation timezone-independent by deriving the
+  tagged commit's UTC author date. The signed `0.1.7` tag remains immutable
+  rejected evidence and has no release.
 
 ## [0.1.6] - 2026-08-24
 
