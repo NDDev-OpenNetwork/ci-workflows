@@ -7,11 +7,26 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-08-24
+
 - Added a trusted default-branch Dependabot catalog synchronizer. Failed
   same-repository Dependabot action bumps are updated in place from a
   `workflow_run` job that never executes candidate code; hardening and
   Scorecard validators now derive action identities from the catalog instead
   of carrying additional hardcoded SHA copies.
+- Made the synchronizer update the exact bound pull request through GitHub's
+  native branch API, approve only `action_required` runs for its exact derived
+  SHA, and keep candidate trees data-only. Transitive Docker-action image
+  declarations now converge with action pin updates as well.
+- Added the machine-enforced cache trust contract v2: provider ref scopes,
+  exact-first key dimensions, persistent-runner residue rules, retention and
+  rate limits, hosted/fleet equivalence, and real cold/warm telemetry.
+- Added successful runtime harnesses for the real cargo-fuzz and
+  ClusterFuzzLite reusable workflows, including a complete C++ libFuzzer
+  builder integration and fail-closed evidence aggregation.
+- Isolated owner-only side-effect runtime fixtures from Dependabot pull
+  requests so real bot commits and repository labels are never mistaken for
+  disposable commitlint or label-mutation evidence.
 
 ## [0.1.6] - 2026-08-24
 
