@@ -51,6 +51,7 @@
 | `.github/workflows/release-supply-chain.yml` | `artifact-attestations`, `sbom-generation`, `slsa-build-provenance`, `release-supply-chain` | ga |
 | `.github/workflows/release.yml` | internal | internal |
 | `.github/workflows/runtime-fixtures-event-write.yml` | internal | internal |
+| `.github/workflows/runtime-fixtures-fuzzing.yml` | internal | internal |
 | `.github/workflows/runtime-fixtures-languages.yml` | internal | internal |
 | `.github/workflows/runtime-fixtures.yml` | internal | internal |
 | `.github/workflows/rust-ci.yml` | `rust-ci` | ga |

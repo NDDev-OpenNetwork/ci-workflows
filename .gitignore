@@ -16,6 +16,8 @@ __pycache__/
 /.serena/
 # Serena MCP local project config (developer tooling, not part of the published catalog)
 tests/fixtures/rust/target/
+tests/fixtures/rust/fuzz/artifacts/
+tests/fixtures/rust/fuzz/corpus/
 tests/fixtures/terraform/.terraform/
 tests/fixtures/terraform/.terraform.lock.hcl
 .venv/

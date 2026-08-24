@@ -1,0 +1,78 @@
+name: runtime-fixtures-fuzzing
+
+on:
+  pull_request:
+    paths:
+      - '.clusterfuzzlite/**'
+      - 'tests/fixtures/fuzzing/**'
+      - 'tests/fixtures/rust/fuzz/**'
+      - '.github/workflows/fuzzing.yml'
+      - '.github/workflows/clusterfuzzlite.yml'
+      - '.github/workflows/runtime-fixtures-fuzzing.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  cargo-fuzz:
+    permissions:
+      contents: read # cargo-fuzz compiles the checked-out fixture tree
+    uses: ./.github/workflows/fuzzing.yml
+    with:
+      runner: ubuntu-latest
+      working_directory: tests/fixtures/rust
+      rust_toolchain: nightly
+      install_command: cargo install cargo-fuzz --locked
+      fuzz_command: cargo fuzz run checksum -- -runs=1000
+      timeout_minutes: 20
+
+  clusterfuzzlite:
+    permissions:
+      actions: read # ClusterFuzzLite discovers prior corpus/build runs
+      contents: read # build the checked-out C++ harness
+      security-events: write # upload the real SARIF result requested below
+    uses: ./.github/workflows/clusterfuzzlite.yml
+    with:
+      runner: ubuntu-latest
+      mode: code-change
+      language: c++
+      sanitizer_matrix: '["address"]'
+      fuzz_seconds: 60
+      output_sarif: true
+      timeout_minutes: 25
+
+  evidence:
+    name: fuzz runtime evidence
+    if: ${{ always() }}
+    needs: [cargo-fuzz, clusterfuzzlite]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require both real callers
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          python3 -I <<'PY'
+          import json
+          import os
+          import sys
+
+          results = json.loads(os.environ["RESULTS"])
+          expected = {"cargo-fuzz", "clusterfuzzlite"}
+          if set(results) != expected:
+              raise SystemExit(f"unexpected callers: {sorted(results)}")
+          failed = {
+              name: payload.get("result")
+              for name, payload in results.items()
+              if payload.get("result") != "success"
+          }
+          if failed:
+              raise SystemExit(f"fuzz runtime evidence rejected: {failed}")
+          print("fuzz runtime evidence accepted: cargo-fuzz + ClusterFuzzLite")
+          PY
