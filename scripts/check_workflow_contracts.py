@@ -48,6 +48,50 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
 """
     workflow_root = workflow_files()[0].parent
 
+    convergence = load_yaml(workflow_root / "dependabot-catalog-convergence.yml")
+    convergence_job = (convergence.get("jobs", {}) or {}).get("synchronize", {})
+    convergence_permissions = convergence_job.get("permissions", {})
+    if not isinstance(convergence_permissions, dict) or (
+        convergence_permissions.get("actions") != "write"
+        or convergence_permissions.get("contents") != "write"
+        or convergence_permissions.get("pull-requests") != "write"
+    ):
+        problems.append(
+            "dependabot-catalog-convergence.yml: synchronize must retain only "
+            "actions, contents, and pull-requests write permissions"
+        )
+    convergence_steps = convergence_job.get("steps", []) or []
+    approval_step = next(
+        (
+            step
+            for step in convergence_steps
+            if isinstance(step, dict)
+            and step.get("name") == "Approve exact candidate workflow runs"
+        ),
+        {},
+    )
+    approval_env = approval_step.get("env", {})
+    approval_run = approval_step.get("run", "")
+    if not isinstance(approval_env, dict) or approval_env.get("CANDIDATE_SHA") != (
+        "${{ steps.commit.outputs.candidate_sha }}"
+    ):
+        problems.append(
+            "dependabot-catalog-convergence.yml: run approval must bind to the "
+            "candidate SHA emitted by the commit step"
+        )
+    required_approval_guards = (
+        "event=pull_request&head_sha=${CANDIDATE_SHA}",
+        'select(.status == "action_required")',
+        "/actions/runs/${run_id}/approve",
+    )
+    if not isinstance(approval_run, str) or any(
+        guard not in approval_run for guard in required_approval_guards
+    ):
+        problems.append(
+            "dependabot-catalog-convergence.yml: approval must select only "
+            "action-required pull-request runs for the exact candidate SHA"
+        )
+
     codeql = load_yaml(workflow_root / "public-codeql.yml")
     codeql_on = get_on(codeql)
     codeql_call = codeql_on.get("workflow_call", {}) if isinstance(codeql_on, dict) else {}
