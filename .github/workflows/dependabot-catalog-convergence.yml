@@ -43,6 +43,16 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
           persist-credentials: true
           path: candidate
+      - name: Integrate reviewed default branch
+        working-directory: candidate
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch --no-tags origin "$DEFAULT_BRANCH"
+          git merge --no-edit "origin/${DEFAULT_BRANCH}"
       - name: Synchronize derived action declarations
         run: python3 -I trusted/scripts/sync_action_catalog.py --root candidate
       - name: Commit converged declarations
@@ -53,10 +63,10 @@ jobs:
           set -euo pipefail
           if git diff --quiet -- catalog docs/generated; then
             echo "catalog already converged"
-            exit 0
+          else
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git add catalog docs/generated
+            git commit -m "chore(deps): synchronize action catalog"
           fi
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add catalog docs/generated
-          git commit -m "chore(deps): synchronize action catalog"
           git push origin "HEAD:${HEAD_BRANCH}"
