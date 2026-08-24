@@ -4,13 +4,11 @@ This doc covers the release flow — from a SemVer tag to an immutable, attested
 GitHub Release — and package publication to GHCR, npm, and PyPI using OIDC
 trusted publishing (no long-lived tokens).
 
-> **Nothing has shipped through this flow yet.** `0.13.3` (2026-08-02) was the
-> last release, and it predates the gate: at that tag `release.yml` was
-> `resolve → publish`, and its run shows exactly those two jobs. The promotion
-> gate and the `release` environment landed two days later, in `1fecb00`. No
-> release has run since, so the sequence below is the design, not a path anyone
-> has walked. What blocks it is a producer for the evidence manifest — see the
-> caveat under *Producing the promotion record* and issue #157.
+> `0.1.3` was the first successful public-native publication through this
+> promotion graph. The signed `0.1.4` tag is not a release: its commit still
+> declares `VERSION=0.1.3`, so preflight rejected it and no GitHub Release was
+> created. Consumers must use a published release commit, never infer release
+> status from a tag-shaped name alone.
 
 ## Tag-driven release flow
 
