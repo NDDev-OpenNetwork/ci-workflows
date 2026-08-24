@@ -42,6 +42,14 @@ ANY_VERSION_HEADING = re.compile(r"^## \[(?!Unreleased\])(.*?)\]")
 # authority, which is deliberately outside what this repository's validators do.
 KNOWN_UNTAGGED: dict[str, str] = {}
 
+# Signed tags whose immutable target failed release preflight and therefore has
+# no GitHub Release. They are retained as failure evidence, but they are not
+# release headings and consumers must never treat them as published versions.
+KNOWN_UNRELEASED_TAGS: dict[str, str] = {
+    "0.1.4": "tag target still declared VERSION 0.1.3; preflight rejected run 32620039075",
+    "0.1.5": "historical 0.1.4 tag lacked a release heading; preflight rejected run 32748217729",
+}
+
 
 def _headings() -> tuple[list[tuple[int, str, str | None]], list[str]]:
     """Every release heading as (line number, version, date), plus problems."""
@@ -136,6 +144,7 @@ def _reconcile(
     tags: set[str],
     known_untagged: Mapping[str, str],
     tag_date: Callable[[str], str | None],
+    known_unreleased_tags: Mapping[str, str] | None = None,
 ) -> list[str]:
     """Reconcile ledger headings against a tag set. Pure: no git, no filesystem.
 
@@ -162,7 +171,8 @@ def _reconcile(
             problems.append(
                 f"{version} is dated {date} in CHANGELOG.md but its tag is {tagged}"
             )
-    for tag in sorted(tags - {version for _, version, _ in headings}):
+    known_unreleased_tags = known_unreleased_tags or {}
+    for tag in sorted(tags - {version for _, version, _ in headings} - set(known_unreleased_tags)):
         problems.append(f"tag {tag} exists but CHANGELOG.md has no heading for it")
     for version in sorted(known_untagged):
         if version in tags:
@@ -170,6 +180,11 @@ def _reconcile(
                 f"{version} is now tagged; drop it from KNOWN_UNTAGGED in "
                 "check_release_ledger.py"
             )
+    for version, reason in sorted(known_unreleased_tags.items()):
+        if version not in tags:
+            problems.append(f"known unreleased tag {version} is absent; remove its exception ({reason})")
+        if version in {release for _, release, _ in headings}:
+            problems.append(f"known unreleased tag {version} has a release heading; remove its exception")
     return problems
 
 
@@ -206,6 +221,10 @@ def _selftest() -> list[str]:
     case("tag-without-heading", one, {"1.0.0", "1.1.0"}, {},
          {"1.0.0": "2026-01-01"},
          ["tag 1.1.0 exists but CHANGELOG.md has no heading for it"])
+    actual = _reconcile(one, {"1.0.0", "1.1.0"}, {}, {"1.0.0": "2026-01-01"}.get,
+                        {"1.1.0": "rejected"})
+    if actual:
+        problems.append(f"reconcile selftest known-unreleased-tag: got {actual}, expected []")
     case("date-mismatch", one, {"1.0.0"}, {}, {"1.0.0": "2026-01-02"},
          ["1.0.0 is dated 2026-01-01 in CHANGELOG.md but its tag is 2026-01-02"])
     case("unknown-tag-date-tolerated", one, {"1.0.0"}, {}, {}, [])
@@ -237,7 +256,9 @@ def check_tags() -> list[str]:
         )
         return shown.stdout.strip() if shown.returncode == 0 else None
 
-    return problems + _reconcile(headings, tags, KNOWN_UNTAGGED, tag_date)
+    return problems + _reconcile(
+        headings, tags, KNOWN_UNTAGGED, tag_date, KNOWN_UNRELEASED_TAGS
+    )
 
 
 def main() -> int:

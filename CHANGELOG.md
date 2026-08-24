@@ -7,7 +7,7 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-## [0.1.5] - 2026-08-24
+## [0.1.6] - 2026-08-24
 
 - Added explicit Dependabot-safe advanced CodeQL routing. Ordinary private
   analysis and Dependabot pull requests can use separate reviewed runner
