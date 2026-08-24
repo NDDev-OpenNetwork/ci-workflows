@@ -14,6 +14,7 @@
 | `.github/workflows/cpp-ci.yml` | `cpp-ci` | ga |
 | `.github/workflows/cross-platform-smoke.yml` | `cross-platform-smoke` | ga |
 | `.github/workflows/dart-flutter-ci.yml` | `dart-flutter-ci` | ga |
+| `.github/workflows/dependabot-catalog-convergence.yml` | internal | internal |
 | `.github/workflows/dependency-review.yml` | internal | internal |
 | `.github/workflows/docs-ci.yml` | `docs-ci` | ga |
 | `.github/workflows/docs-quality.yml` | `docs-quality` | ga |

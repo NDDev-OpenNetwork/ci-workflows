@@ -350,6 +350,9 @@
     ]
   },
   "sibling_imports": {
+    "test_sync_action_catalog.py": [
+      "sync_action_catalog"
+    ],
     "__init__.py": [],
     "_gradle_lockfile.py": [],
     "_json_schema.py": [],
