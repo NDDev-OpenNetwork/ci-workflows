@@ -28,6 +28,7 @@ SELF_WORKFLOWS = {
     "runtime-fixtures.yml",
     "runtime-fixtures-languages.yml",
     "runtime-fixtures-event-write.yml",
+    "runtime-fixtures-fuzzing.yml",
     "scorecard.yml",
 }
 
