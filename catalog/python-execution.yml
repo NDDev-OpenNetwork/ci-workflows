@@ -2,7 +2,7 @@
   "schema_version": 1,
   "python": {
     "major_minor": "3.13",
-    "subject_count": 62,
+    "subject_count": 64,
     "launcher": "scripts/check_python_execution_contract.py",
     "launcher_prefix": [
       ".venv/bin/python",

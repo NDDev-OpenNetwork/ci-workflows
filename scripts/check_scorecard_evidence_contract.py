@@ -12,6 +12,10 @@ from typing import Any
 from ci_workflows_tools._strict_yaml import strict_load
 from ci_workflows_tools._workflow_yaml import REPO_ROOT, WORKFLOWS_DIR, get_on, load_yaml
 from ci_workflows_tools.check_harden_runner_contract import HARDENED_WORKFLOWS, HARDEN_RUNNER
+from ci_workflows_tools.check_tool_registry import catalog_action
+
+CODEQL_ACTION, CODEQL_ACTION_VERSION = catalog_action("codeql-action")
+CODEQL_REPOSITORY, CODEQL_SHA = CODEQL_ACTION.rsplit("@", 1)
 from ci_workflows_tools.check_python_execution_contract import clean_environment
 
 CONTRACT_PATH = REPO_ROOT / "catalog" / "scorecard-evidence.yml"
@@ -34,7 +38,7 @@ EXPECTED_CATEGORY_CONTRACT = {
     "source_urls": [
         "https://github.com/ossf/scorecard/blob/v5.5.0/pkg/scorecard/sarif.go",
         "https://github.com/github/codeql-action/blob/"
-        "d1ba80a13dd99fba24a470575428917156a28b43/src/upload-lib.ts",
+        f"{CODEQL_SHA}/src/upload-lib.ts",
         "https://docs.github.com/en/code-security/reference/code-scanning/"
         "sarif-files/sarif-support-for-code-scanning",
     ],
@@ -718,8 +722,8 @@ def check() -> list[str]:
     upload = steps["Upload SARIF to code scanning"]
     if upload.get("id") != "upload-sarif":
         problems.append("Scorecard SARIF upload must expose its documented output")
-    if upload.get("uses") != "github/codeql-action/upload-sarif@d1ba80a13dd99fba24a470575428917156a28b43":
-        problems.append("Scorecard upload-sarif action must retain the immutable v4.37.5 pin")
+    if upload.get("uses") != f"{CODEQL_REPOSITORY}/upload-sarif@{CODEQL_SHA}":
+        problems.append(f"Scorecard upload-sarif action must use catalog pin {CODEQL_ACTION_VERSION}")
     if upload.get("with", {}).get("category") != "${{ inputs.sarif_category }}":
         problems.append("Scorecard SARIF upload must use the caller-visible deterministic category")
     if upload.get("continue-on-error") or analysis.get("continue-on-error"):

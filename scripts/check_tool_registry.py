@@ -34,6 +34,18 @@ TOOLS = REPO_ROOT / "catalog" / "tools.yml"
 LOCAL_PREFIXES = ("./", "NDDev-OpenNetwork/ci-workflows/")
 
 
+def catalog_action(tool_id: str) -> tuple[str, str]:
+    tools = (strict_load(TOOLS) or {}).get("tools") or []
+    matches = [tool for tool in tools if isinstance(tool, dict) and tool.get("id") == tool_id]
+    if len(matches) != 1 or matches[0].get("kind") != "action":
+        raise ValueError(f"catalog action {tool_id!r} is not unique")
+    pin = str(matches[0].get("pin") or "")
+    version = str(matches[0].get("current_version") or "")
+    if not re.fullmatch(r"[^@\s]+@[0-9a-f]{40}", pin) or not version:
+        raise ValueError(f"catalog action {tool_id!r} has invalid pin/version")
+    return pin, version
+
+
 def _actual_usage() -> dict[str, set[str]]:
     """action repo (owner/name[/path]) -> workflow paths that call it.
 
