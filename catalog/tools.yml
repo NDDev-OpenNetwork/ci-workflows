@@ -98,6 +98,7 @@ tools:
     pin: "step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920"
     used_by:
       - .github/workflows/ci.yml
+      - .github/workflows/dependabot-catalog-convergence.yml
       - .github/workflows/maintenance.yml
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/public-codeql.yml
@@ -180,6 +181,7 @@ tools:
       - .github/workflows/coverage-gate.yml
       - .github/workflows/cpp-ci.yml
       - .github/workflows/cross-platform-smoke.yml
+      - .github/workflows/dependabot-catalog-convergence.yml
       - .github/workflows/dart-flutter-ci.yml
       - .github/workflows/docs-ci.yml
       - .github/workflows/docs-quality.yml

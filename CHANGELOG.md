@@ -7,6 +7,12 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Added a trusted default-branch Dependabot catalog synchronizer. Failed
+  same-repository Dependabot action bumps are updated in place from a
+  `workflow_run` job that never executes candidate code; hardening and
+  Scorecard validators now derive action identities from the catalog instead
+  of carrying additional hardcoded SHA copies.
+
 ## [0.1.6] - 2026-08-24
 
 - Added explicit Dependabot-safe advanced CodeQL routing. Ordinary private

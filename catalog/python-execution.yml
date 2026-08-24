@@ -2,7 +2,7 @@
   "schema_version": 1,
   "python": {
     "major_minor": "3.13",
-    "subject_count": 62,
+    "subject_count": 64,
     "launcher": "scripts/check_python_execution_contract.py",
     "launcher_prefix": [
       ".venv/bin/python",
@@ -327,6 +327,7 @@
       "compile_evidence_plan.py",
       "render_runtime_evidence.py",
       "resolve_profile.py",
+      "test_sync_action_catalog.py",
       "validate_catalog.py",
       "validate_product_facts.py",
       "validate_profiles.py",
@@ -338,6 +339,7 @@
     "mutating_generator_import_help_only": [
       "generate_android_fixture_provenance.py",
       "generate_sdk_runtime_manifest.py",
+      "sync_action_catalog.py",
       "sync_skills.py"
     ],
     "aggregate": [
@@ -417,7 +419,8 @@
       "check_python_execution_contract"
     ],
     "check_harden_runner_contract.py": [
-      "_workflow_yaml"
+      "_workflow_yaml",
+      "check_tool_registry"
     ],
     "check_merge_group.py": [
       "_workflow_yaml"
@@ -474,7 +477,8 @@
       "_strict_yaml",
       "_workflow_yaml",
       "check_harden_runner_contract",
-      "check_python_execution_contract"
+      "check_python_execution_contract",
+      "check_tool_registry"
     ],
     "check_secret_scan_contract.py": [
       "_strict_yaml",
@@ -536,6 +540,9 @@
     "resolve_profile.py": [
       "_strict_yaml"
     ],
+    "test_sync_action_catalog.py": [
+      "sync_action_catalog"
+    ],
     "validate_all.py": [
       "_strict_yaml",
       "check_actionlint_config",
@@ -586,6 +593,7 @@
       "generate_docs",
       "render_runtime_evidence",
       "resolve_profile",
+      "test_sync_action_catalog",
       "validate_catalog",
       "validate_product_facts",
       "validate_profiles"

@@ -13,14 +13,13 @@ import sys
 from typing import Any
 
 from ci_workflows_tools._workflow_yaml import load_yaml, workflow_files
+from ci_workflows_tools.check_tool_registry import catalog_action
 
-HARDEN_RUNNER = (
-    "step-security/harden-runner@"
-    "bf7454d06d71f1098171f2acdf0cd4708d7b5920"
-)
+HARDEN_RUNNER, HARDEN_RUNNER_VERSION = catalog_action("harden-runner")
 
 HARDENED_WORKFLOWS = {
     "ci.yml",
+    "dependabot-catalog-convergence.yml",
     "maintenance.yml",
     "nddev-security-bundle.yml",
     "public-codeql.yml",
@@ -76,7 +75,7 @@ def check() -> list[str]:
                     )
                 if uses != HARDEN_RUNNER:
                     problems.append(
-                        f"{where}: Harden-Runner must use the audited v2.20.0 pin"
+                        f"{where}: Harden-Runner must use catalog pin {HARDEN_RUNNER_VERSION}"
                     )
                 if "if" in step:
                     problems.append(

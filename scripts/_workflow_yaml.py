@@ -22,6 +22,7 @@ SELF_WORKFLOWS = {
     "maintenance.yml",
     "codeql.yml",
     "dependency-review.yml",
+    "dependabot-catalog-convergence.yml",
     "gitleaks.yml",
     "release.yml",
     "runtime-fixtures.yml",
