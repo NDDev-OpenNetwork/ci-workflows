@@ -5,10 +5,11 @@ GitHub Release — and package publication to GHCR, npm, and PyPI using OIDC
 trusted publishing (no long-lived tokens).
 
 > `0.1.3` was the first successful public-native publication through this
-> promotion graph. The signed `0.1.4` tag is not a release: its commit still
-> declares `VERSION=0.1.3`, so preflight rejected it and no GitHub Release was
-> created. Consumers must use a published release commit, never infer release
-> status from a tag-shaped name alone.
+> promotion graph. The signed `0.1.4` and `0.1.5` tags are retained rejected
+> attempts, not releases: preflight failed and no GitHub Release was created.
+> `check_release_ledger.py` records those exact exceptions and fails if either
+> disappears or gains a release heading. Consumers must use a published release
+> commit, never infer release status from a tag-shaped name alone.
 
 ## Tag-driven release flow
 
