@@ -7,7 +7,7 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-## [0.1.8] - 2026-08-25
+## [0.1.8] - 2026-08-24
 
 - Added a trusted default-branch Dependabot catalog synchronizer. Failed
   same-repository Dependabot action bumps are updated in place from a
