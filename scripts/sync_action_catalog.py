@@ -5,9 +5,43 @@ import argparse
 import collections
 import pathlib
 import re
+import urllib.error
+import urllib.request
+from collections.abc import Callable
 
 
 PIN = re.compile(r"uses:\s*([^\s#@]+)@([0-9a-f]{40})\s*#\s*(\S+)")
+IMAGE = re.compile(r"(?m)^\s*image:\s*[\"']?(docker://[^\s\"']+)")
+
+
+def resolve_action_image(action: str, sha: str) -> str:
+    parts = action.split("/")
+    repository = "/".join(parts[:2])
+    subpath = "/".join(parts[2:])
+    prefix = f"{subpath}/" if subpath else ""
+    failures: list[str] = []
+    for filename in ("action.yml", "action.yaml"):
+        url = (
+            "https://raw.githubusercontent.com/"
+            f"{repository}/{sha}/{prefix}{filename}"
+        )
+        try:
+            with urllib.request.urlopen(url, timeout=20) as response:
+                payload = response.read(1_048_577)
+        except urllib.error.HTTPError as error:
+            if error.code == 404:
+                failures.append(filename)
+                continue
+            raise
+        if len(payload) > 1_048_576:
+            raise ValueError(f"{action}@{sha} definition exceeds 1 MiB")
+        match = IMAGE.search(payload.decode("utf-8"))
+        if match is None:
+            raise ValueError(f"{action}@{sha} is not a direct Docker action")
+        return match.group(1)
+    raise ValueError(
+        f"{action}@{sha} has neither action.yml nor action.yaml ({failures})"
+    )
 
 
 def workflow_pins(root: pathlib.Path) -> dict[str, tuple[str, str]]:
@@ -29,7 +63,10 @@ def workflow_pins(root: pathlib.Path) -> dict[str, tuple[str, str]]:
     return result
 
 
-def synchronize(root: pathlib.Path) -> list[str]:
+def synchronize(
+    root: pathlib.Path,
+    image_resolver: Callable[[str, str], str] = resolve_action_image,
+) -> list[str]:
     pins = workflow_pins(root)
     changed: list[str] = []
     for path in sorted((root / ".github/workflows").glob("*.yml")):
@@ -52,6 +89,7 @@ def synchronize(root: pathlib.Path) -> list[str]:
     tools = root / "catalog/tools.yml"
     lines = tools.read_text(encoding="utf-8").splitlines()
     replacements: list[tuple[str, str]] = []
+    changed_repositories: set[str] = set()
     current_kind = current_pin = None
     for index, line in enumerate(lines):
         if line.startswith("    kind: "):
@@ -69,6 +107,7 @@ def synchronize(root: pathlib.Path) -> list[str]:
                 lines[index] = f'    pin: "{repository}@{new_sha}"'
                 replacements.append((old_sha, new_sha))
                 replacements.append((f"{repository}@{old_sha}", f"{repository}@{new_sha}"))
+                changed_repositories.add(repository)
             for version_index in range(index - 1, max(-1, index - 8), -1):
                 if lines[version_index].startswith("    current_version: "):
                     old_version = lines[version_index].split(":", 1)[1].strip().strip('"')
@@ -79,6 +118,27 @@ def synchronize(root: pathlib.Path) -> list[str]:
     if new_tools != tools.read_text(encoding="utf-8"):
         tools.write_text(new_tools, encoding="utf-8")
         changed.append(str(tools.relative_to(root)))
+
+    action_images = root / "catalog/action-images.yml"
+    if action_images.is_file() and changed_repositories:
+        before = action_images.read_text(encoding="utf-8")
+        image_lines = before.splitlines()
+        current_action = None
+        for index, line in enumerate(image_lines):
+            if line.startswith("  - action: "):
+                current_action = line.split(":", 1)[1].strip()
+                continue
+            if not line.startswith("    image: ") or current_action is None:
+                continue
+            repository = "/".join(current_action.split("/")[:2])
+            if repository not in changed_repositories:
+                continue
+            sha, _ = pins[repository]
+            image_lines[index] = f"    image: {image_resolver(current_action, sha)}"
+        after = "\n".join(image_lines) + "\n"
+        if after != before:
+            action_images.write_text(after, encoding="utf-8")
+            changed.append(str(action_images.relative_to(root)))
 
     for relative in ("catalog/scorecard-evidence.yml", "docs/generated/scorecard-evidence.md"):
         path = root / relative
