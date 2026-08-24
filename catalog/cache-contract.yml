@@ -11,7 +11,77 @@
 # `check_cache_contract.py` compiles this fail-closed: an action that can cache
 # and is not listed here fails the gate, so a new caching dependency has to be
 # classified rather than inherited.
-schema_version: 1
+schema_version: 2
+
+trust:
+  namespace: repository
+  pull_request_scope: merge-ref
+  default_branch_fallback: read-only
+  low_trust_default_branch_access: restore-only
+  trusted_default_branch_writers:
+    - push
+    - workflow_dispatch
+    - repository_dispatch
+    - delete
+    - registry_package
+    - page_build
+    - schedule
+  cache_is_provenance: false
+  secrets_allowed: false
+
+keys:
+  match: exact-first
+  prefix_restore: explicit-review-only
+  cross_os_archive_default: false
+  required_dimensions:
+    - repository
+    - operating-system
+    - architecture
+    - tool-or-action-version
+    - dependency-input-digest
+  conditional_dimensions:
+    - target-platform
+    - build-settings
+    - private-backend-identity
+
+persistent_runners:
+  workspace_reuse: forbidden
+  mutable_cross_job_state: forbidden
+  allowed_warm_state:
+    - immutable-runner-image
+    - checksum-verified-tool-store
+    - typed-tenant-scoped-cache-backend
+  cleanup_authority: runner-lifecycle
+  residue_is_trusted_input: false
+
+retention:
+  idle_eviction_days: 7
+  default_repository_limit_gb: 10
+  eviction_order: least-recently-accessed
+  upload_rate_per_minute: 200
+  download_rate_per_minute: 1500
+  cache_miss_correctness_effect: none
+
+equivalence:
+  hosted_and_fleet_keys_share_semantics: true
+  backend_identity_required_for_private_cache: true
+  hit_is_authoritative_evidence: false
+  miss_may_fail_job: false
+  corrupt_entry_action: discard-and-rebuild
+
+telemetry:
+  required:
+    - backend
+    - key-digest
+    - hit
+    - restore-duration
+    - save-duration
+    - restored-bytes
+    - saved-bytes
+  compare:
+    - cold
+    - warm
+  synthetic_load_allowed: false
 
 # Every action in the tree that can write to a cache, the input that decides
 # whether it does, and what happens with no input at all.
