@@ -1,13 +1,15 @@
 name: dependabot-catalog-convergence
 
 on:
-  workflow_run:
+  # `workflow_run` supplies a default-branch workflow and write token. This job
+  # accepts only a failed same-repository PR run by dependabot[bot], never
+  # executes candidate files, and runs the synchronizer from a separate trusted
+  # default-branch checkout. The candidate is only a Git output worktree.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: [ci]
     types: [completed]
 
-permissions:
-  contents: write
-  pull-requests: read
+permissions: {}
 
 concurrency:
   group: dependabot-catalog-${{ github.run_id }}
@@ -23,8 +25,8 @@ jobs:
       startsWith(github.event.workflow_run.head_branch, 'dependabot/')
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: read
+      contents: write # push the derived catalog commit to the same Dependabot branch
+      pull-requests: read # bind workflow_run metadata to the existing PR
     timeout-minutes: 10
     steps:
       - name: Harden runner
