@@ -350,9 +350,6 @@
     ]
   },
   "sibling_imports": {
-    "test_sync_action_catalog.py": [
-      "sync_action_catalog"
-    ],
     "__init__.py": [],
     "_gradle_lockfile.py": [],
     "_json_schema.py": [],
@@ -422,7 +419,8 @@
       "check_python_execution_contract"
     ],
     "check_harden_runner_contract.py": [
-      "_workflow_yaml"
+      "_workflow_yaml",
+      "check_tool_registry"
     ],
     "check_merge_group.py": [
       "_workflow_yaml"
@@ -479,7 +477,8 @@
       "_strict_yaml",
       "_workflow_yaml",
       "check_harden_runner_contract",
-      "check_python_execution_contract"
+      "check_python_execution_contract",
+      "check_tool_registry"
     ],
     "check_secret_scan_contract.py": [
       "_strict_yaml",
@@ -540,6 +539,9 @@
     ],
     "resolve_profile.py": [
       "_strict_yaml"
+    ],
+    "test_sync_action_catalog.py": [
+      "sync_action_catalog"
     ],
     "validate_all.py": [
       "_strict_yaml",
