@@ -92,6 +92,19 @@ def validate(doc: dict[str, Any]) -> list[str]:
     if concurrency.get("cancel-in-progress") is not False:
         problems.append("side-effect fixture must preserve the first run; cancellation hides evidence")
 
+    for job_name in (
+        "prepare-pr-hygiene",
+        "fixture-pr-hygiene",
+        "fixture-pr-hygiene-explicit",
+        "cleanup-pr-hygiene",
+        "evidence-pr-hygiene",
+    ):
+        condition = str(_job(doc, job_name).get("if", ""))
+        if "github.event.pull_request.user.login != 'dependabot[bot]'" not in condition:
+            problems.append(
+                f"{job_name} must exclude Dependabot from owner-only side-effect evidence"
+            )
+
     benchmark = _job(doc, "fixture-benchmark")
     if benchmark.get("permissions") != {"contents": "write"}:
         problems.append("benchmark caller must grant exactly contents:write")

@@ -169,7 +169,7 @@ jobs:
           .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch render_runtime_evidence.py --
 
   prepare-pr-hygiene:
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -198,7 +198,7 @@ jobs:
           echo "PR fixture: ci label absent before caller"
 
   fixture-pr-hygiene:
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]' }}
     needs: prepare-pr-hygiene
     permissions:
       contents: read       # checkout commits and the labeler configuration
@@ -214,7 +214,7 @@ jobs:
       stale: false
 
   fixture-pr-hygiene-explicit:
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]' }}
     permissions:
       contents: read       # checkout commits and validate the explicit config file
       issues: write        # required ceiling for the disabled stale nested job
@@ -229,7 +229,7 @@ jobs:
       stale: false
 
   cleanup-pr-hygiene:
-    if: ${{ always() && github.event_name == 'pull_request' }}
+    if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]' }}
     needs: [prepare-pr-hygiene, fixture-pr-hygiene]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -283,7 +283,7 @@ jobs:
           fi
 
   evidence-pr-hygiene:
-    if: ${{ always() && github.event_name == 'pull_request' }}
+    if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]' }}
     needs: [fixture-pr-hygiene, fixture-pr-hygiene-explicit, cleanup-pr-hygiene]
     runs-on: ubuntu-latest
     timeout-minutes: 5
