@@ -61,12 +61,12 @@ jobs:
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           set -euo pipefail
-          if git diff --quiet -- catalog docs/generated; then
+          if git diff --quiet -- .github/workflows catalog docs/generated; then
             echo "catalog already converged"
           else
             git config user.name github-actions[bot]
             git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git add catalog docs/generated
+            git add .github/workflows catalog docs/generated
             git commit -m "chore(deps): synchronize action catalog"
           fi
           git push origin "HEAD:${HEAD_BRANCH}"

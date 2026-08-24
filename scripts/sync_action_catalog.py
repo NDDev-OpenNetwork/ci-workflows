@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import collections
 import pathlib
 import re
 
@@ -10,7 +11,7 @@ PIN = re.compile(r"uses:\s*([^\s#@]+)@([0-9a-f]{40})\s*#\s*(\S+)")
 
 
 def workflow_pins(root: pathlib.Path) -> dict[str, tuple[str, str]]:
-    found: dict[str, set[tuple[str, str]]] = {}
+    found: dict[str, collections.Counter[tuple[str, str]]] = {}
     for path in sorted((root / ".github/workflows").glob("*.yml")):
         for line in path.read_text(encoding="utf-8").splitlines():
             match = PIN.search(line)
@@ -18,21 +19,39 @@ def workflow_pins(root: pathlib.Path) -> dict[str, tuple[str, str]]:
                 continue
             reference, sha, version = match.groups()
             repository = "/".join(reference.split("/")[:2])
-            found.setdefault(repository, set()).add((sha, version))
+            found.setdefault(repository, collections.Counter())[(sha, version)] += 1
     result: dict[str, tuple[str, str]] = {}
     for repository, identities in found.items():
-        if len(identities) != 1:
-            raise ValueError(f"{repository} has multiple action identities: {sorted(identities)}")
-        result[repository] = next(iter(identities))
+        ranked = identities.most_common()
+        if len(ranked) > 1 and ranked[0][1] == ranked[1][1]:
+            raise ValueError(f"{repository} has no unique majority identity: {ranked}")
+        result[repository] = ranked[0][0]
     return result
 
 
 def synchronize(root: pathlib.Path) -> list[str]:
     pins = workflow_pins(root)
+    changed: list[str] = []
+    for path in sorted((root / ".github/workflows").glob("*.yml")):
+        before = path.read_text(encoding="utf-8")
+        output: list[str] = []
+        for line in before.splitlines():
+            match = PIN.search(line)
+            if match is not None:
+                reference, sha, version = match.groups()
+                repository = "/".join(reference.split("/")[:2])
+                expected = pins[repository]
+                if (sha, version) != expected:
+                    line = line[:match.start(2)] + expected[0] + line[match.end(2):match.start(3)] + expected[1] + line[match.end(3):]
+            output.append(line)
+        after = "\n".join(output) + "\n"
+        if after != before:
+            path.write_text(after, encoding="utf-8")
+            changed.append(str(path.relative_to(root)))
+
     tools = root / "catalog/tools.yml"
     lines = tools.read_text(encoding="utf-8").splitlines()
     replacements: list[tuple[str, str]] = []
-    changed: list[str] = []
     current_kind = current_pin = None
     for index, line in enumerate(lines):
         if line.startswith("    kind: "):
