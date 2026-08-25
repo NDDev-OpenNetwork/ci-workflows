@@ -524,13 +524,14 @@ tools:
     name: NDDev-OpenNetwork/github-actions/actions/tool-cache
     homepage: "https://github.com/NDDev-OpenNetwork/github-actions/tree/main/actions/tool-cache"
     kind: action
-    current_version: "v1.0.0"
-    pin: "NDDev-OpenNetwork/github-actions@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5"
+    current_version: "v1.0.1"
+    pin: "NDDev-OpenNetwork/github-actions@470c95c3e7cd1f9a0d763f3f6d7f43024f8451ad"
     used_by:
       - .github/workflows/private-security-bundle-free.yml
     last_verified: "2026-08-23"
     notes: >-
-      Signed tag v1.0.0 resolves to the exact pinned repository commit.
+      Signed tag v1.0.1 resolves to the exact pinned repository commit and
+      mirrors structured fetch evidence into the runner diagnostic bundle.
       Checksum-addressed immutable tool artifacts use the caller's injected
       trust-scoped RustFS identity on private runners and the same verified
       upstream fallback on GitHub-hosted runners.

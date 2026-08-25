@@ -101,7 +101,7 @@ jobs:
       - name: Restore pinned uv archive
         if: ${{ steps.baked-uv.outputs.available != 'true' }}
         id: uv-archive
-        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5  # v1.0.0
+        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@470c95c3e7cd1f9a0d763f3f6d7f43024f8451ad  # v1.0.1
         with:
           url: https://github.com/astral-sh/uv/releases/download/0.11.30/uv-x86_64-unknown-linux-gnu.tar.gz
           sha256: 04bc7d180d6138bf6dc08387acf507a823f397a98fea55da36b0ccc7fbce3b68
@@ -124,7 +124,7 @@ jobs:
           printf '%s\n' "$RUNNER_TEMP/private-security-tools/bin" >> "$GITHUB_PATH"
 
       - name: Restore actionlint archive
-        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5  # v1.0.0
+        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@470c95c3e7cd1f9a0d763f3f6d7f43024f8451ad  # v1.0.1
         with:
           url: https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
           sha256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
@@ -132,7 +132,7 @@ jobs:
           max-bytes: '16777216'
 
       - name: Restore OSV-Scanner binary
-        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5  # v1.0.0
+        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@470c95c3e7cd1f9a0d763f3f6d7f43024f8451ad  # v1.0.1
         with:
           url: https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_linux_amd64
           sha256: edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c
@@ -140,7 +140,7 @@ jobs:
           max-bytes: '268435456'
 
       - name: Restore gitleaks archive
-        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@bcacca8a41c5b8117716fcbeb0006ab83fd0d0f5  # v1.0.0
+        uses: NDDev-OpenNetwork/github-actions/actions/tool-cache@470c95c3e7cd1f9a0d763f3f6d7f43024f8451ad  # v1.0.1
         with:
           url: https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
           sha256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
