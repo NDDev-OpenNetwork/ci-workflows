@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-08-25
+
 - Standardized reviewed network downloads on two retries after the initial
   request: exactly three total attempts, with checksum and permanent-failure
   handling unchanged.
