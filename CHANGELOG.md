@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-08-25
+
 - Updated the immutable tool-cache action to signed `v1.0.1`, retaining each
   verified fetch event in the ephemeral runner diagnostic bundle for durable
   OpenObserve evidence after teardown.
