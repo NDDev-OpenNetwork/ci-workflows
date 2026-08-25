@@ -135,7 +135,7 @@ jobs:
         run: |
           set -euo pipefail
           lock="$RUNNER_TEMP/requirements-qt.txt"
-          curl --fail --silent --show-error --location --retry 3 \
+          curl --fail --silent --show-error --location --retry 2 \
             --output "$lock" \
             "https://raw.githubusercontent.com/$CALLEE_REPOSITORY/$CALLEE_SHA/requirements-qt.txt"
           printf '%s  %s\n' "$LOCK_SHA256" "$lock" | sha256sum --check --status || {

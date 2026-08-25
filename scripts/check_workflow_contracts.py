@@ -334,12 +334,31 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
     problems += _runner_selftest()
     problems += _job_defaults_pin_the_shell()
     problems += _started_runs_are_preserved()
+    problems += _download_attempts_are_bounded()
     return problems
 
 
 BARE_BASH_C = re.compile(r'\bbash -c "(\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)"')
 # Inputs whose value is handed to a shell by the reusable that receives it.
 COMMAND_INPUT = re.compile(r"(^|_)commands?$")
+DOWNLOAD_RETRY = re.compile(r"--retry[ =]([0-9]+)")
+
+
+def _download_attempts_are_bounded() -> list[str]:
+    """curl's retry count excludes the initial request; two means three attempts."""
+    problems: list[str] = []
+    paths = [*workflow_files(), *(Path("scripts").glob("*.sh"))]
+    for path in paths:
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if line.lstrip().startswith("#"):
+                continue
+            for match in DOWNLOAD_RETRY.finditer(line):
+                if int(match.group(1)) > 2:
+                    problems.append(
+                        f"{path}:{lineno}: download retry count {match.group(1)} "
+                        "exceeds two retries / three total attempts"
+                    )
+    return problems
 
 
 def _started_runs_are_preserved() -> list[str]:

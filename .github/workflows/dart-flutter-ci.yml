@@ -165,7 +165,7 @@ jobs:
           # --retry covers the transient case only; a 404 or a digest mismatch
           # must fail rather than be retried into success.
           curl --fail --silent --show-error --location \
-            --retry 3 --retry-connrefused --max-time 900 \
+            --retry 2 --retry-connrefused --max-time 900 \
             --output "$archive" "$ARCHIVE_URL"
           printf '%s  %s\n' "$ARCHIVE_SHA256" "$archive" > "${RUNNER_TEMP}/flutter.sha256"
           shasum -a 256 -c "${RUNNER_TEMP}/flutter.sha256"

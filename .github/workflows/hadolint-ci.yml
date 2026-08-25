@@ -119,7 +119,7 @@ jobs:
           # six seconds, which a Releases outage outlasts easily. Left unset, curl backs
           # off 1s, 2s, 4s, 8s..., and --retry-max-time bounds the whole thing so a
           # genuinely dead endpoint still fails the job rather than hanging it.
-          curl -fsSL --retry 5 --retry-max-time 120 -o "${RUNNER_TEMP}/hadolint" \
+          curl -fsSL --retry 2 --retry-max-time 120 -o "${RUNNER_TEMP}/hadolint" \
             "https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-linux-x86_64"
           echo "${HADOLINT_SHA256}  ${RUNNER_TEMP}/hadolint" | sha256sum -c -
           # Install into a runner-writable directory rather than /usr/local/bin:

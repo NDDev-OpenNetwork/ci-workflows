@@ -73,7 +73,7 @@ jobs:
           # six seconds, which a Releases outage outlasts easily. Left unset, curl backs
           # off 1s, 2s, 4s, 8s..., and --retry-max-time bounds the whole thing so a
           # genuinely dead endpoint still fails the job rather than hanging it.
-          curl -fsSL --retry 5 --retry-max-time 120 -o /tmp/osv-scanner \
+          curl -fsSL --retry 2 --retry-max-time 120 -o /tmp/osv-scanner \
             "https://github.com/google/osv-scanner/releases/download/v${OSV_VERSION}/osv-scanner_linux_amd64"
           echo "${OSV_SHA256}  /tmp/osv-scanner" | sha256sum -c -
           # Install into a runner-writable directory rather than /usr/local/bin:

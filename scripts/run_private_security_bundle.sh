@@ -52,7 +52,7 @@ use_or_download() {
     install -m 0600 "$supplied" "$output"
     return
   fi
-  curl -fsSL --retry 5 --retry-max-time 120 -o "$output" "$url"
+  curl -fsSL --retry 2 --retry-max-time 120 -o "$output" "$url"
 }
 
 use_or_download "${ACTIONLINT_ARCHIVE_PATH:-}" "$tool_root/actionlint.tar.gz" \

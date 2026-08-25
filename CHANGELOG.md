@@ -7,6 +7,10 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Standardized reviewed network downloads on two retries after the initial
+  request: exactly three total attempts, with checksum and permanent-failure
+  handling unchanged.
+
 ## [0.1.10] - 2026-08-25
 
 - Updated the immutable tool-cache action to signed `v1.0.1`, retaining each
