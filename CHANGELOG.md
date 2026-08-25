@@ -7,6 +7,10 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Updated the immutable tool-cache action to signed `v1.0.1`, retaining each
+  verified fetch event in the ephemeral runner diagnostic bundle for durable
+  OpenObserve evidence after teardown.
+
 ## [0.1.8] - 2026-08-24
 
 - Added a trusted default-branch Dependabot catalog synchronizer. Failed
