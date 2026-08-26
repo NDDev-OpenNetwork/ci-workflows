@@ -4,10 +4,10 @@ description: Wire a repository onto the ci-workflows reusable library correctly 
 license: AGPL-3.0-or-later
 compatibility: Codex and Agent Skills compatible; OpenCode discovers .agents/skills. Generate .claude/skills mirrors for Claude Code.
 metadata:
-  version: 1.0.0
+  version: 1.1.0
   owner: NDDev
   status: proposed
-  reviewed_at: '2026-08-01'
+  reviewed_at: '2026-08-26'
 ---
 
 # Adopting ci-workflows in a consumer repository
@@ -28,10 +28,9 @@ out first. Everything below runs in that checkout, not in yours:
 
 ```bash
 # Pin to the ref you intend to consume. `resolve_profile.py` does not exist in
-# 0.13.3, the newest release at the time of writing; until a release after it
-# exists, check out `main` at a full SHA and know that you are ahead of the
-# released surface. See "Pin" below -- what you *consume* must still be a
-# released tag.
+# Use the current released surface. At the 2026-08-26 review this is 0.1.11 at
+# 409817cf743e76383c84e30c72edf781d73b71a1; re-read the latest immutable
+# release before adoption rather than copying this review-time value.
 LIBRARY_REF=main
 git clone --depth 1 --branch "$LIBRARY_REF" \
     https://github.com/NDDev-OpenNetwork/ci-workflows.git /tmp/ci-workflows
@@ -103,6 +102,22 @@ everywhere":
 - **private → self-hosted label**, passed by the caller through the `runner`
   input.
 
+For NDDev private repositories, route by capability rather than by whichever
+queue looks shortest:
+
+| Workload | Runner label |
+| --- | --- |
+| checkout-free lint or policy | `nddev-linux-fast` |
+| ordinary private build/test | `nddev-linux-standard` |
+| Docker, service containers, nested runtime | `nddev-linux-integration` |
+| untrusted candidate code | `nddev-linux-untrusted` |
+| credentialed release/deploy | `nddev-linux-release` |
+| Almaty ordinary/integration work | `nddev-priority-standard` / `nddev-priority-integration` |
+
+Do not put a private checkout on `fast`, Docker work on `standard`, untrusted
+code on a credentialed class, or ordinary repositories on the Almaty priority
+classes.
+
 Then close the two settings that **no workflow file can reach**, because GitHub
 schedules them itself:
 
@@ -136,6 +151,12 @@ A saved setting is not evidence. Two failure classes only appear on a real run:
 Verify by reading the job's `runner_name` and `runner_group_name` from the
 completed run, not by re-reading the setting you just wrote.
 
+Retry only an idempotent transient boundary, at most twice after the first
+failure (three total attempts), and preserve one structured log record per
+attempt. Do not retry deterministic tests, policy failures, missing tools,
+permission failures, or failed deploy health checks. Fleet scheduling already
+reconciles placement; workflow-level retries must not duplicate an active job.
+
 ## Cost controls that belong to the consumer, not the library
 
 - **Code Quality AI findings are metered separately from the licence, with no
@@ -159,3 +180,4 @@ completed run, not by re-reading the setting you just wrote.
 6. A completed run inspected for `runner_name`, not just a saved setting.
 7. AI findings off unless deliberately sized.
 8. Release caller matches entitlement — attested where the plan allows it.
+9. Transient retries are idempotent, logged, and capped at three attempts.
