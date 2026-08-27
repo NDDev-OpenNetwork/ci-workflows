@@ -7,11 +7,17 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-## [0.1.12] - 2026-08-28
+## [0.1.13] - 2026-08-27
 
 - Added an optional dedicated runner for Docker-based cargo-deny so
   cargo-audit and cargo-machete can use a lighter runner without weakening
   supply-chain coverage.
+
+## [0.1.12] - 2026-08-27
+
+- The signed `0.1.12` tag is retained as immutable rejected evidence because
+  its candidate changelog used the next local-calendar date rather than the
+  tag's UTC date. No release exists.
 
 ## [0.1.11] - 2026-08-25
 
