@@ -19,6 +19,9 @@ jobs:
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/rust-supply-chain.yml@<sha>
     with:
       runner: ubuntu-latest
+      # Optional: route only the Docker-based cargo-deny action to a
+      # Docker-capable pool while audit and machete stay on a lighter runner.
+      # deny_runner: nddev-linux-integration
       toolchain: stable
       enable_deny: true
       enable_audit: true
