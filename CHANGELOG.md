@@ -7,6 +7,12 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-08-28
+
+- Added an optional dedicated runner for Docker-based cargo-deny so
+  cargo-audit and cargo-machete can use a lighter runner without weakening
+  supply-chain coverage.
+
 ## [0.1.11] - 2026-08-25
 
 - Standardized reviewed network downloads on two retries after the initial
