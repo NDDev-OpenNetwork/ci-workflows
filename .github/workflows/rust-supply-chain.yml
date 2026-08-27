@@ -20,9 +20,13 @@ on:
   workflow_call:
     inputs:
       runner:
-        description: 'Runner label.'
+        description: 'Runner label for shell-native cargo-audit and cargo-machete.'
         type: string
         default: 'ubuntu-latest'
+      deny_runner:
+        description: 'Optional runner label for the Docker-based cargo-deny action; empty inherits runner.'
+        type: string
+        default: ''
       toolchain:
         description: 'Rust toolchain version for cargo-audit/machete (not needed for deny which uses the action).'
         type: string
@@ -66,7 +70,7 @@ jobs:
   deny:
     name: cargo-deny
     if: ${{ inputs.enable_deny }}
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ inputs.deny_runner || inputs.runner }}
     timeout-minutes: 20
     permissions:
       contents: read

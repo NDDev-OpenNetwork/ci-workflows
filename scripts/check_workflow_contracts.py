@@ -48,6 +48,25 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
 """
     workflow_root = workflow_files()[0].parent
 
+    rust_supply_chain = load_yaml(workflow_root / "rust-supply-chain.yml")
+    rust_call = get_on(rust_supply_chain).get("workflow_call", {})
+    rust_inputs = rust_call.get("inputs", {}) if isinstance(rust_call, dict) else {}
+    deny_runner = rust_inputs.get("deny_runner", {}) if isinstance(rust_inputs, dict) else {}
+    rust_jobs = rust_supply_chain.get("jobs", {}) or {}
+    if (
+        not isinstance(deny_runner, dict)
+        or deny_runner.get("type") != "string"
+        or deny_runner.get("default") != ""
+        or (rust_jobs.get("deny", {}) or {}).get("runs-on")
+        != "${{ inputs.deny_runner || inputs.runner }}"
+        or (rust_jobs.get("audit", {}) or {}).get("runs-on") != "${{ inputs.runner }}"
+        or (rust_jobs.get("machete", {}) or {}).get("runs-on") != "${{ inputs.runner }}"
+    ):
+        problems.append(
+            "rust-supply-chain.yml: Docker cargo-deny must expose an optional "
+            "deny_runner while audit and machete retain the ordinary runner"
+        )
+
     convergence = load_yaml(workflow_root / "dependabot-catalog-convergence.yml")
     convergence_job = (convergence.get("jobs", {}) or {}).get("synchronize", {})
     convergence_permissions = convergence_job.get("permissions", {})
