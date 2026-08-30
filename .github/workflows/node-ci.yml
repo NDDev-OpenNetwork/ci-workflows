@@ -140,6 +140,10 @@ jobs:
           YARN_VERSION: ${{ inputs.yarn_version }}
         run: |
           set -euo pipefail
+          # `prepare --activate` selects and downloads a version, but Corepack
+          # does not place the pnpm/Yarn proxies on PATH until `enable` creates
+          # its shims beside the selected Node binary.
+          corepack enable
           case "$PACKAGE_MANAGER" in
             pnpm) corepack prepare "pnpm@$PNPM_VERSION" --activate ;;
             yarn) corepack prepare "yarn@$YARN_VERSION" --activate ;;
