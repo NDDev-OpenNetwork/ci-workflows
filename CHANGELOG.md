@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.14] - 2026-08-30
+
 - Enable Corepack's pnpm and Yarn shims before activating the caller-pinned
   package-manager version, so hosted Node jobs resolve the requested binary
   instead of finding no pnpm or the image's unrelated Yarn Classic install.
