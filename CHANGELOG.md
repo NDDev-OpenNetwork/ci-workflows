@@ -7,6 +7,10 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Enable Corepack's pnpm and Yarn shims before activating the caller-pinned
+  package-manager version, so hosted Node jobs resolve the requested binary
+  instead of finding no pnpm or the image's unrelated Yarn Classic install.
+
 ## [0.1.13] - 2026-08-27
 
 - Added an optional dedicated runner for Docker-based cargo-deny so
