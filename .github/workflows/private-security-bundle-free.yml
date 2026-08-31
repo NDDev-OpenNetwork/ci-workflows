@@ -184,6 +184,7 @@ jobs:
           max-bytes: '16777216'
 
       - name: Run consolidated security gates without SARIF upload
+        id: scan
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -201,7 +202,10 @@ jobs:
         run: "$PRIVATE_SECURITY_BUNDLE_SCRIPT"
 
       - name: Upload redacted security evidence
-        if: ${{ always() }}
+        # Only when the gates actually ran; see the note in
+        # nddev-security-bundle.yml. `always()` here turned a bootstrap failure
+        # into a missing-SARIF message that named the wrong step.
+        if: ${{ !cancelled() && steps.scan.conclusion != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: ${{ inputs.evidence_artifact_name }}
