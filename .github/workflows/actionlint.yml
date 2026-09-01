@@ -7,6 +7,13 @@ name: actionlint
 # linux_amd64 tarball, verifies it with sha256sum, and installs into
 # /usr/local/bin, so any other OS/architecture is rejected by an explicit
 # guard before the download instead of failing half-way through.
+#
+# tool_source picks where the binaries come from: 'download' is the verified
+# tarball above, 'image' is the surface a fleet image already bakes (versions
+# are reported, the image build chain is the trust root), and 'auto' uses the
+# baked surface exactly when the runner carries the nddev image marker
+# (/etc/nddev/image-build.json) with the tool present -- so hosted runners
+# keep downloading, byte for byte as before.
 
 on:
   workflow_call:
@@ -15,6 +22,10 @@ on:
         description: 'Linux X64 runner label; other platforms are rejected by the runner-contract guard.'
         type: string
         default: 'ubuntu-latest'
+      tool_source:
+        description: "Where tool binaries come from: auto (baked when the nddev image marker and tool are present, else download), image (require the baked tool), or download (pinned checksum-verified tarball)."
+        type: string
+        default: 'auto'
       actionlint_version:
         type: string
         default: '1.7.12'
@@ -77,6 +88,46 @@ jobs:
           print("runner contract validated: Linux X64")
           PY
 
+      - name: Resolve tool source
+        shell: bash
+        env:
+          TOOL_SOURCE: ${{ inputs.tool_source }}
+          ENABLE_SHELLCHECK: ${{ inputs.enable_shellcheck }}
+        run: |
+          set -euo pipefail
+          case "$TOOL_SOURCE" in auto|image|download) ;; *)
+            echo "tool_source must be auto, image or download; got '$TOOL_SOURCE'" >&2
+            exit 1
+          ;; esac
+          resolve() {
+            local tool="$1"
+            case "$TOOL_SOURCE" in
+              download) echo download ;;
+              image)
+                if ! command -v "$tool" >/dev/null 2>&1; then
+                  echo "tool_source=image but $tool is not on the runner" >&2
+                  return 1
+                fi
+                echo image
+                ;;
+              auto)
+                if [ -f /etc/nddev/image-build.json ] && command -v "$tool" >/dev/null 2>&1; then
+                  echo image
+                else
+                  echo download
+                fi
+                ;;
+            esac
+          }
+          actionlint_source="$(resolve actionlint)"
+          printf 'TOOL_SOURCE_ACTIONLINT=%s\n' "$actionlint_source" >> "$GITHUB_ENV"
+          echo "actionlint source: $actionlint_source"
+          if [ "$ENABLE_SHELLCHECK" = "true" ]; then
+            shellcheck_source="$(resolve shellcheck)"
+            printf 'TOOL_SOURCE_SHELLCHECK=%s\n' "$shellcheck_source" >> "$GITHUB_ENV"
+            echo "shellcheck source: $shellcheck_source"
+          fi
+
       - name: Isolate global Git config
         shell: bash
         run: |
@@ -91,7 +142,19 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Use baked actionlint
+        if: ${{ env.TOOL_SOURCE_ACTIONLINT == 'image' }}
+        run: |
+          set -euo pipefail
+          # The image build chain attests this binary (manifest binary_sha256,
+          # estate audit); the job reports what it used rather than re-pinning.
+          binary="$(command -v actionlint)"
+          echo "using baked actionlint at $binary"
+          sha256sum "$binary"
+          actionlint --version
+
       - name: Download actionlint (pinned + checksum-verified)
+        if: ${{ env.TOOL_SOURCE_ACTIONLINT == 'download' }}
         env:
           ACTIONLINT_VERSION: ${{ inputs.actionlint_version }}
           ACTIONLINT_SHA256: ${{ inputs.actionlint_sha256 }}
@@ -123,8 +186,21 @@ jobs:
       - name: Run actionlint
         run: actionlint -color
 
+      - name: Use baked shellcheck
+        if: ${{ inputs.enable_shellcheck && env.TOOL_SOURCE_SHELLCHECK == 'image' }}
+        run: |
+          set -euo pipefail
+          # The baked shellcheck is the image's apt surface; its version can
+          # trail the download pin, so it is reported here where the log and
+          # the lint verdict sit together. A consumer that needs the exact
+          # pinned release selects tool_source: download.
+          binary="$(command -v shellcheck)"
+          echo "using baked shellcheck at $binary"
+          sha256sum "$binary"
+          shellcheck --version
+
       - name: Download shellcheck (pinned + checksum-verified)
-        if: ${{ inputs.enable_shellcheck }}
+        if: ${{ inputs.enable_shellcheck && env.TOOL_SOURCE_SHELLCHECK == 'download' }}
         env:
           SHELLCHECK_VERSION: ${{ inputs.shellcheck_version }}
           SHELLCHECK_SHA256: ${{ inputs.shellcheck_sha256 }}
