@@ -73,7 +73,10 @@ jobs:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout_minutes }}
     permissions:
+      # Checkout of the caller repository only; no writes back to it.
       contents: read
+      # ghcr.io push and the registry layer cache authenticate with the
+      # ambient token; both write to the caller's own package namespace.
       packages: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
