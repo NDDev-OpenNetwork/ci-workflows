@@ -115,21 +115,21 @@ jobs:
 
       - name: Initialize CodeQL
         if: ${{ inputs.config_file == '' }}
-        uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
+        uses: github/codeql-action/init@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28  # v4.37.8
         with:
           languages: ${{ matrix.language }}
           queries: ${{ inputs.queries }}
 
       - name: Initialize CodeQL with config
         if: ${{ inputs.config_file != '' }}
-        uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
+        uses: github/codeql-action/init@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28  # v4.37.8
         with:
           languages: ${{ matrix.language }}
           config-file: ${{ inputs.config_file }}
 
       - name: Autobuild
         if: ${{ inputs.autobuild && inputs.build_command == '' }}
-        uses: github/codeql-action/autobuild@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
+        uses: github/codeql-action/autobuild@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28  # v4.37.8
 
       - name: Custom build
         if: ${{ inputs.build_command != '' }}
@@ -139,13 +139,13 @@ jobs:
 
       - name: Analyze
         if: ${{ inputs.output_directory == '' }}
-        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
+        uses: github/codeql-action/analyze@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28  # v4.37.8
         with:
           category: "/language:${{ matrix.language }}"
 
       - name: Analyze with output directory
         if: ${{ inputs.output_directory != '' }}
-        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
+        uses: github/codeql-action/analyze@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28  # v4.37.8
         with:
           category: "/language:${{ matrix.language }}"
           output: ${{ inputs.output_directory }}
