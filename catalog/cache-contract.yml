@@ -103,6 +103,14 @@ producers:
     upstream_default: null
     default_caches: true
     note: Explicit cache; the key is written by the calling workflow.
+  - action: docker/build-push-action
+    control: cache-to
+    upstream_default: null
+    default_caches: false
+    note: >-
+      Caches only when docker-build.yml passes cache-from/cache-to, and the
+      workflow computes them from its `cache` input: a registry ref
+      ({image}/buildcache by default) or type=gha. No input means no cache.
   - action: astral-sh/setup-uv
     control: enable-cache
     upstream_default: auto

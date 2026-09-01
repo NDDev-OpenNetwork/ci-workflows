@@ -15,6 +15,7 @@ an operating system this table does not list for it.
 | `.github/workflows/cpp-ci.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/cross-platform-smoke.yml` | `portable-shell` | linux, macos, windows | shell only |
 | `.github/workflows/dart-flutter-ci.yml` | `linux-shell` | linux | shell only |
+| `.github/workflows/docker-build.yml` | `linux-container` | linux | container-runtime |
 | `.github/workflows/docs-ci.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/docs-quality.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/dotnet-ci.yml` | `portable-shell` | linux, macos, windows | shell only |

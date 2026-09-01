@@ -31,6 +31,7 @@ groups:
     runtime_requirements: [container-runtime]
     workflows:
       - .github/workflows/container-ci.yml
+      - .github/workflows/docker-build.yml
       - .github/workflows/secret-scan.yml
   - id: linux-shell
     supported_os: [linux]

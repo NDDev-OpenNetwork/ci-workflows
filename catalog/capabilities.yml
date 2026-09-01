@@ -1172,6 +1172,32 @@ capabilities:
       - "https://github.com/aquasecurity/trivy"
       - "https://github.com/aquasecurity/trivy-action"
 
+  - id: docker-build-registry-cache
+    name: Docker build with a registry layer cache
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/docker-build.yml
+    # build-push-action shells out to the Docker daemon through BuildKit.
+    runtime_requirements: ["container-runtime"]
+    example: examples/infra/docker-build.yml
+    required_permissions:
+      - "contents: read"
+      - "packages: write"
+    required_settings:
+      - "ghcr.io push and registry cache authenticate with the ambient workflow token"
+    risks:
+      - "Workflow is present on disk and validated by generated workflow inventory"
+      - "Registry cache refs accumulate untagged manifests; clean them with a retention policy"
+      - "type=gha cache needs Docker Engine >= 28 and Buildx >= 0.21 on the runner"
+    deprecations: null
+    last_verified: "2026-09-01"
+    sources:
+      - "https://github.com/docker/build-push-action"
+      - "https://docs.docker.com/build/cache/backends/registry/"
+
   - id: terraform-ci
     name: Terraform CI
     cluster: actions-core

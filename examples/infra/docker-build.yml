@@ -1,0 +1,24 @@
+# Build a container image with a layer cache that survives disposable
+# runners. The registry cache defaults to {image}/buildcache -- on ghcr.io
+# that storage is currently free -- so every run starts from the layers the
+# last one built, on hosted and self-hosted runners alike.
+name: docker-build
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  image:
+    permissions:
+      contents: read
+      packages: write
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/docker-build.yml@<sha>
+    with:
+      runner: ubuntu-latest
+      image: ghcr.io/acme/app
+      push: true
+      # cache: registry (default) shares {image}/buildcache across runs;
+      # switch to gha for the Actions cache backend, or none.

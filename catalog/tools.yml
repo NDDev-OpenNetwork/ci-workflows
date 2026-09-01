@@ -181,13 +181,14 @@ tools:
       - .github/workflows/coverage-gate.yml
       - .github/workflows/cpp-ci.yml
       - .github/workflows/cross-platform-smoke.yml
-      - .github/workflows/dependabot-catalog-convergence.yml
       - .github/workflows/dart-flutter-ci.yml
+      - .github/workflows/dependabot-catalog-convergence.yml
+      - .github/workflows/docker-build.yml
       - .github/workflows/docs-ci.yml
       - .github/workflows/docs-quality.yml
-      - .github/workflows/gds-anchor-contract.yml
       - .github/workflows/dotnet-ci.yml
       - .github/workflows/fuzzing.yml
+      - .github/workflows/gds-anchor-contract.yml
       - .github/workflows/go-ci.yml
       - .github/workflows/grype-scan.yml
       - .github/workflows/hadolint-ci.yml
@@ -197,16 +198,16 @@ tools:
       - .github/workflows/maintenance.yml
       - .github/workflows/monorepo-changed-paths.yml
       - .github/workflows/mutation-testing.yml
+      - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/node-ci.yml
       - .github/workflows/osv-scan.yml
       - .github/workflows/pr-hygiene.yml
-      - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/private-static.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-dependency-review.yml
-      - .github/workflows/public-scorecard-json.yml
       - .github/workflows/public-scorecard-analysis.yml
+      - .github/workflows/public-scorecard-json.yml
       - .github/workflows/public-scorecard.yml
       - .github/workflows/python-ci.yml
       - .github/workflows/qt-ci.yml
@@ -214,9 +215,9 @@ tools:
       - .github/workflows/release-supply-chain-free.yml
       - .github/workflows/release-supply-chain.yml
       - .github/workflows/release.yml
-      - .github/workflows/runtime-fixtures.yml
       - .github/workflows/runtime-fixtures-event-write.yml
       - .github/workflows/runtime-fixtures-languages.yml
+      - .github/workflows/runtime-fixtures.yml
       - .github/workflows/rust-ci.yml
       - .github/workflows/rust-supply-chain.yml
       - .github/workflows/secret-scan.yml
@@ -617,6 +618,36 @@ tools:
     used_by:
       - .github/workflows/container-ci.yml
     last_verified: "2026-07-12"
+
+  - id: docker-login-action
+    name: docker/login-action
+    homepage: "https://github.com/docker/login-action"
+    kind: action
+    current_version: "v4.6.0"
+    pin: "docker/login-action@dbcb813823bdd20940b903addbd779551569679f"
+    used_by:
+      - .github/workflows/docker-build.yml
+    last_verified: "2026-09-01"
+
+  - id: docker-setup-buildx-action
+    name: docker/setup-buildx-action
+    homepage: "https://github.com/docker/setup-buildx-action"
+    kind: action
+    current_version: "v4.3.0"
+    pin: "docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e"
+    used_by:
+      - .github/workflows/docker-build.yml
+    last_verified: "2026-09-01"
+
+  - id: docker-build-push-action
+    name: docker/build-push-action
+    homepage: "https://github.com/docker/build-push-action"
+    kind: action
+    current_version: "v7.3.0"
+    pin: "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a"
+    used_by:
+      - .github/workflows/docker-build.yml
+    last_verified: "2026-09-01"
 
   # Registered late: these three workflows (rust-supply-chain, clusterfuzzlite)
   # shipped without catalog entries because the pin validators check pin format,
