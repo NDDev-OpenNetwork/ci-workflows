@@ -16,6 +16,7 @@
 | `.github/workflows/dart-flutter-ci.yml` | `dart-flutter-ci` | ga |
 | `.github/workflows/dependabot-catalog-convergence.yml` | internal | internal |
 | `.github/workflows/dependency-review.yml` | internal | internal |
+| `.github/workflows/docker-build.yml` | `docker-build-registry-cache` | ga |
 | `.github/workflows/docs-ci.yml` | `docs-ci` | ga |
 | `.github/workflows/docs-quality.yml` | `docs-quality` | ga |
 | `.github/workflows/dotnet-ci.yml` | `dotnet-ci` | ga |
@@ -67,4 +68,4 @@
 | `.github/workflows/zizmor-sarif.yml` | `zizmor` | ga |
 
 ---
-Source data verified through: 2026-08-24
+Source data verified through: 2026-09-01

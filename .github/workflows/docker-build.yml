@@ -1,0 +1,163 @@
+name: docker-build
+
+# Reusable BuildKit image build whose layer cache outlives the runner.
+#
+# Disposable runners rebuild every layer from scratch unless the cache lives
+# somewhere durable. This workflow puts it in a registry --
+# `{image}/buildcache` by default, which on ghcr.io is currently free storage
+# -- so hosted and self-hosted runners share one cache across runs and
+# repositories. `cache: gha` selects the GitHub Actions cache backend instead
+# (needs Docker Engine >= 28 / Buildx >= 0.21, both satisfied by
+# ubuntu-latest and the nddev images); `cache: none` disables caching.
+#
+# Runner contract: any Linux runner with a Docker daemon -- ubuntu-latest or
+# a docker-capable nddev class (nddev-linux-integration and friends). Pushing
+# to ghcr.io authenticates with the ambient workflow token, which needs
+# `packages: write` in the caller when push or a ghcr cache ref is used.
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'Linux runner label with a Docker daemon.'
+        type: string
+        default: 'ubuntu-latest'
+      image:
+        description: 'Image repository without a tag, e.g. ghcr.io/acme/app.'
+        type: string
+        required: true
+      tags:
+        description: 'Comma-separated tags; empty tags the image with the commit SHA.'
+        type: string
+        default: ''
+      context:
+        description: 'Build context path inside the repository.'
+        type: string
+        default: '.'
+      dockerfile:
+        description: 'Dockerfile path relative to the repository root.'
+        type: string
+        default: 'Dockerfile'
+      platforms:
+        description: 'Target platforms.'
+        type: string
+        default: 'linux/amd64'
+      push:
+        description: 'Push the built image and tags to the registry.'
+        type: boolean
+        default: false
+      cache:
+        description: 'Layer cache backend: registry, gha, or none.'
+        type: string
+        default: 'registry'
+      cache_ref:
+        description: 'Registry cache ref; empty derives {image}/buildcache.'
+        type: string
+        default: ''
+      build_args:
+        description: 'Newline-separated KEY=value build arguments.'
+        type: string
+        default: ''
+      timeout_minutes:
+        type: number
+        default: 30
+    outputs:
+      digest:
+        description: 'Content digest of the built image.'
+        value: ${{ jobs.build.outputs.digest }}
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    permissions:
+      # Checkout of the caller repository only; no writes back to it.
+      contents: read
+      # ghcr.io push and the registry layer cache authenticate with the
+      # ambient token; both write to the caller's own package namespace.
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Validate immutable inputs
+        env:
+          IMAGE: ${{ inputs.image }}
+          TAGS: ${{ inputs.tags }}
+          CONTEXT: ${{ inputs.context }}
+          DOCKERFILE: ${{ inputs.dockerfile }}
+          CACHE: ${{ inputs.cache }}
+          CACHE_REF: ${{ inputs.cache_ref }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE" =~ ^[a-z0-9][a-z0-9._/-]*$ ]]
+          [[ -z "$TAGS" || "$TAGS" =~ ^[A-Za-z0-9._,-]+$ ]]
+          for value in "$CONTEXT" "$DOCKERFILE"; do
+            [[ "$value" =~ ^[A-Za-z0-9._/-]+$ && "$value" != /* && "$value" != *..* ]]
+          done
+          [[ "$CACHE" == registry || "$CACHE" == gha || "$CACHE" == none ]]
+          [[ -z "$CACHE_REF" || "$CACHE_REF" =~ ^[a-z0-9][a-z0-9._/-]*$ ]]
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve tags and cache references
+        id: refs
+        env:
+          IMAGE: ${{ inputs.image }}
+          TAGS: ${{ inputs.tags }}
+          CACHE: ${{ inputs.cache }}
+          CACHE_REF: ${{ inputs.cache_ref }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$TAGS" ]; then
+            full=""
+            IFS=',' read -ra parts <<< "$TAGS"
+            for tag in "${parts[@]}"; do full="${full:+$full,}$IMAGE:$tag"; done
+          else
+            full="$IMAGE:$SHA"
+          fi
+          printf 'tags=%s\n' "$full" >> "$GITHUB_OUTPUT"
+          case "$CACHE" in
+            registry)
+              ref="${CACHE_REF:-$IMAGE/buildcache}"
+              printf 'cache_from=type=registry,ref=%s\n' "$ref" >> "$GITHUB_OUTPUT"
+              printf 'cache_to=type=registry,ref=%s,mode=max,image-manifest=true,oci-mediatypes=true\n' "$ref" >> "$GITHUB_OUTPUT"
+              ;;
+            gha)
+              printf 'cache_from=type=gha\n' >> "$GITHUB_OUTPUT"
+              printf 'cache_to=type=gha,mode=max\n' >> "$GITHUB_OUTPUT"
+              ;;
+            none)
+              printf 'cache_from=\n' >> "$GITHUB_OUTPUT"
+              printf 'cache_to=\n' >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Log in to ghcr.io
+        if: ${{ inputs.push || (inputs.cache == 'registry' && startsWith(inputs.image, 'ghcr.io/')) }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Set up BuildKit
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e  # v4.3.0
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7.3.0
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          platforms: ${{ inputs.platforms }}
+          push: ${{ inputs.push }}
+          tags: ${{ steps.refs.outputs.tags }}
+          cache-from: ${{ steps.refs.outputs.cache_from }}
+          cache-to: ${{ steps.refs.outputs.cache_to }}
+          build-args: ${{ inputs.build_args }}

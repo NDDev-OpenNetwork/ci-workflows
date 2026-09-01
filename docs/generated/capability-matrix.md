@@ -8,6 +8,7 @@
 | C/C++ CI (`cpp-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/cpp-ci.yml` | `examples/languages/cpp.yml` |
 | Cross-platform smoke test (`cross-platform-smoke`) | actions-core | ga | free | free | available | `.github/workflows/cross-platform-smoke.yml` | `examples/infra/cross-platform.yml` |
 | Dart/Flutter CI (`dart-flutter-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/dart-flutter-ci.yml` | `examples/languages/dart-flutter.yml` |
+| Docker build with a registry layer cache (`docker-build-registry-cache`) | actions-core | ga | free | free | available | `.github/workflows/docker-build.yml` | `examples/infra/docker-build.yml` |
 | Docs CI (`docs-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/docs-ci.yml` | `examples/infra/docs.yml` |
 | Docs quality (links, spelling, markdown) (`docs-quality`) | actions-core | ga | free | free | available | `.github/workflows/docs-quality.yml` | `examples/quality/docs-quality.yml` |
 | .NET CI (`dotnet-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/dotnet-ci.yml` | `examples/languages/dotnet.yml` |
@@ -83,4 +84,4 @@
 | SLSA build provenance (`slsa-build-provenance`) | supply-chain | ga | free | paid | conditional | `.github/workflows/release-supply-chain.yml` | `-` |
 
 ---
-Source data verified through: 2026-08-24
+Source data verified through: 2026-09-01
