@@ -7,6 +7,15 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.15] - 2026-08-31
+
+- `docker-build.yml`: reusable BuildKit image build whose layer cache
+  outlives the runner (registry cache on ghcr by default, `gha` and `none`
+  backends), registered across the catalog with an infra example.
+- `security-bundle` (free): the called-workflow source fetch retries and
+  falls back to protocol v0, and evidence uploads only when the scan ran.
+- Dependabot pin-registry synchronization for the bumped action set.
+
 ## [0.1.14] - 2026-08-30
 
 - Enable Corepack's pnpm and Yarn shims before activating the caller-pinned
