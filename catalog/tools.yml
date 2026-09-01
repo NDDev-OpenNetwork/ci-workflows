@@ -114,14 +114,14 @@ tools:
     name: github/codeql-action
     homepage: "https://github.com/github/codeql-action"
     kind: action
-    current_version: "v4.37.7"
-    pin: "github/codeql-action@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd"
+    current_version: "v4.37.8"
+    pin: "github/codeql-action@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28"
     used_by:
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-scorecard.yml
       - .github/workflows/zizmor-sarif.yml
-    last_verified: "2026-07-12"
+    last_verified: "2026-09-01"
 
   - id: dependency-review-action
     name: actions/dependency-review-action
@@ -459,11 +459,11 @@ tools:
     name: bridgecrewio/checkov-action
     homepage: "https://github.com/bridgecrewio/checkov-action"
     kind: action
-    current_version: "v12.3117.0"
-    pin: "bridgecrewio/checkov-action@1246d92f57abae29d5db5f9aeeed2a9813e52d7d"
+    current_version: "v12.3119.0"
+    pin: "bridgecrewio/checkov-action@59b9d7edfcad5b87fbe3f473a9a134a721ad03f8"
     used_by:
       - .github/workflows/iac-scan.yml
-    last_verified: "2026-07-25"
+    last_verified: "2026-09-01"
 
   - id: github-action-benchmark
     name: benchmark-action/github-action-benchmark
@@ -525,11 +525,11 @@ tools:
     name: NDDev-OpenNetwork/github-actions/actions/tool-cache
     homepage: "https://github.com/NDDev-OpenNetwork/github-actions/tree/main/actions/tool-cache"
     kind: action
-    current_version: "v1.0.1"
-    pin: "NDDev-OpenNetwork/github-actions@470c95c3e7cd1f9a0d763f3f6d7f43024f8451ad"
+    current_version: "v1.2.0"
+    pin: "NDDev-OpenNetwork/github-actions@468af475a08210020502f74588b2c98ba4c01696"
     used_by:
       - .github/workflows/private-security-bundle-free.yml
-    last_verified: "2026-08-23"
+    last_verified: "2026-09-01"
     notes: >-
       Signed tag v1.0.1 resolves to the exact pinned repository commit and
       mirrors structured fetch evidence into the runner diagnostic bundle.
@@ -590,13 +590,13 @@ tools:
     name: actions/setup-java
     homepage: "https://github.com/actions/setup-java"
     kind: action
-    current_version: "v5.7.0"
-    pin: "actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961"
+    current_version: "v6.0.0"
+    pin: "actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c"
     used_by:
       - .github/workflows/java-ci.yml
       - .github/workflows/kotlin-android-ci.yml
       - .github/workflows/runtime-fixtures-languages.yml
-    last_verified: "2026-07-25"
+    last_verified: "2026-09-01"
 
   - id: setup-terraform
     name: hashicorp/setup-terraform
@@ -667,11 +667,11 @@ tools:
     name: taiki-e/install-action
     homepage: "https://github.com/taiki-e/install-action"
     kind: action
-    current_version: "v2.86.2"
-    pin: "taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20"
+    current_version: "v2.86.7"
+    pin: "taiki-e/install-action@b6ff580856c41316412a0b9b60540fbc6f8c82cc"
     used_by:
       - .github/workflows/rust-supply-chain.yml
-    last_verified: "2026-08-12"
+    last_verified: "2026-09-01"
 
   # Upstream tags no release, so the pin comment carries the commit date rather
   # than a version. Bump it by picking a newer commit deliberately, not by
