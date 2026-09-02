@@ -7,6 +7,12 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.16] - 2026-09-02
+
+- `security-bundle` authenticates its exact called-workflow source fetch with
+  the job token, so a shared fleet egress address cannot exhaust GitHub's
+  anonymous allowance and stop the gate before any scanner runs.
+
 ## [0.1.15] - 2026-08-31
 
 - `docker-build.yml`: reusable BuildKit image build whose layer cache
