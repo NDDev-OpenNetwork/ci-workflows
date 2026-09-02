@@ -77,44 +77,33 @@ jobs:
         env:
           WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
           WORKFLOW_SHA: ${{ job.workflow_sha }}
+          # The fetch goes out with the job's own token, the way actions/checkout
+          # does it (basic auth, user x-access-token). The repository is public
+          # and the token adds no access; it adds an identity. GitHub throttles
+          # anonymous git per source address, and the fleet's runners share four
+          # addresses: under a burst on 2026-09-02 (09:25Z-09:40Z, again at
+          # 10:02Z) anonymous fetches answered 401 -- surfacing as "could not
+          # read Username for 'https://github.com'" and "expected flush after
+          # ref listing" -- while the same fetch with a token went through. The
+          # earlier reading of that failure as a protocol-v2 problem was wrong:
+          # the retry below is kept as a belt, the token is the fix.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           source_root="$RUNNER_TEMP/nddev-security-bundle-source"
           git init --quiet "$source_root"
           git -C "$source_root" remote add origin \
             "https://github.com/${WORKFLOW_REPOSITORY}.git"
-          # Retry, and fall back to protocol v0.
-          #
-          # Measured on a fleet host: `git -c protocol.version=2 ls-remote`
-          # against a public repository fails about two times in ten, while
-          # protocol.version=0 succeeded ten times out of ten, and plain HTTPS
-          # to the same ref-listing endpoint returns a valid ref advertisement
-          # every time. The failure surfaces as
-          #
-          #   fatal: could not read Username for 'https://github.com'
-          #   fatal: expected flush after ref listing
-          #
-          # which reads like a credentials problem and is not one: the remote is
-          # public, there is no gitconfig at any level on the host, no proxy
-          # variables, and path MTU to github.com is clean at 1500. v2's
-          # negotiation is simply not surviving this egress reliably.
-          #
-          # That made a security gate fail about one run in five, and a security
-          # gate that fails for its own bootstrap teaches people to re-run it
-          # without reading it. Three attempts, the last on v0.
+          authorization="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
           fetch_called_workflow() {
             local attempt
             for attempt in 1 2 3; do
-              local version=2
-              if [ "$attempt" -eq 3 ]; then
-                version=0
-              fi
-              if git -C "$source_root" -c "protocol.version=${version}" \
+              if git -C "$source_root" \
+                -c "http.https://github.com/.extraheader=${authorization}" \
                 fetch --quiet --depth=1 origin "$WORKFLOW_SHA"; then
                 return 0
               fi
-              printf 'called-workflow fetch attempt %s failed (protocol v%s)\n' \
-                "$attempt" "$version" >&2
+              printf 'called-workflow fetch attempt %s failed\n' "$attempt" >&2
               sleep "$attempt"
             done
             return 1
