@@ -7,6 +7,10 @@ name: private-security-bundle-free
 on:
   workflow_call:
     inputs:
+      check_name:
+        description: 'Job display name; preserve the existing name when migrating a required check.'
+        type: string
+        default: 'actionlint + zizmor + OSV + gitleaks (no SARIF)'
       runner:
         description: 'Private Linux X64 runner label.'
         type: string
@@ -36,7 +40,7 @@ permissions: {}
 
 jobs:
   security-bundle:
-    name: actionlint + zizmor + OSV + gitleaks (no SARIF)
+    name: ${{ inputs.check_name }}
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 30
     permissions:
