@@ -994,8 +994,8 @@ facts:
   overage: upgrade
   status: vendor-verified
   source_authority: vendor
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-04'
+  verified_at: '2026-09-07'
+  expires_after: '2026-10-01'
   source_urls:
   - https://www.blacksmith.sh/pricing
   notes:
@@ -1012,22 +1012,23 @@ facts:
   - Pay-as-you-go with recurring credit
   model: credit-quota
   allowance:
-    value: 2
+    value: 2.5
     unit: usd-credits
     period: month
     multipliers: {}
   conditions:
-  - About 1,250 runner minutes at cited base rate
+  - Advertised 1,250-minute equivalence uses the two-vCPU premium runner rate
   - Credit card required
   - Exact minutes depend on runner type
   payment_method: required
   overage: metered billing
   status: vendor-verified
   source_authority: vendor
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-04'
+  verified_at: '2026-09-07'
+  expires_after: '2026-09-23'
   source_urls:
-  - https://www.ubicloud.com/use-cases/github-actions
+  - https://www.ubicloud.com/docs/about/pricing
+  - https://www.ubicloud.com/docs/github-actions-integration/quickstart
   notes: []
 - id: buddy-free
   provider: Buddy
@@ -1053,14 +1054,15 @@ facts:
   overage: upgrade
   status: vendor-verified
   source_authority: vendor
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-04'
+  verified_at: '2026-09-07'
+  expires_after: '2026-10-03'
   source_urls:
   - https://buddy.works/pricing
+  - https://buddy.works/compare/circleci-alternative
   notes: []
 - id: harness-free
   provider: Harness
-  product: Continuous Delivery & Git Experience Free
+  product: Harness Cloud CI Free
   surface: hosted-ci
   repository_visibility:
   - public
@@ -1074,19 +1076,23 @@ facts:
     period: month
     multipliers: {}
   conditions:
-  - Harness Cloud may require card validation
+  - Free Cloud eligibility is subject to account verification and business-domain restrictions
   - Local runner is an alternative
   - Credit consumption depends on execution class
   payment_method: may-be-required
   overage: upgrade/purchase
-  status: vendor-verified
+  status: conditional
   source_authority: vendor
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-04'
+  verified_at: '2026-09-07'
+  expires_after: '2026-09-17'
   source_urls:
   - https://www.harness.io/pricing
-  - https://developer.harness.io/docs/continuous-integration/get-started/ci-subscription-mgmt/
-  notes: []
+  - https://github.com/harness/developer-hub/blob/main/docs/continuous-integration/get-started/ci-subscription-mgmt.md
+  - https://github.com/harness/developer-hub/blob/main/docs/continuous-integration/ci-articles-faqs/continuous-integration-faqs.md
+  - https://www.harness.io/products/continuous-integration/harness-cloud
+  notes:
+  - Technical billing documentation defines 2,000 monthly credits with OS/resource multipliers.
+  - Marketing describes build minutes and no-card signup; do not promise universal minutes or unrestricted Cloud eligibility.
 - id: codemagic-personal
   provider: Codemagic
   product: Personal plan

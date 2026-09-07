@@ -7,6 +7,10 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Re-verify four vendor allowance records with staggered review dates, correct
+  Ubicloud's monthly credit and Harness's conditional CI credit semantics, and
+  align the disclosed Checkov image tag with the existing pinned action.
+
 - Declare both git-submodule and reusable-workflow consumption in the GDS
   module contract. Refresh its projection using the existing stable bundle.
 - Place the Docker publisher permission explanation inline so the pinned
