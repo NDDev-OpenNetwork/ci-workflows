@@ -46,7 +46,7 @@ container images, checksum for downloaded binaries).
 
 | Kind | Pin by | Bumped by |
 | --- | --- | --- |
-| GitHub Action | full commit SHA + version comment | Dependabot |
+| GitHub Action | full commit SHA + release or matching development-commit comment | Dependabot |
 | Container image | `name:tag@sha256:...` digest | Dependabot / manual |
 | Downloaded binary | version + SHA256 checksum verify | manual |
 

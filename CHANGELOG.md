@@ -7,6 +7,11 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Publish unsuccessful completed self-workflow attempts as unassigned,
+  repository-local CI evidence; preserve actual conclusions and exact attempts.
+- Accept exact matching development-commit comments and correct nested action
+  pin validation and container whitespace rejection. Keep registrations scoped to their actual action paths.
+
 - Declare both git-submodule and reusable-workflow consumption in the GDS
   module contract. Refresh its projection using the existing stable bundle.
 - Place the Docker publisher permission explanation inline so the pinned

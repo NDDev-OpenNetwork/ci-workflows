@@ -6,6 +6,7 @@
 | `.github/workflows/actionlint.yml` | `actionlint` | ga |
 | `.github/workflows/benchmark-compare.yml` | `benchmark-compare` | ga |
 | `.github/workflows/benchmark.yml` | `benchmark` | ga |
+| `.github/workflows/ci-feedback-events.yml` | internal | internal |
 | `.github/workflows/ci.yml` | internal | internal |
 | `.github/workflows/clusterfuzzlite.yml` | `clusterfuzzlite-fuzzing` | ga |
 | `.github/workflows/codeql.yml` | internal | internal |
