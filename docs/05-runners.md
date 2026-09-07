@@ -300,7 +300,8 @@ is checked against the mapping on every gate run.
 
 The generated [workflow routing matrix](generated/workflow-routing.md) keeps
 supported OS separate from runtime-proven OS. A static routing check is not a
-live run: only `proven_os` in `catalog/runtime-coverage.yml` is runtime evidence.
+live run: only successful scoped fixture results with an exact workflow digest
+from `scripts/render_runtime_evidence.py` are runtime evidence.
 macOS and Windows stay hosted until a future native backend is independently
 reviewed and proves the same lifecycle contract.
 

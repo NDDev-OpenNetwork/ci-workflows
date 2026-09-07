@@ -358,7 +358,7 @@ examples/   copy-paste callers: per-tier + languages/ quality/ security/ testing
 
 ## Conventions
 
-- Third-party actions pinned to full commit SHAs with version comments, and
+- Third-party actions pinned to full commit SHAs with release or matching development-commit comments, and
   `check_transitive_action_pins.py` resolves each one to check what *it* calls —
   a pin is only one level deep, and the advisory sweep reports any action
   reaching a tag.
@@ -375,3 +375,15 @@ examples/   copy-paste callers: per-tier + languages/ quality/ security/ testing
 - Security policy: [SECURITY.md](SECURITY.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Releases: https://github.com/NDDev-OpenNetwork/ci-workflows/releases
+
+
+## CI feedback
+
+The CI feedback workflow reports unsuccessful completed self-workflow attempts
+as unassigned issues in this repository. It uses a pinned publisher and records
+actual job conclusions and attempt identity without executing source-run code.
+Issue publication does not launch a repair agent or authorize deployment.
+
+Unreleased dependencies use a `commit:<full SHA>` comment matching the immutable
+ref and catalog version. Stable releases retain their release-version comments;
+the validator rejects a shortened or mismatched development identity.

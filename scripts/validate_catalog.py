@@ -34,8 +34,8 @@ WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
 EXAMPLES_DIR = REPO_ROOT / "examples"
 SCHEMA_FILE = CATALOG_DIR / "schema" / "capability.schema.yaml"
 
-PIN_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[^@\\s]+)?@[0-9a-f]{40}(?:@sha256:[0-9a-f]{64})?$")
-CONTAINER_PIN_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+:[^\\s@]+@sha256:[0-9a-f]{64}$")
+PIN_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[^@\s]+)?@[0-9a-f]{40}(?:@sha256:[0-9a-f]{64})?$")
+CONTAINER_PIN_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+:[^\s@]+@sha256:[0-9a-f]{64}$")
 
 
 def _load(name: str, problems: list[str]):
@@ -50,8 +50,32 @@ def _load(name: str, problems: list[str]):
         return None
 
 
+def pin_selftest() -> list[str]:
+    sha = "a" * 40
+    valid = ["example/actions@" + sha,
+             "example/actions/actions/tool-cache@" + sha,
+             "example/actions/.github/workflows/ci-feedback.yml@" + sha]
+    invalid = ["example/actions/actions/tool cache@" + sha,
+               "example/actions/actions/tool\tcache@" + sha,
+               "example/actions@" + sha + "\n",
+               "example/actions/actions/tool-cache@main"]
+    problems = []
+    for value in valid:
+        if not PIN_RE.fullmatch(value):
+            problems.append("catalog pin self-test rejected a nested immutable reference")
+    for value in invalid:
+        if PIN_RE.fullmatch(value):
+            problems.append("catalog pin self-test accepted whitespace or a mutable reference")
+    digest = "a" * 64
+    if not CONTAINER_PIN_RE.fullmatch("example/scanner:stable@sha256:" + digest):
+        problems.append("catalog pin self-test rejected an immutable container tag")
+    if CONTAINER_PIN_RE.fullmatch("example/scanner:bad tag@sha256:" + digest):
+        problems.append("catalog pin self-test accepted container tag whitespace")
+    return problems
+
+
 def check() -> list[str]:
-    problems: list[str] = []
+    problems: list[str] = pin_selftest()
     if not CATALOG_DIR.is_dir():
         return [f"missing catalog directory: {CATALOG_DIR}"]
     problems += _json_schema.selftest()
@@ -151,9 +175,9 @@ def check() -> list[str]:
             if isinstance(pin, str):
                 if "#" in pin:
                     problems.append(f"tool `{tid}`: pin value must not include comments: {pin}")
-                if kind == "action" and not PIN_RE.match(pin):
+                if kind == "action" and not PIN_RE.fullmatch(pin):
                     problems.append(f"tool `{tid}`: action pin is not a full-SHA ref: {pin}")
-                if kind == "container" and not CONTAINER_PIN_RE.match(pin):
+                if kind == "container" and not CONTAINER_PIN_RE.fullmatch(pin):
                     problems.append(f"tool `{tid}`: container pin is not digest-pinned: {pin}")
             for used_by in tool.get("used_by", []):
                 used_path = REPO_ROOT / used_by

@@ -16,10 +16,20 @@ DIGEST_RE = re.compile(r"@sha256:[0-9a-f]{64}$")
 # The comment must say *which release* the SHA is, because that is the only
 # human-readable half of the pin: a reviewer diffing a Dependabot bump reads the
 # comment, and a bare `#` or `# bumped` both satisfied the old presence-only
-# test. Two accepted forms — a semantic version, or an ISO date for upstreams
-# that publish no releases at all (`google/clusterfuzzlite`), where a date is
-# the honest identifier rather than an invented version.
+# test. A semantic release version or an ISO date for an untagged upstream
+# identifies stable inputs. An unreleased development input must instead name
+# its exact commit, equal to the immutable ref, rather than inventing a release.
 PIN_COMMENT_RE = re.compile(r"#\s*(v?\d+\.\d+(?:\.\d+)?[\w.+-]*|\d{4}-\d{2}-\d{2})\b")
+
+
+DEVELOPMENT_COMMENT_RE = re.compile(r"^\s*#\s*commit:([0-9a-f]{40})(?:\s|$)")
+
+
+def supported_pin_comment(ref: str, comment: str) -> bool:
+    if re.match(r"^\s*#\s*commit:", comment):
+        match = DEVELOPMENT_COMMENT_RE.search(comment)
+        return match is not None and match.group(1) == ref.rsplit("@", 1)[-1]
+    return PIN_COMMENT_RE.search(comment) is not None
 
 
 def check() -> list[str]:
@@ -46,11 +56,11 @@ def check() -> list[str]:
                 continue
             if "#" not in rest:
                 problems.append(f"{where}: SHA pin missing a `# vX.Y.Z` version comment: {ref}")
-            elif PIN_COMMENT_RE.search(rest) is None:
+            elif not supported_pin_comment(ref, rest):
                 problems.append(
                     f"{where}: SHA pin comment must name the release "
                     f"(`# vX.Y.Z`, or `# YYYY-MM-DD` for an upstream that tags no "
-                    f"releases), got {rest.strip()!r}: {ref}"
+                    f"releases; or # commit:<same full SHA>), got {rest.strip()!r}: {ref}"
                 )
     return problems
 
@@ -65,6 +75,18 @@ def _selftest() -> list[str]:
     for bad in ("  #", "  # bumped", "  # see PR", "  # latest", "  #  "):
         if PIN_COMMENT_RE.search(bad) is not None:
             problems.append(f"check_pinned_actions self-test: accepted {bad.strip()!r}")
+    development_sha = "a" * 40
+    development_ref = "example/action@" + development_sha
+    if not supported_pin_comment(development_ref, " # commit:" + development_sha):
+        problems.append("check_pinned_actions self-test: rejected exact development commit")
+    for comment in (
+        " # commit:" + "b" * 40,
+        " # commit:" + "a" * 7,
+        " # commit:" + "a" * 41,
+        " # commit:wrong # v1.0.0",
+    ):
+        if supported_pin_comment(development_ref, comment):
+            problems.append("check_pinned_actions self-test: accepted mismatched development identity")
     return problems
 
 

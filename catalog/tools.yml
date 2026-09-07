@@ -521,12 +521,26 @@ tools:
       - .github/workflows/zizmor-sarif.yml
     last_verified: "2026-07-20"
 
+  - id: ci-feedback
+    name: NDDev-OpenNetwork/github-actions/.github/workflows/ci-feedback.yml
+    homepage: "https://github.com/NDDev-OpenNetwork/github-actions/blob/a0dc5592333dcfdf2a3d239ed1f2b128899e5482/.github/workflows/ci-feedback.yml"
+    kind: action
+    current_version: "commit:a0dc5592333dcfdf2a3d239ed1f2b128899e5482"
+    pin: "NDDev-OpenNetwork/github-actions/.github/workflows/ci-feedback.yml@a0dc5592333dcfdf2a3d239ed1f2b128899e5482"
+    used_by:
+      - .github/workflows/ci-feedback-events.yml
+    last_verified: "2026-09-07"
+    notes: >-
+      Published development commit, not a stable release claim. The trusted
+      publisher reads completed job metadata and writes unassigned issues in
+      the caller repository without executing source-run code.
+
   - id: nddev-tool-cache
     name: NDDev-OpenNetwork/github-actions/actions/tool-cache
     homepage: "https://github.com/NDDev-OpenNetwork/github-actions/tree/main/actions/tool-cache"
     kind: action
     current_version: "v1.2.0"
-    pin: "NDDev-OpenNetwork/github-actions@468af475a08210020502f74588b2c98ba4c01696"
+    pin: "NDDev-OpenNetwork/github-actions/actions/tool-cache@468af475a08210020502f74588b2c98ba4c01696"
     used_by:
       - .github/workflows/private-security-bundle-free.yml
     last_verified: "2026-09-01"

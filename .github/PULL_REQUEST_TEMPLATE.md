@@ -40,7 +40,7 @@ that is more than `contents: read`. Example:
 ## Checklist
 
 - [ ] All third-party actions pinned to a **full 40-char commit SHA** with a
-      `# vX.Y.Z` version comment (no tags/branches).
+      release-version or matching `# commit:<full SHA>` comment (no tags/branches).
 - [ ] Least-privilege `permissions` (top-level `{}`, per-job minimal scopes).
 - [ ] `concurrency` and `timeout-minutes` present on new/changed workflows/jobs.
 - [ ] `persist-credentials: false` on all read-only `actions/checkout` steps.

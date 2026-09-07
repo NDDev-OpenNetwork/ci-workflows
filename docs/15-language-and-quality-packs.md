@@ -2,7 +2,7 @@
 
 This page documents the reusable packs added in the July 2026 expansion. Every
 pack follows the library conventions (top-level `permissions: {}`, SHA-pinned
-actions with version comments, env-indirected caller commands, `timeout-minutes`,
+actions with release or matching development-commit comments, env-indirected caller commands, `timeout-minutes`,
 and an explicit private-free-safe action surface) and is validated by
 `scripts/validate_all.py`. The
 machine-readable source of truth is
