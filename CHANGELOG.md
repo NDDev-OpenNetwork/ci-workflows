@@ -12,6 +12,9 @@ The project follows Semantic Versioning.
   selectable; public CodeQL, SARIF, Scorecard and attestations stay. Private
   repositories without those purchases use the private-free programme. A live
   GitHub plan belongs to one organization and is not copied between accounts.
+  Consumer adoption resolves the programme from the immutable release being
+  pinned, not from `main`. Private attestations stay an Enterprise Cloud plan
+  gate, independent of the three add-ons.
 
 - Re-verify four vendor allowance records with staggered review dates, correct
   Ubicloud's monthly credit and Harness's conditional CI credit semantics, and

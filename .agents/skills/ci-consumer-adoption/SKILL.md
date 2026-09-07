@@ -12,8 +12,8 @@ metadata:
 
 # Adopting ci-workflows in a consumer repository
 
-This is the *caller* side. For work inside the library itself use `AGENTS.md`
-and the repository validators. There is no `nddev-repo-flow` skill.
+This is the *caller* side. For work inside this library, use `AGENTS.md` and
+`scripts/` in the library checkout.
 
 Adoption is four decisions, in order. Getting them out of order is what produces
 the two failure shapes seen in practice: a repository that looks configured but
@@ -27,14 +27,14 @@ The resolver lives in the library, not in your repository, so check the library
 out first. Everything below runs in that checkout, not in yours:
 
 ```bash
-# Pin to the ref you intend to consume. Re-read the latest immutable release
-# before adoption rather than copying a review-time value. At the 2026-09-07
-# review the current release is 0.1.16 at
-# 377e5311509e3e162d7bf377c1faf57e6b0e622a and ships resolve_profile.py.
-LIBRARY_REF=main
-git clone --depth 1 --branch "$LIBRARY_REF" \
+# LIBRARY_TAG is the immutable SemVer release you verified and will pin.
+# Resolve the programme from that same revision. Do not check out main.
+LIBRARY_TAG="${LIBRARY_TAG:?set LIBRARY_TAG to the release tag you will pin}"
+git clone --depth 1 --branch "$LIBRARY_TAG" \
     https://github.com/NDDev-OpenNetwork/ci-workflows.git /tmp/ci-workflows
 cd /tmp/ci-workflows
+LIBRARY_SHA=$(git rev-parse HEAD)
+# Write $LIBRARY_SHA in every consumer `uses: ...@<sha>` line.
 
 # The library runs every Python tool through one launcher, which needs its own
 # environment. A bare `python3 scripts/...` aborts with ModuleNotFoundError.
@@ -46,9 +46,8 @@ uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
 # attestations on current GitHub plans whether the org is Free or Team:
 .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch resolve_profile.py -- --visibility public --plan free
 .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch resolve_profile.py -- --visibility public --plan team
-# Explicit paid opt-in only when those products are independently held:
-# --visibility private --plan enterprise-cloud \
-#   --code-security --secret-protection --code-quality
+# Private attestations need --plan enterprise-cloud. Add-on flags are separate:
+# --code-security, --secret-protection, --code-quality.
 ```
 
 It returns the matching profile, its controls (CodeQL mode, runner class,
@@ -72,12 +71,18 @@ Pick the tier doc first; it decides which reusables are even legal to call:
 The publisher is a GitHub Organization, not an Enterprise account, and this
 library does not assume it purchased Code Security, Secret Protection, Code
 Quality, or Enterprise Cloud. A live GitHub plan belongs to one organization;
-do not copy one account's plan onto another. Do not copy the paid examples into
-a private repository that has not bought those products. The inverse trap also
-exists: an organization that **did** buy them and then follows private-free
-will discard attested releases. Check entitlements before believing a tier
-table. Prices and quotas live in `catalog/product-facts.yml`; never quote them
-from memory or from a skill.
+do not copy one account's plan onto another.
+
+Public repositories keep CodeQL, native secret scanning, dependency review and
+artifact attestations on current GitHub plans without those add-ons. Code
+Security, Secret Protection and Code Quality are independent purchases; none
+of them unlocks private Artifact Attestations. That is an Enterprise Cloud
+**plan** gate. Following private-free on a private repository without
+Enterprise Cloud is correct even if Code Security is held. Following
+private-free on Enterprise Cloud drops attested `release-supply-chain.yml`
+even if no add-on is held. Check entitlements and the plan gate separately.
+Prices and quotas live in `catalog/product-facts.yml`; never quote them from
+memory or from a skill.
 
 ## 2. Pin — to a released tag, by full SHA
 
@@ -179,5 +184,5 @@ reconciles placement; workflow-level retries must not duplicate an active job.
 5. Managed CodeQL default setup and Code Quality routed **only** when those products are enabled.
 6. A completed run inspected for `runner_name`, not just a saved setting.
 7. AI findings off unless deliberately sized.
-8. Release caller matches entitlement — attested where the plan allows it.
+8. Release caller matches the plan gate: attested on public, and on private/internal only with Enterprise Cloud. Add-ons do not unlock private attestations.
 9. Transient retries are idempotent, logged, and capped at three attempts.
