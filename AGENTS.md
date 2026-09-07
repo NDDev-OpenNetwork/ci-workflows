@@ -9,8 +9,8 @@ contracts below are strict.
 
 | | |
 | --- | --- |
-| `.github/workflows/*.yml` | The product: every `on: workflow_call` file here, counted in `docs/generated/workflow-inventory.md`. Plus the self workflows, which are exactly `SELF_WORKFLOWS` in `scripts/_workflow_yaml.py` — `ci.yml`, `release.yml`, `maintenance.yml` (scheduled advisory sweep), `runtime-fixtures.yml`, `runtime-fixtures-languages.yml` and `runtime-fixtures-event-write.yml` (the evidence estate, split three ways), `codeql.yml`, `dependency-review.yml`, `gitleaks.yml`, `scorecard.yml`. |
-| `catalog/*.yml` | Source of truth. One concern each: `capabilities` (what exists, per tier), `tools` (pins + `used_by`), `product-facts` (volatile external plan/price/quota facts, dated and expiring), `runtime-coverage` (what is actually proven to run), `profiles` (operating modes), `deprecations`. |
+| `.github/workflows/*.yml` | Reusable product workflows plus self workflows enumerated by `SELF_WORKFLOWS` in `scripts/_workflow_yaml.py`. Self workflows are consumers and do not create catalog capabilities. |
+| `catalog/*.yml` | Source of truth. One concern each: `capabilities` (what exists, per tier), `tools` (pins + `used_by`), `product-facts` (volatile external plan/price/quota facts, dated and expiring), `evidence-orchestration` (which evidence lanes apply), `profiles` (operating modes), `deprecations`. |
 | `scripts/` | The validators. `validate_all.py` aggregates them. |
 | `docs/generated/*` | Rendered from the catalog. Never hand-edit. |
 | `docs/NN-*.md`, `README.md` | Human prose. May reference the catalog, may not restate it. Where prose and a generated artifact disagree, the generated artifact wins. |
@@ -52,17 +52,14 @@ unrelated bugfix.
 
 Touch this → also do this:
 
-- **a workflow** → catalog entry, `tools.yml` `used_by`, an `examples/` caller,
-  regenerate docs, `CHANGELOG.md` under `[Unreleased]`.
-- **a *proven* workflow** (`runtime-coverage.yml` says `runtime-proven`) → the
-  `proven_digest` no longer matches and the gate says so. Push a `fixtures/**`
-  branch: the estate — `runtime-fixtures.yml` for the tree-level lanes,
-  `runtime-fixtures-languages.yml` for the language and stack packs, and
-  `runtime-fixtures-event-write.yml` for the lanes that mutate real state — calls
-  the reusables as a consumer would, most against a minimal project under
-  `tests/fixtures/`, and its evidence job prints the run URL and each new digest
-  ready to paste back. Or drop the record to `static-only`. Never leave a stale
-  run masquerading as proof.
+- **a reusable workflow** → catalog entry, `tools.yml` `used_by`, an
+  `examples/` caller, generated docs and `CHANGELOG.md` under `[Unreleased]`.
+- **a self workflow** → `SELF_WORKFLOWS`, consumed tool pins, generated docs and
+  `CHANGELOG.md`; do not invent a reusable capability for a local consumer.
+- **runtime claims** → `scripts/render_runtime_evidence.py` binds eligible
+  successful caller/guard results to exact workflow digests and a run URL.
+  Failed, cancelled, skipped and missing results prove nothing. Preserve the
+  scope of actual fixture execution; static validation is not runtime evidence.
 - **a gate's behaviour** → the `shell-gates` and `dockerfile-gate` jobs in
   `ci.yml` are inside `ci-gate`'s `needs`, so they **block the merge**. They lift
   each gate's real step out of its workflow with
@@ -84,7 +81,7 @@ the named script — its fixtures say what the contract is.
 | Contract | Enforced by |
 | --- | --- |
 | No duplicate mapping keys in any canonical YAML | `_strict_yaml.py` |
-| Full 40-char SHA pins with a version comment; `uvx`/`bunx` tools pinned | `check_pinned_actions.py`, `check_tool_pinning.py` |
+| Full 40-char SHA pins with a release or matching `commit:<SHA>` comment; `uvx`/`bunx` tools pinned | `check_pinned_actions.py`, `check_tool_pinning.py` |
 | `permissions: {}` top-level, least-privilege jobs, `timeout-minutes` everywhere | `check_permissions.py` |
 | Release writes sit behind the promotion gate **and** a protected environment | `check_release_graph.py` |
 | `gate.yml` is a report, not an authorization primitive | `check_gate_contract.py` |
@@ -94,7 +91,7 @@ the named script — its fixtures say what the contract is.
 | Monorepo router is fail-closed: strict JSON filters, no wildcards, conservative all-true | `check_monorepo_routing.py` |
 | Runtime bundle ⊆ source archive | `check_release_supply_chain.py` |
 | Every valid repository shape resolves to a programme | `resolve_profile.py` |
-| Blocking workflows owe runtime evidence | `validate_runtime_coverage.py` |
+| Runtime evidence binds successful caller/guard results and exact workflow digests | `render_runtime_evidence.py` |
 | Every action is registered, and `used_by` matches the tree | `check_tool_registry.py` |
 | Every reusable has a caller example, which states its runner | `check_examples.py` |
 | No estate inventory or observed spend in public prose | `check_public_docs.py` |
@@ -119,25 +116,14 @@ Two rules no validator can catch for you:
 
 ## Tier truth
 
-Artifact Attestations: free on public repositories on any plan; private and
-internal require **Enterprise Cloud** (Code Security does not unlock them).
-Private-free repositories release with `release-supply-chain-free.yml`.
+Use `catalog/product-facts.yml` for dated plan, licence, price and quota facts;
+use `catalog/profiles.yml` and the resolver for available workflow composition.
+Do not duplicate volatile commercial values in agent instructions. Public jobs
+use standard GitHub-hosted runners; private routing follows the caller contract.
 
-Runners: **standard** hosted runners are unmetered on public repositories — all
-three operating systems, macOS included, `macos-latest` is standard. The
-reusables proven on all three carry `proven_os` in `runtime-coverage.yml`; the
-fixture estate runs them there because it costs nothing and Windows is where
-non-portable shell syntax surfaces. **Larger**
-ones (`-N-cores`, `-large`, `-xlarge`) are billed from the first minute there too;
-hosted is not the same as free. On **private** repositories the OS multiplier
-bites: macOS is 10.33x Linux. A public repository must never route to
-self-hosted hardware — a forked pull request there is remote code execution on it.
-`docs/05` teaches the routing; the amounts live in `catalog/product-facts.yml`.
-
-Code Quality is a separate licence needing Team or Enterprise, billed per active
-committer counted once per organization. **Its public per-committer rate is
-disputed between GitHub's own sources**, so never compile a public cost from it
-in either direction. It ships no Action, so it carries `workflow: null`.
+`catalog/evidence-orchestration.yml` declares evidence lanes and platforms.
+`scripts/render_runtime_evidence.py` reports what a concrete fixture run proves;
+a declared lane or green source check is not proof it ran on every platform.
 
 ## Git
 
@@ -157,4 +143,5 @@ resolve → promotion → authorize → publish; see `docs/09`.
 `validate_all.py`, `actionlint`, and the pinned `zizmor` all pass, and you can
 name the evidence for anything you claim works. A green gate proves the
 contracts hold; it does not prove a workflow runs — that is what
-`catalog/runtime-coverage.yml` records, honestly, including what is unproven.
+the fixture summaries from `scripts/render_runtime_evidence.py` record,
+including failed, skipped and missing caller results.

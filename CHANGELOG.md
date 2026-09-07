@@ -10,6 +10,10 @@ The project follows Semantic Versioning.
 - Re-verify four vendor allowance records with staggered review dates, correct
   Ubicloud's monthly credit and Harness's conditional CI credit semantics, and
   align the disclosed Checkov image tag with the existing pinned action.
+- Publish unsuccessful completed self-workflow attempts as unassigned,
+  repository-local CI evidence; preserve actual conclusions and exact attempts.
+- Accept exact matching development-commit comments and correct nested action
+  pin validation and container whitespace rejection. Keep registrations scoped to their actual action paths.
 
 - Declare both git-submodule and reusable-workflow consumption in the GDS
   module contract. Refresh its projection using the existing stable bundle.
