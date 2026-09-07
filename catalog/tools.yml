@@ -94,8 +94,8 @@ tools:
     name: step-security/harden-runner
     homepage: "https://github.com/step-security/harden-runner"
     kind: action
-    current_version: "v2.21.0"
-    pin: "step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c"
+    current_version: "v2.21.1"
+    pin: "step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1"
     used_by:
       - .github/workflows/ci.yml
       - .github/workflows/dependabot-catalog-convergence.yml
@@ -108,20 +108,20 @@ tools:
       - .github/workflows/public-scorecard.yml
       - .github/workflows/release.yml
       - .github/workflows/zizmor-sarif.yml
-    last_verified: "2026-07-10"
+    last_verified: "2026-09-07"
 
   - id: codeql-action
     name: github/codeql-action
     homepage: "https://github.com/github/codeql-action"
     kind: action
-    current_version: "v4.37.8"
-    pin: "github/codeql-action@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28"
+    current_version: "v4.37.9"
+    pin: "github/codeql-action@cdf488f595d80d6e07e03d4674febd5ab45fa938"
     used_by:
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-scorecard.yml
       - .github/workflows/zizmor-sarif.yml
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-07"
 
   - id: dependency-review-action
     name: actions/dependency-review-action
@@ -275,12 +275,12 @@ tools:
     name: hendrikmuhs/ccache-action
     homepage: "https://github.com/hendrikmuhs/ccache-action"
     kind: action
-    current_version: "v1.2.23"
-    pin: "hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03"
+    current_version: "v1.2.24"
+    pin: "hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d"
     used_by:
       - .github/workflows/cpp-ci.yml
       - .github/workflows/qt-ci.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-07"
 
   - id: setup-gradle
     name: gradle/actions/setup-gradle
@@ -317,11 +317,11 @@ tools:
     name: r-lib/actions/setup-r
     homepage: "https://github.com/r-lib/actions"
     kind: action
-    current_version: "v2.12.1"
-    pin: "r-lib/actions@d3c5be51b12e724e68f33216ca3c148b66d5f0b6"
+    current_version: "v2.13.0"
+    pin: "r-lib/actions@465b7d8e732ca3921382b1674c59bada9cbf3399"
     used_by:
       - .github/workflows/r-ci.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-07"
 
   - id: codecov-action
     name: codecov/codecov-action
@@ -357,11 +357,11 @@ tools:
     name: crate-ci/typos
     homepage: "https://github.com/crate-ci/typos"
     kind: action
-    current_version: "v1.49.0"
-    pin: "crate-ci/typos@8a48f81b6c64dcfea44b3633223084c4be58ac5f"
+    current_version: "v1.50.0"
+    pin: "crate-ci/typos@4d9c206a77c041268485162b8e2579ad7a5cb9a3"
     used_by:
       - .github/workflows/docs-quality.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-07"
 
   - id: markdownlint-cli2-action
     name: DavidAnson/markdownlint-cli2-action
@@ -439,11 +439,11 @@ tools:
     name: anchore/scan-action
     homepage: "https://github.com/anchore/scan-action"
     kind: action
-    current_version: "v7.4.0"
-    pin: "anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2"
+    current_version: "v7.4.2"
+    pin: "anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439"
     used_by:
       - .github/workflows/grype-scan.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-07"
 
   - id: hadolint
     name: hadolint
@@ -459,11 +459,11 @@ tools:
     name: bridgecrewio/checkov-action
     homepage: "https://github.com/bridgecrewio/checkov-action"
     kind: action
-    current_version: "v12.3119.0"
-    pin: "bridgecrewio/checkov-action@59b9d7edfcad5b87fbe3f473a9a134a721ad03f8"
+    current_version: "v12.3122.0"
+    pin: "bridgecrewio/checkov-action@f967808197a8d784d3e72919f38c3ff0cda7884e"
     used_by:
       - .github/workflows/iac-scan.yml
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-07"
 
   - id: github-action-benchmark
     name: benchmark-action/github-action-benchmark
@@ -681,11 +681,11 @@ tools:
     name: taiki-e/install-action
     homepage: "https://github.com/taiki-e/install-action"
     kind: action
-    current_version: "v2.86.7"
-    pin: "taiki-e/install-action@b6ff580856c41316412a0b9b60540fbc6f8c82cc"
+    current_version: "v2.87.2"
+    pin: "taiki-e/install-action@1ed6d7be6168f6c9046541087ff549b6bc581fdf"
     used_by:
       - .github/workflows/rust-supply-chain.yml
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-07"
 
   # Upstream tags no release, so the pin comment carries the commit date rather
   # than a version. Bump it by picking a newer commit deliberately, not by

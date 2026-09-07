@@ -128,6 +128,52 @@ def check() -> list[str]:
             problems.append("full synchronization did not rewrite the straggler workflow pin")
         if ".github/workflows/other.yml" not in changed:
             problems.append("full synchronization did not report the rewritten workflow")
+    with tempfile.TemporaryDirectory() as directory:
+        root = pathlib.Path(directory)
+        (root / ".github/workflows").mkdir(parents=True)
+        (root / "catalog").mkdir()
+        (root / "docs/generated").mkdir(parents=True)
+        old, new, workflow_sha = "a" * 40, "b" * 40, "c" * 40
+        (root / "catalog/tools.yml").write_text(
+            "tools:\n  - id: cache\n    kind: action\n"
+            f'    current_version: "v1"\n    pin: "mono/repo/actions/cache@{old}"\n'
+            "  - id: setup\n    kind: action\n"
+            f'    current_version: "v1"\n    pin: "mono/repo/actions/setup@{old}"\n'
+            "  - id: feedback\n    kind: reusable-workflow\n"
+            f'    current_version: "commit:{workflow_sha}"\n'
+            f'    pin: "mono/repo/.github/workflows/feedback.yml@{workflow_sha}"\n',
+            encoding="utf-8",
+        )
+        workflow = root / ".github/workflows/ci.yml"
+        before = (
+            f"jobs:\n  feedback:\n    uses: mono/repo/.github/workflows/feedback.yml@{workflow_sha} # commit:{workflow_sha}\n"
+            f"  test:\n    steps:\n      - uses: mono/repo/actions/cache@{new} # v2\n"
+            f"      - uses: mono/repo/actions/setup@{old} # v1\n"
+        )
+        workflow.write_text(before, encoding="utf-8")
+        evidence = (f"mono/repo/actions/cache@{old}\nmono/repo/actions/setup@{old}\n"
+                    f"https://github.com/mono/repo/blob/{old}/actions/cache/action.yml\n"
+                    f"https://github.com/mono/repo/blob/{old}/actions/setup/action.yml\n"
+                    f"historic_artifact_sha: {old}\n")
+        for relative in ("catalog/scorecard-evidence.yml", "docs/generated/scorecard-evidence.md"):
+            (root / relative).write_text(evidence, encoding="utf-8")
+        synchronize(root, catalog_only=True)
+        tools = (root / "catalog/tools.yml").read_text(encoding="utf-8")
+        if (f"mono/repo/actions/cache@{new}" not in tools
+                or f"mono/repo/actions/setup@{old}" not in tools
+                or f"feedback.yml@{workflow_sha}" not in tools):
+            problems.append("independent components in one repository lost their declared pins")
+        if workflow.read_text(encoding="utf-8") != before:
+            problems.append("catalog-only rewrote an independently pinned workflow")
+        evidence_after = (root / "catalog/scorecard-evidence.yml").read_text(encoding="utf-8")
+        if (f"mono/repo/actions/cache@{new}" not in evidence_after
+                or f"mono/repo/actions/setup@{old}" not in evidence_after
+                or f"/blob/{new}/actions/cache/action.yml" not in evidence_after
+                or f"/blob/{old}/actions/setup/action.yml" not in evidence_after
+                or f"historic_artifact_sha: {old}" not in evidence_after):
+            problems.append("evidence replacement escaped the changed action reference")
+        if synchronize(root, catalog_only=True):
+            problems.append("independent component synchronization was not idempotent")
     return problems
 
 

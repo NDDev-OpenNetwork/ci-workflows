@@ -7,6 +7,11 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Synchronize pins by catalog action family, preserving independent subpath actions
+  and reusable workflows in the same repository. Apply the reviewed dependency
+  updates from #92 with matching catalog and transitive-image records; historical
+  evidence digests are no longer rewritten by an unrelated action update.
+
 - Stop treating the publisher as an Enterprise Cloud buyer of Code Security,
   Secret Protection and Code Quality. Paid programmes stay explicitly
   selectable; public CodeQL, SARIF, Scorecard and attestations stay. Private
