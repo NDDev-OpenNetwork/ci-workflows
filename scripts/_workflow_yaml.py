@@ -18,6 +18,7 @@ WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
 # this repository applying its own catalog to itself, so they carry no catalog,
 # runtime-coverage, or generated-inventory entry.
 SELF_WORKFLOWS = {
+    "ci-feedback-events.yml",
     "ci.yml",
     "maintenance.yml",
     "codeql.yml",
