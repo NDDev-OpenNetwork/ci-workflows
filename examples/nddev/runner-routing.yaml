@@ -1,6 +1,7 @@
-# Operator mapping for NDDev private repositories. This is estate-specific data,
-# not a reusable-workflow default. Compile it before dispatch; GitHub will not
-# fall back after a self-hosted label has entered the queue.
+# Example operator mapping for private repositories that compile a runner
+# before dispatch. This is caller-owned data, not a reusable-workflow default
+# and not a live fleet inventory. GitHub will not fall back after a
+# self-hosted label has entered the queue.
 schema: nddev-ci-runner-map/v1
 fleet_contract:
   repository: NDDev-OpenNetwork/github-actions

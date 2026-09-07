@@ -70,6 +70,10 @@ Dependabot bump would have flipped it.
   the two conditions above. It does not make this library's default safe, which
   is a separate question about resolvability, but it removes the reason a public
   estate repository could not use the fleet at all.
+
+  **Update 2026-09-07:** `examples/nddev/` remains a caller-owned map, not a live
+  fleet inventory and not a claim the publisher holds Enterprise Cloud or paid
+  GitHub security products. The default-must-be-hosted rule is unchanged.
 - The same trap exists in the platform API: a `PATCH` to code-scanning default
   setup that omits `runner_type` resets it to `standard`, silently moving a
   private repository off the fleet. Send the field on every write.

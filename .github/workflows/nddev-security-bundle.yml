@@ -1,10 +1,11 @@
 name: nddev-security-bundle
 
 # One private-fleet placement for four fast security gates in a private
-# repository with GitHub Code Security. zizmor retains SARIF upload while the
-# previously paid four independent cold-start and queue costs. The workflow
-# source is fetched at job.workflow_sha, so its companion script is exactly the
-# same immutable revision as this called workflow.
+# repository that has GitHub Code Security. zizmor retains SARIF upload while
+# sharing one checkout. Callers without Code Security must use
+# private-security-bundle-free.yml instead. The workflow source is fetched at
+# job.workflow_sha, so its companion script is exactly the same immutable
+# revision as this called workflow.
 
 on:
   workflow_call:

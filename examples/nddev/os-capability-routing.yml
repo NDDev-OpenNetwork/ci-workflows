@@ -1,7 +1,8 @@
-# NDDev PRIVATE-repository caller compiled from runner-routing.yaml.
+# PRIVATE-repository caller compiled from runner-routing.yaml.
 # Each useful job has its final runner before dispatch: there is no routing job
 # and no delayed fallback after a self-hosted label enters GitHub's queue.
 # Do not use the self-hosted Linux routes in a public repository.
+# Labels are caller-owned; this example is not a live fleet inventory.
 # Replace @<sha> with a pinned full commit SHA of ci-workflows.
 name: os-capability-routing
 on:

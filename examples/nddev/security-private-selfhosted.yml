@@ -1,41 +1,21 @@
-# NDDev estate tier — PRIVATE repository variant.
+# Publisher-org PRIVATE repository variant without paid GitHub add-ons.
 #
-# Identical coverage to examples/nddev/security.yml; the only difference is that
-# every job is routed to the estate's self-hosted fleet so that the metered
-# private-repository minutes never reach the bill.
+# Same surfaces as examples/private-free/security-selfhosted.yml: the free
+# private bundle (actionlint, zizmor without SARIF, OSV, gitleaks) plus
+# private-static. No CodeQL, no SARIF upload, no dependency review — those
+# need Code Security on private repositories and are not assumed here.
+# Release provenance for this shape is release-supply-chain-free.yml.
 #
 # Do NOT copy this file into a public repository. A forked pull request against
 # a public repo executes attacker-controlled code, so pointing a public repo at a
-# self-hosted runner is a remote-code-execution path into your own hardware. The
-# estate's runner group also sets allows_public_repositories: false, but treat
-# that as a backstop rather than the control.
+# self-hosted runner is a remote-code-execution path into your own hardware.
+# A private runner group should also set allows_public_repositories: false as a
+# backstop, not as the control.
 #
-# Two scans are NOT configured by this file and must be set per repository, or
-# they keep consuming metered minutes regardless of what is written here:
-#   * CodeQL default setup  -> PATCH /repos/{owner}/{repo}/code-scanning/default-setup
-#                              with runner_type=labeled, runner_label=nddev-linux-standard
-#   * Code Quality          -> repository Settings -> Code quality -> Labeled runner
-# See docs/05-runners.md#visibility-routing.
-#
-# Replace @<sha> with a pinned full commit SHA of ci-workflows. The runner
-# labels below are the estate's real scale-set classes, documented in
-# `github-actions/docs/architecture.md`:
-#
-#   nddev-linux-fast         format, lint, typecheck, short unit tests
-#                            (no job credential, no Docker)          [no host yet]
-#   nddev-linux-standard     normal builds and tests, repo-scoped credentials
-#   nddev-linux-integration  Docker, Compose, databases, browsers
-#   nddev-linux-release      signing, publish, deploy (isolated)     [no host yet]
-#
-# DECLARED IS NOT DEPLOYED. As of 2026-08-11 the fleet's GARM holds one
-# repository entity and serves `NDDev-OpenNetwork/github-actions` alone, so none of
-# these labels can take a job from another repository until the organization
-# entity and its scale sets are rolled out. Until then this file documents the
-# intended routing; a caller that needs to run today names a hosted runner.
-#
-# The consolidated bundle runs checksum-verified Linux binaries and therefore
-# needs no Docker daemon. actionlint, zizmor, OSV-Scanner and gitleaks share one
-# checkout and one ephemeral standard worker instead of four cold placements.
+# Replace @<sha> with a pinned full commit SHA of ci-workflows. Replace the
+# runner labels with isolated ephemeral labels registered only to private
+# repositories. Destroy the worker after one job. This file does not publish a
+# live fleet inventory.
 name: security
 on:
   push: { branches: [main] }
@@ -45,20 +25,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.run_id }}
   cancel-in-progress: false
 jobs:
-  codeql:
-    permissions: { actions: read, contents: read, security-events: write }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-codeql.yml@<sha>
-    with:
-      languages: '["python","actions"]'
-      runner: nddev-linux-standard
-      dependabot_runner: nddev-linux-untrusted
   security-bundle:
     permissions: { contents: read }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/nddev-security-bundle.yml@<sha>
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/private-security-bundle-free.yml@<sha>
     with:
       runner: nddev-linux-standard
-  dependency-review:
-    permissions: { contents: read, pull-requests: write }
-    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-dependency-review.yml@<sha>
+  validate:
+    permissions: { contents: read }
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/private-static.yml@<sha>
     with:
       runner: nddev-linux-standard
+      command: "python3 scripts/validate_all.py"

@@ -1,9 +1,9 @@
 # Public OSS tier — the free full suite
 
 Public repositories on GitHub get the **entire security and supply-chain suite
-for free**, including features that are paid on private repositories. This is the
-tier the NDDev estate targets for open-source work, and it is where the library
-delivers its full value.
+for free**, including features that are paid on private repositories. This is
+the programme this public library itself runs, and it is where the library
+delivers its full value without paid add-ons.
 
 > **One documented exception: GitHub Code Quality is not free on public repos.**
 > Unlike CodeQL and everything else in the table below, it is billed per active

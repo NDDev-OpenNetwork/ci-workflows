@@ -4,16 +4,16 @@ description: Wire a repository onto the ci-workflows reusable library correctly 
 license: AGPL-3.0-or-later
 compatibility: Codex and Agent Skills compatible; OpenCode discovers .agents/skills. Generate .claude/skills mirrors for Claude Code.
 metadata:
-  version: 1.1.0
+  version: 1.2.0
   owner: NDDev
   status: proposed
-  reviewed_at: '2026-08-26'
+  reviewed_at: '2026-09-07'
 ---
 
 # Adopting ci-workflows in a consumer repository
 
-This is the *caller* side. For work inside the library itself use
-`nddev-repo-flow`.
+This is the *caller* side. For work inside this library, use `AGENTS.md` and
+`scripts/` in the library checkout.
 
 Adoption is four decisions, in order. Getting them out of order is what produces
 the two failure shapes seen in practice: a repository that looks configured but
@@ -27,22 +27,27 @@ The resolver lives in the library, not in your repository, so check the library
 out first. Everything below runs in that checkout, not in yours:
 
 ```bash
-# Pin to the ref you intend to consume. `resolve_profile.py` does not exist in
-# Use the current released surface. At the 2026-08-26 review this is 0.1.11 at
-# 409817cf743e76383c84e30c72edf781d73b71a1; re-read the latest immutable
-# release before adoption rather than copying this review-time value.
-LIBRARY_REF=main
-git clone --depth 1 --branch "$LIBRARY_REF" \
+# LIBRARY_TAG is the immutable SemVer release you verified and will pin.
+# Resolve the programme from that same revision. Do not check out main.
+LIBRARY_TAG="${LIBRARY_TAG:?set LIBRARY_TAG to the release tag you will pin}"
+git clone --depth 1 --branch "$LIBRARY_TAG" \
     https://github.com/NDDev-OpenNetwork/ci-workflows.git /tmp/ci-workflows
 cd /tmp/ci-workflows
+LIBRARY_SHA=$(git rev-parse HEAD)
+# Write $LIBRARY_SHA in every consumer `uses: ...@<sha>` line.
 
 # The library runs every Python tool through one launcher, which needs its own
 # environment. A bare `python3 scripts/...` aborts with ModuleNotFoundError.
 python3.13 -I -B -m venv --copies .venv
 uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
 
-.venv/bin/python -I -B scripts/check_python_execution_contract.py --launch resolve_profile.py -- --visibility private --plan enterprise-cloud \
-    --code-security --secret-protection --code-quality
+# Pass THIS consumer organization's live plan. Do not copy another
+# organization's observed plan. Public no-addon shapes keep CodeQL and
+# attestations on current GitHub plans whether the org is Free or Team:
+.venv/bin/python -I -B scripts/check_python_execution_contract.py --launch resolve_profile.py -- --visibility public --plan free
+.venv/bin/python -I -B scripts/check_python_execution_contract.py --launch resolve_profile.py -- --visibility public --plan team
+# Private attestations need --plan enterprise-cloud. Add-on flags are separate:
+# --code-security, --secret-protection, --code-quality.
 ```
 
 It returns the matching profile, its controls (CodeQL mode, runner class,
@@ -59,17 +64,25 @@ Pick the tier doc first; it decides which reusables are even legal to call:
 | --- | --- |
 | public repository | `docs/01-public-oss-free.md` |
 | private, no paid security products | `docs/02-private-free.md` |
-| private, Advanced Security held | `docs/03-private-paid-ghas.md` |
-| an estate that already owns the paid products | `docs/17-nddev-tier.md` |
+| private, Advanced Security **selected** | `docs/03-private-paid-ghas.md` |
+| opt-in paid organization programmes | `docs/17-nddev-tier.md` |
 | Code Quality (orthogonal to all of the above) | `docs/16-code-quality.md` |
 
-The trap: the generic model treats *private* as the degraded case, so a private
-repository inside an estate that already pays for the paid products gets
-configured down to the free tier and quietly discards capability that is already
-bought — most visibly by releasing through `release-supply-chain-free.yml` when
-`release-supply-chain.yml` would attest. Check entitlements before believing a
-tier table. Prices and quotas live in `catalog/product-facts.yml`; never quote
-them from memory or from a skill.
+The publisher is a GitHub Organization, not an Enterprise account, and this
+library does not assume it purchased Code Security, Secret Protection, Code
+Quality, or Enterprise Cloud. A live GitHub plan belongs to one organization;
+do not copy one account's plan onto another.
+
+Public repositories keep CodeQL, native secret scanning, dependency review and
+artifact attestations on current GitHub plans without those add-ons. Code
+Security, Secret Protection and Code Quality are independent purchases; none
+of them unlocks private Artifact Attestations. That is an Enterprise Cloud
+**plan** gate. Following private-free on a private repository without
+Enterprise Cloud is correct even if Code Security is held. Following
+private-free on Enterprise Cloud drops attested `release-supply-chain.yml`
+even if no add-on is held. Check entitlements and the plan gate separately.
+Prices and quotas live in `catalog/product-facts.yml`; never quote them from
+memory or from a skill.
 
 ## 2. Pin — to a released tag, by full SHA
 
@@ -102,33 +115,25 @@ everywhere":
 - **private → self-hosted label**, passed by the caller through the `runner`
   input.
 
-For NDDev private repositories, route by capability rather than by whichever
-queue looks shortest:
+Private callers supply their own labels. Example class names used by some
+NDDev private repositories (`nddev-linux-fast` / `-standard` / `-integration`
+/ `-untrusted` / `-release`) are caller-owned; this library does not publish a
+live fleet inventory. Do not put a private checkout on a checkout-free class,
+Docker work on a class without a container runtime, or untrusted code on a
+credentialed class.
 
-| Workload | Runner label |
-| --- | --- |
-| checkout-free lint or policy | `nddev-linux-fast` |
-| ordinary private build/test | `nddev-linux-standard` |
-| Docker, service containers, nested runtime | `nddev-linux-integration` |
-| untrusted candidate code | `nddev-linux-untrusted` |
-| credentialed release/deploy | `nddev-linux-release` |
-| Almaty ordinary/integration work | `nddev-priority-standard` / `nddev-priority-integration` |
-
-Do not put a private checkout on `fast`, Docker work on `standard`, untrusted
-code on a credentialed class, or ordinary repositories on the Almaty priority
-classes.
-
-Then close the two settings that **no workflow file can reach**, because GitHub
-schedules them itself:
+Then close the two settings that **no workflow file can reach**, and only when
+those products are actually enabled, because GitHub schedules them itself:
 
 | Scan | Where the runner is chosen |
 | --- | --- |
 | CodeQL *default setup* | `PATCH /repos/{owner}/{repo}/code-scanning/default-setup` with `runner_type: labeled` |
 | Code Quality | `PATCH /repos/{owner}/{repo}/code-quality/setup` with `runner_type: labeled`, `runner_label` — or repository settings → Code quality → *Labeled runner* |
 
-Miss either and the repository keeps consuming metered minutes while every
-caller in the tree claims otherwise. Full mechanics:
-`docs/05-runners.md#visibility-routing`.
+Miss either **on a repository that has those products enabled** and it keeps
+consuming metered minutes while every caller in the tree claims otherwise. Do
+not enable or route them on a repository that has not purchased them. Full
+mechanics: `docs/05-runners.md#visibility-routing`.
 
 There is **no** automatic spillover from a self-hosted label to a hosted runner.
 A job whose label is busy queues until a runner frees. Size the fleet so
@@ -176,8 +181,8 @@ reconciles placement; workflow-level retries must not duplicate an active job.
 2. Every reusable reference pinned by full SHA to a released tag; one pin per repository.
 3. No reference to the pre-rename library name.
 4. `runner` input set on private callers; absent on public ones.
-5. CodeQL default setup and Code Quality both routed for private repositories.
+5. Managed CodeQL default setup and Code Quality routed **only** when those products are enabled.
 6. A completed run inspected for `runner_name`, not just a saved setting.
 7. AI findings off unless deliberately sized.
-8. Release caller matches entitlement — attested where the plan allows it.
+8. Release caller matches the plan gate: attested on public, and on private/internal only with Enterprise Cloud. Add-ons do not unlock private attestations.
 9. Transient retries are idempotent, logged, and capped at three attempts.

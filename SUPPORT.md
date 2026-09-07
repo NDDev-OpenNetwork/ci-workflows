@@ -1,7 +1,7 @@
 # Support
 
 `ci-workflows` is a library of reusable GitHub Actions workflows consumed
-across the NDDev estate by full commit SHA. Here is where to get help.
+by full commit SHA. Here is where to get help.
 
 ## Read the docs first
 

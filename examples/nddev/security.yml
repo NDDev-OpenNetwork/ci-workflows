@@ -1,7 +1,9 @@
-# NDDev estate tier — the full paid stack the NDDev-OpenNetwork organization actually owns:
-# Enterprise Cloud + Code Security + Secret Protection + Code Quality.
-# Runs identically on public and private repositories; on private it is the
-# GHAS licences that make CodeQL and SARIF upload legal, not the visibility.
+# Publisher-org public caller: the free public security surfaces (CodeQL, SARIF,
+# dependency review, gitleaks, actionlint, OSV). These are free on public
+# repositories on every current GitHub plan; they are not a claim that the
+# publisher purchased Code Security, Secret Protection, Code Quality, or
+# Enterprise Cloud. Private repositories without those purchases must not copy
+# this file — use examples/private-free/ or security-private-selfhosted.yml.
 # Replace @<sha> with a pinned full commit SHA of ci-workflows.
 name: security
 on:

@@ -64,7 +64,7 @@
 | hadolint Dockerfile lint (`hadolint-dockerfile`) | security-scanning | ga | free | free | available | `.github/workflows/hadolint-ci.yml` | `examples/security/hadolint.yml` |
 | IaC scan (Checkov) (`iac-scan-checkov`) | security-scanning | ga | free | free | available | `.github/workflows/iac-scan.yml` | `examples/security/iac-scan.yml` |
 | GitHub native secret scanning (`native-secret-scanning`) | security-scanning | ga | free | unavailable | available | `-` | `-` |
-| Consolidated private security bundle (`nddev-security-bundle`) | security-scanning | preview | unavailable | unavailable | available | `.github/workflows/nddev-security-bundle.yml` | `examples/nddev/security-private-selfhosted.yml` |
+| Consolidated private security bundle (`nddev-security-bundle`) | security-scanning | preview | unavailable | unavailable | available | `.github/workflows/nddev-security-bundle.yml` | `examples/private-paid-ghas/security-selfhosted.yml` |
 | OpenSSF Scorecard SARIF (`ossf-scorecard`) | security-scanning | ga | free | unavailable | unavailable | `.github/workflows/public-scorecard.yml` | `examples/public-oss/scorecard-sarif.yml` |
 | OpenSSF Scorecard read-only SARIF analysis (`ossf-scorecard-analysis`) | security-scanning | ga | conditional | unavailable | unavailable | `.github/workflows/public-scorecard-analysis.yml` | `examples/public-oss/scorecard-analysis.yml` |
 | OpenSSF Scorecard JSON artifact (`ossf-scorecard-json`) | security-scanning | ga | free | unavailable | unavailable | `.github/workflows/public-scorecard-json.yml` | `examples/public-oss/scorecard.yml` |

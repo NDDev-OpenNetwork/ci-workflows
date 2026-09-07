@@ -70,6 +70,10 @@
         "role": "adoption-guide",
         "language": "markdown"
       },
+      "docs/17-nddev-tier.md": {
+        "role": "adoption-guide",
+        "language": "markdown"
+      },
       "docs/19-python-execution.md": {
         "role": "repository-launcher",
         "language": "markdown"
@@ -77,6 +81,10 @@
       "examples/evidence-orchestration.md": {
         "role": "adoption-guide",
         "language": "markdown"
+      },
+      "examples/nddev/security-private-selfhosted.yml": {
+        "role": "consumer-command",
+        "language": "yaml"
       },
       "examples/private-free/security-selfhosted.yml": {
         "role": "consumer-command",

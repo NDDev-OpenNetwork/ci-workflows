@@ -13,8 +13,8 @@ That model cannot express the estate it serves. Visibility, base plan and the
 three paid add-ons (Code Security, Secret Protection, Code Quality) vary
 independently, and most repositories sit in a combination the three tiers cannot
 name — a private repository holding only Code Quality is neither "private-free"
-nor "private-paid". Two further modes existed in prose only: the fixed-cost
-NDDev tier and the personal-account tier.
+nor "private-paid". Two further modes existed in prose only: a fixed-cost paid
+organization programme and the personal-account tier.
 
 So a mode could be stated only in a document, and a document is exactly what
 nothing validates. The $80 envelope drifted in three separate ways before this
@@ -31,7 +31,9 @@ was noticed.
   unplaceable.
 - Named profiles compose those axes. Four exist: `public-free-standalone`,
   `private-free-max`, `public-enterprise-max`,
-  `enterprise-full-private-fixed80`.
+  `enterprise-full-private-fixed80`. The two paid ids are opt-in consumer
+  programmes, not a claim that the publisher holds Enterprise Cloud or the
+  paid add-ons.
 - `scripts/validate_profiles.py` enforces coherence, and its rules encode
   failures that actually happened rather than generic schema checks: itemised
   fixed cost lines must sum to the declared total; a fixed-cost profile may not
