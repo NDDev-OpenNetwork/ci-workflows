@@ -11,7 +11,7 @@ entrypoint_matrix:
       contents: read
     harden_runner:
       required: true
-      pin: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c
+      pin: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1
       egress_policy: audit
       position: first
     allowed_callers:
@@ -38,7 +38,7 @@ entrypoint_matrix:
       security-events: write
     harden_runner:
       required: true
-      pin: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c
+      pin: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1
       egress_policy: audit
       position: first
     allowed_callers:
@@ -66,7 +66,7 @@ category_contract:
     guid: null
   source_urls:
     - https://github.com/ossf/scorecard/blob/v5.5.0/pkg/scorecard/sarif.go
-    - https://github.com/github/codeql-action/blob/db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28/src/upload-lib.ts
+    - https://github.com/github/codeql-action/blob/cdf488f595d80d6e07e03d4674febd5ab45fa938/src/upload-lib.ts
     - https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support-for-code-scanning
 attempts:
   - attempt: 1

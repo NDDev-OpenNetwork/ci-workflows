@@ -10,6 +10,8 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable
 
+from ci_workflows_tools._strict_yaml import strict_load
+
 
 PIN = re.compile(r"uses:\s*([^\s#@]+)@([0-9a-f]{40})\s*#\s*(\S+)")
 IMAGE = re.compile(r"(?m)^\s*image:\s*[\"']?(docker://[^\s\"']+)")
@@ -45,9 +47,28 @@ def resolve_action_image(action: str, sha: str) -> str:
     )
 
 
+def action_prefixes(root: pathlib.Path) -> tuple[str, ...]:
+    """Use the same action families as the tool registry, including subpaths.
+
+    One repository can publish independent actions and reusable workflows at
+    different revisions. Only a catalog action entry defines a shared pin.
+    """
+    tools = (strict_load(root / "catalog/tools.yml") or {}).get("tools") or []
+    return tuple(sorted({
+        str(tool["pin"]).rsplit("@", 1)[0]
+        for tool in tools if tool.get("kind") == "action" and tool.get("pin")
+    }, key=lambda prefix: (-len(prefix), prefix)))
+
+
+def action_prefix(reference: str, prefixes: tuple[str, ...]) -> str | None:
+    return next((prefix for prefix in prefixes
+                 if reference == prefix or reference.startswith(prefix + "/")), None)
+
+
 def workflow_pins(
     root: pathlib.Path, *, require_unique: bool = False
 ) -> dict[str, tuple[str, str]]:
+    prefixes = action_prefixes(root)
     found: dict[str, collections.Counter[tuple[str, str]]] = {}
     for path in sorted((root / ".github/workflows").glob("*.yml")):
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -55,8 +76,9 @@ def workflow_pins(
             if match is None:
                 continue
             reference, sha, version = match.groups()
-            repository = "/".join(reference.split("/")[:2])
-            found.setdefault(repository, collections.Counter())[(sha, version)] += 1
+            prefix = action_prefix(reference, prefixes)
+            if prefix is not None:
+                found.setdefault(prefix, collections.Counter())[(sha, version)] += 1
     result: dict[str, tuple[str, str]] = {}
     for repository, identities in found.items():
         ranked = identities.most_common()
@@ -82,6 +104,7 @@ def synchronize(
     catalog_only: bool = False,
 ) -> list[str]:
     pins = workflow_pins(root, require_unique=catalog_only)
+    prefixes = action_prefixes(root)
     changed: list[str] = []
     if not catalog_only:
         for path in sorted((root / ".github/workflows").glob("*.yml")):
@@ -91,9 +114,9 @@ def synchronize(
                 match = PIN.search(line)
                 if match is not None:
                     reference, sha, version = match.groups()
-                    repository = "/".join(reference.split("/")[:2])
-                    expected = pins[repository]
-                    if (sha, version) != expected:
+                    prefix = action_prefix(reference, prefixes)
+                    expected = pins.get(prefix) if prefix is not None else None
+                    if expected is not None and (sha, version) != expected:
                         line = (
                             line[:match.start(2)]
                             + expected[0]
@@ -126,8 +149,15 @@ def synchronize(
             new_sha, new_version = identity
             if old_sha != new_sha:
                 lines[index] = f'    pin: "{repository}@{new_sha}"'
-                replacements.append((old_sha, new_sha))
                 replacements.append((f"{repository}@{old_sha}", f"{repository}@{new_sha}"))
+                parts = repository.split("/")
+                origin = "/".join(parts[:2])
+                subpath = "/".join(parts[2:])
+                suffix = f"/{subpath}/" if subpath else "/"
+                replacements.append((
+                    f"https://github.com/{origin}/blob/{old_sha}{suffix}",
+                    f"https://github.com/{origin}/blob/{new_sha}{suffix}",
+                ))
                 changed_repositories.add(repository)
             for version_index in range(index - 1, max(-1, index - 8), -1):
                 if lines[version_index].startswith("    current_version: "):
@@ -151,7 +181,7 @@ def synchronize(
                 continue
             if not line.startswith("    image: ") or current_action is None:
                 continue
-            repository = "/".join(current_action.split("/")[:2])
+            repository = action_prefix(current_action, prefixes)
             if repository not in changed_repositories:
                 continue
             sha, _ = pins[repository]

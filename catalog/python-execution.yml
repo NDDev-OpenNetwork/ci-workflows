@@ -625,6 +625,9 @@
       "_workflow_yaml",
       "check_python_execution_contract",
       "check_scorecard_evidence_contract"
+    ],
+    "sync_action_catalog.py": [
+      "_strict_yaml"
     ]
   },
   "direct_external_imports": {
