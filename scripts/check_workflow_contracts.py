@@ -269,6 +269,28 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
     if "ci-gate" not in jobs:
         problems.append("ci.yml: missing required `ci-gate` job (branch-protection status check)")
 
+    # Run 34091935173 failed because this job committed workflow files and
+    # GITHUB_TOKEN cannot push them without `workflows` permission. Catalog
+    # follow-up must not expand App permissions; it commits catalog only.
+    convergence = (workflow_files()[0].parent / "dependabot-catalog-convergence.yml").read_text(
+        encoding="utf-8"
+    )
+    if "git add .github/workflows" in convergence:
+        problems.append(
+            "dependabot-catalog-convergence.yml: must not git-add workflow files; "
+            "GITHUB_TOKEN cannot push them without workflows permission"
+        )
+    if "--catalog-only" not in convergence:
+        problems.append(
+            "dependabot-catalog-convergence.yml: must run sync_action_catalog.py "
+            "--catalog-only so it does not rewrite workflow files"
+        )
+    if "git add catalog docs/generated" not in convergence:
+        problems.append(
+            "dependabot-catalog-convergence.yml: catalog convergence commit must "
+            "add only catalog and docs/generated"
+        )
+
     go_ci = load_yaml((workflow_files()[0].parent / "go-ci.yml"))
     go_on = get_on(go_ci)
     go_call = go_on.get("workflow_call", {}) if isinstance(go_on, dict) else {}

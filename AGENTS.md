@@ -128,9 +128,17 @@ a declared lane or green source check is not proof it ran on every platform.
 ## Git
 
 Conventional Commits under 100 chars, `git commit -s -S`, no `Co-Authored-By`.
-`main` is PR-only and takes **merge commits** (squash and rebase are disabled
-live), behind the required `ci-gate`. Fill the PR template; workflow changes owe
+`main` is PR-only and takes **merge commits**. This repository's required merge
+context is `ci-gate` (core validators, changed-path validators, actionlint,
+zizmor, and the negative shell/Dockerfile gates). Runtime fixtures, Scorecard,
+CodeQL, language packs and other self-workflows stay truthful background
+evidence: a failure remains a failure and opens an issue here; ordinary merge
+does not wait on that wider matrix. Fill the PR template; workflow changes owe
 a permissions diff and a threat-model note.
+
+Source ruleset `.github/rulesets/branch-main.json` is merge-only with required
+`ci-gate`. Live GitHub settings are not applied from this tree; a drift report
+belongs with the coordinator's plan→approve→apply.
 
 Releases are tag-driven and immutable: `VERSION` must equal the tag on one
 LF-terminated line, `CHANGELOG.md` must hold exactly one matching `## [X.Y.Z]`

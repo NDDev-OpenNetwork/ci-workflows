@@ -55,6 +55,39 @@ def check() -> list[str]:
             problems.append("transitive Docker image did not converge")
         if synchronize(root, image_resolver=lambda action, sha: "unexpected"):
             problems.append("second synchronization was not idempotent")
+
+        old = "c" * 40
+        new = "d" * 40
+        (root / ".github/workflows/ci.yml").write_text(
+            f"jobs:\n  x:\n    steps:\n      - uses: example/action@{new} # v2.0.0\n",
+            encoding="utf-8",
+        )
+        (root / ".github/workflows/second.yml").write_text(
+            f"jobs:\n  z:\n    steps:\n      - uses: example/action@{new} # v2.0.0\n",
+            encoding="utf-8",
+        )
+        (root / ".github/workflows/other.yml").write_text(
+            f"jobs:\n  y:\n    steps:\n      - uses: example/action@{old} # v1.0.0\n",
+            encoding="utf-8",
+        )
+        (root / "catalog/tools.yml").write_text(
+            "tools:\n  - id: example\n    kind: action\n"
+            f'    current_version: "v1.0.0"\n    pin: "example/action@{old}"\n',
+            encoding="utf-8",
+        )
+        before_other = (root / ".github/workflows/other.yml").read_text(encoding="utf-8")
+        changed = synchronize(
+            root,
+            image_resolver=lambda action, sha: "docker://example/action:2.0.0",
+            catalog_only=True,
+        )
+        if ".github/workflows/other.yml" in changed:
+            problems.append("catalog-only synchronization rewrote a workflow file")
+        if (root / ".github/workflows/other.yml").read_text(encoding="utf-8") != before_other:
+            problems.append("catalog-only synchronization mutated a workflow on disk")
+        tools = (root / "catalog/tools.yml").read_text(encoding="utf-8")
+        if f"example/action@{new}" not in tools or 'current_version: "v2.0.0"' not in tools:
+            problems.append("catalog-only synchronization did not follow the majority pin")
     return problems
 
 

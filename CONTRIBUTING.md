@@ -154,12 +154,12 @@ one command ended up disagreeing.
 
 ## Branch protection and CI
 
-`main` is protected: signed commits, required review plus code-owner review,
-linear history, no force-push or deletion, and the required `ci-gate` status
-check. All workflow files are owned by [@rldyourmnd](https://github.com/rldyourmnd)
-via [CODEOWNERS](.github/CODEOWNERS), so a maintainer review is always required.
-Open PRs against `main` from a topic branch; the `ci-gate` check (contract +
-actionlint + zizmor) must be green before merge.
+`main` is protected: signed commits, no force-push or deletion, merge commits
+only in the source ruleset, and the required `ci-gate` status check (core +
+touched validators, actionlint, zizmor, negative gates). Background workflows
+must stay truthful; they are not merge blockers. All workflow files are owned
+by [@rldyourmnd](https://github.com/rldyourmnd) via
+[CODEOWNERS](.github/CODEOWNERS). Open PRs against `main` from a topic branch.
 
 ## Releases
 

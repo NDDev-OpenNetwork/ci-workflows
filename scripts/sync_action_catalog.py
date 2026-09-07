@@ -66,25 +66,34 @@ def workflow_pins(root: pathlib.Path) -> dict[str, tuple[str, str]]:
 def synchronize(
     root: pathlib.Path,
     image_resolver: Callable[[str, str], str] = resolve_action_image,
+    *,
+    catalog_only: bool = False,
 ) -> list[str]:
     pins = workflow_pins(root)
     changed: list[str] = []
-    for path in sorted((root / ".github/workflows").glob("*.yml")):
-        before = path.read_text(encoding="utf-8")
-        output: list[str] = []
-        for line in before.splitlines():
-            match = PIN.search(line)
-            if match is not None:
-                reference, sha, version = match.groups()
-                repository = "/".join(reference.split("/")[:2])
-                expected = pins[repository]
-                if (sha, version) != expected:
-                    line = line[:match.start(2)] + expected[0] + line[match.end(2):match.start(3)] + expected[1] + line[match.end(3):]
-            output.append(line)
-        after = "\n".join(output) + "\n"
-        if after != before:
-            path.write_text(after, encoding="utf-8")
-            changed.append(str(path.relative_to(root)))
+    if not catalog_only:
+        for path in sorted((root / ".github/workflows").glob("*.yml")):
+            before = path.read_text(encoding="utf-8")
+            output: list[str] = []
+            for line in before.splitlines():
+                match = PIN.search(line)
+                if match is not None:
+                    reference, sha, version = match.groups()
+                    repository = "/".join(reference.split("/")[:2])
+                    expected = pins[repository]
+                    if (sha, version) != expected:
+                        line = (
+                            line[:match.start(2)]
+                            + expected[0]
+                            + line[match.end(2):match.start(3)]
+                            + expected[1]
+                            + line[match.end(3):]
+                        )
+                output.append(line)
+            after = "\n".join(output) + "\n"
+            if after != before:
+                path.write_text(after, encoding="utf-8")
+                changed.append(str(path.relative_to(root)))
 
     tools = root / "catalog/tools.yml"
     lines = tools.read_text(encoding="utf-8").splitlines()
@@ -155,8 +164,14 @@ def synchronize(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=pathlib.Path, default=pathlib.Path.cwd())
+    parser.add_argument(
+        "--catalog-only",
+        action="store_true",
+        help="update catalog and generated docs from current workflow pins; "
+             "do not rewrite workflow files (GITHUB_TOKEN cannot push them)",
+    )
     args = parser.parse_args()
-    changed = synchronize(args.root.resolve())
+    changed = synchronize(args.root.resolve(), catalog_only=args.catalog_only)
     print("\n".join(changed) if changed else "action-catalog-current")
     return 0
 
