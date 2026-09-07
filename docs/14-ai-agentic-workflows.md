@@ -18,11 +18,11 @@ public preview, they are designed defensively:
   egress.
 - **Threat detection** — prompt-injection and abuse detection on inputs.
 
-**Recommended use in this estate:** triage, summarization, docs-gap detection,
-and read-only audits only. Do not grant an agentic workflow write permissions or
-let it act on untrusted input from forked PRs. Treat its output as a suggestion
-that a human or a trusted, least-privilege step reviews — the same trust boundary
-as [pull_request_target](security/pull-request-target.md).
+**Recommended use:** triage, summarization, docs-gap detection, and read-only
+audits only. Do not grant an agentic workflow write permissions or let it act
+on untrusted input from forked PRs. Treat its output as a suggestion that a
+human or a trusted, least-privilege step reviews — the same trust boundary as
+[pull_request_target](security/pull-request-target.md).
 
 <a id="autofix"></a>
 ## Copilot Autofix

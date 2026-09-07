@@ -409,7 +409,7 @@ def _render(result: dict[str, Any]) -> str:
     if result["visibility"] in {"private", "internal"}:
         if result["controls"].get("compute_billing") == "private-self-hosted":
             lines.append("  cost guard:    pass a self-hosted runner label in every caller")
-            lines.append("                 and route CodeQL default setup / Code Quality separately")
+            lines.append("                 and route managed CodeQL/Code Quality only if enabled")
         elif result["controls"].get("runner_mode") == "github-hosted-standard":
             lines.append("  cost warning:  private hosted minutes are metered after the plan allowance")
             lines.append("  cost guard:    set an Actions budget with Stop paid usage enabled")
@@ -737,6 +737,125 @@ def check() -> list[str]:
                 "resolve-profile: the two public profiles resolve identically — "
                 "entitlements are not affecting resolution"
             )
+
+    problems.extend(_entitlement_path_tests(profiles_doc, capabilities))
+    return problems
+
+
+def _entitlement_path_tests(profiles_doc: dict[str, Any],
+                            capabilities: list[dict[str, Any]]) -> list[str]:
+    """Positive and negative paths for free, public, private and paid opt-in.
+
+    These are behaviour, not string mirrors: a public Free organization must
+    keep CodeQL and attestations; a private repository without add-ons must
+    not receive them; an explicit Code Security opt-in must.
+    """
+    problems: list[str] = []
+    none = {"code_security": False, "secret_protection": False,
+            "code_quality": False}
+
+    def included(result: dict[str, Any]) -> set[str]:
+        return {row["capability"] for row in result["included"]}
+
+    def programme(result: dict[str, Any]) -> dict[str, Any]:
+        return result["programme"]
+
+    public_free = resolve_shape(profiles_doc, capabilities, "public", "free", none)
+    public_team = resolve_shape(profiles_doc, capabilities, "public", "team", none)
+    for label, result in (("public/free/000", public_free),
+                          ("public/team/000", public_team)):
+        got = included(result)
+        for cap in ("codeql-code-scanning", "native-secret-scanning",
+                    "artifact-attestations"):
+            if cap not in got:
+                problems.append(
+                    f"resolve-profile: {label} dropped free public {cap}"
+                )
+        if "github-code-quality" in got:
+            problems.append(
+                f"resolve-profile: {label} included Code Quality without opt-in"
+            )
+        if programme(result)["release_workflow"] != (
+                ".github/workflows/release-supply-chain.yml"):
+            problems.append(
+                f"resolve-profile: {label} must keep attested public releases"
+            )
+
+    private_free = resolve_shape(
+        profiles_doc, capabilities, "private", "free", none)
+    private_team = resolve_shape(
+        profiles_doc, capabilities, "private", "team", none)
+    for label, result in (("private/free/000", private_free),
+                          ("private/team/000", private_team)):
+        got = included(result)
+        for cap in ("codeql-code-scanning", "dependency-review",
+                    "native-secret-scanning", "github-code-quality"):
+            if cap in got:
+                problems.append(
+                    f"resolve-profile: {label} included paid {cap} without opt-in"
+                )
+        if programme(result)["release_workflow"] != (
+                ".github/workflows/release-supply-chain-free.yml"):
+            problems.append(
+                f"resolve-profile: {label} must use checksummed unattested release"
+            )
+
+    private_cs = resolve_shape(
+        profiles_doc, capabilities, "private", "team",
+        {"code_security": True, "secret_protection": False,
+         "code_quality": False},
+    )
+    cs_got = included(private_cs)
+    if "codeql-code-scanning" not in cs_got:
+        problems.append(
+            "resolve-profile: private/team/100 dropped CodeQL after Code Security opt-in"
+        )
+    if "native-secret-scanning" in cs_got:
+        problems.append(
+            "resolve-profile: private/team/100 leaked Secret Protection from Code Security"
+        )
+
+    private_ghec = resolve_shape(
+        profiles_doc, capabilities, "private", "enterprise-cloud", none)
+    if "codeql-code-scanning" in included(private_ghec):
+        problems.append(
+            "resolve-profile: private/enterprise-cloud/000 included CodeQL without Code Security"
+        )
+    if programme(private_ghec)["release_workflow"] != (
+            ".github/workflows/release-supply-chain.yml"):
+        problems.append(
+            "resolve-profile: private/enterprise-cloud/000 must attest — that is a plan gate"
+        )
+
+    paid = resolve_shape(
+        profiles_doc, capabilities, "private", "enterprise-cloud",
+        {"code_security": True, "secret_protection": True,
+         "code_quality": True},
+    )
+    paid_got = included(paid) | {
+        row["capability"] for row in paid["conditional"]
+    }
+    for cap in ("codeql-code-scanning", "native-secret-scanning",
+                "github-code-quality", "artifact-attestations"):
+        if cap not in paid_got:
+            problems.append(
+                f"resolve-profile: explicit paid opt-in dropped {cap}"
+            )
+
+    if invalid_reason(profiles_doc, "private", "free",
+                      {"code_security": True, "secret_protection": False,
+                       "code_quality": False}) is None:
+        problems.append(
+            "resolve-profile: private/free/100 must be refused — Code Security "
+            "is not a Free-plan purchase"
+        )
+    if invalid_reason(profiles_doc, "private", "pro",
+                      {"code_security": False, "secret_protection": False,
+                       "code_quality": True}) is None:
+        problems.append(
+            "resolve-profile: private/pro/001 must be refused — Code Quality "
+            "needs Team or Enterprise Cloud"
+        )
     return problems
 
 

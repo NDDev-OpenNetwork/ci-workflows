@@ -1,7 +1,7 @@
 # ci-workflows
 
 A **July-2026 GitHub-native CI/CD, security, governance, and supply-chain
-automation knowledge base plus reusable workflow library** for the NDDev estate.
+automation knowledge base plus reusable workflow library**.
 
 It separates repository visibility, runner billing, base plan, and the three
 independent paid add-ons instead of collapsing them into one tier ladder.
@@ -39,13 +39,15 @@ control. The authoritative record is the `github-code-quality-transition` entry
 in [`catalog/product-facts.yml`](catalog/product-facts.yml). See
 [`docs/16-code-quality.md`](docs/16-code-quality.md).
 
-**The NDDev estate is not on the free plan.** The three tiers above describe what
-GitHub offers; [`docs/17-nddev-tier.md`](docs/17-nddev-tier.md) records what this
-organization has already bought — Enterprise Cloud, Code Security, Secret
-Protection, Code Quality — and which generic tier advice therefore does **not**
-apply here. Chiefly: private repositories release with attested
-`release-supply-chain.yml`, not the `-free` variant, because Artifact
-Attestations are gated on Enterprise Cloud and this estate has it.
+This library is published from a **GitHub Organization**, not an Enterprise
+account, and it does **not** assume the publisher purchased Enterprise Cloud,
+Code Security, Secret Protection, or Code Quality. Paid programmes stay
+explicitly selectable for other consumers — see
+[`docs/17-nddev-tier.md`](docs/17-nddev-tier.md). Public repositories still get
+the free GitHub security surfaces (CodeQL, SARIF, dependency review, Scorecard,
+attestations). Private repositories without those purchases use the
+private-free programme and `release-supply-chain-free.yml`; attested private
+releases require Enterprise Cloud and must be opted into.
 
 ## Capability → workflow map
 

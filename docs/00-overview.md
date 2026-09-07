@@ -1,11 +1,10 @@
 # ci-workflows — Overview
 
 `ci-workflows` is a **reusable GitHub Actions library plus a GitHub-native
-CI/CD, security, governance, and supply-chain knowledge base** for the NDDev
-estate, current for July 2026. Consumers reference the reusable workflows by
-full commit SHA; the docs in this folder explain the platform behavior those
-workflows depend on so you can compose them correctly for your repository's
-billing reality.
+CI/CD, security, governance, and supply-chain knowledge base**, current for
+July 2026. Consumers reference the reusable workflows by full commit SHA; the
+docs in this folder explain the platform behavior those workflows depend on so
+you can compose them correctly for your repository's billing reality.
 
 The library is intentionally opinionated:
 
@@ -53,15 +52,17 @@ the three tiers as an opt-in fourth one — see
 [16 Code Quality tier](16-code-quality.md). Both free tiers exclude it, and the
 free maintainability substitutes are listed there.
 
-### What this estate actually owns
+### Publisher posture versus opt-in paid programmes
 
-The three tiers describe what GitHub *offers*. [17 NDDev estate
-tier](17-nddev-tier.md) records what the NDDev-OpenNetwork organization has **already
-bought** — Enterprise Cloud, Code Security, Secret Protection, and Code Quality —
-so repositories here stop being configured as if they were on the free plan. Its
-most consequential correction: Artifact Attestations are gated on Enterprise
-Cloud for private repos, and this estate **has** it, so private repositories
-release with full provenance instead of the `-free` variant.
+The three tiers describe what GitHub *offers*. This library is published from a
+GitHub Organization, not an Enterprise account, and it does **not** assume the
+publisher purchased Enterprise Cloud, Code Security, Secret Protection, or Code
+Quality. [17 Paid organization programmes](17-nddev-tier.md) is the opt-in
+guide for consumers who independently hold those products. Public repositories
+still get free CodeQL, SARIF, dependency review, Scorecard and attestations.
+Private repositories without those purchases use the private-free programme and
+`release-supply-chain-free.yml`; attested private releases require Enterprise
+Cloud.
 
 ### Personal-account repositories
 
@@ -133,7 +134,7 @@ For end-to-end caller examples per tier, see the tier docs and the repository
   [02 Private free](02-private-free.md) ·
   [03 Private paid / GHAS](03-private-paid-ghas.md) ·
   [16 Code Quality](16-code-quality.md) ·
-  [17 NDDev estate](17-nddev-tier.md) ·
+  [17 Paid organization programmes](17-nddev-tier.md) ·
   [18 Personal account](18-personal-account-tier.md)
 - Platform: [04 Actions core](04-actions-core.md) · [05 Runners](05-runners.md)
 - Security: [06 Security scanning](06-security-scanning.md) ·

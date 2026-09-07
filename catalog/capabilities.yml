@@ -260,7 +260,7 @@ capabilities:
     private_free: unavailable
     private_paid: available
     workflow: .github/workflows/nddev-security-bundle.yml
-    example: examples/nddev/security-private-selfhosted.yml
+    example: examples/private-paid-ghas/security-selfhosted.yml
     required_permissions:
       - "actions: read"
       - "contents: read"

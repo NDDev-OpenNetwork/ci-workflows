@@ -7,7 +7,11 @@ are mutable; Dependabot bumps the SHA for you).
 - [`public-oss/`](public-oss/) — full free security suite for public repos.
 - [`private-free/`](private-free/) — private stack without paid security add-ons;
   includes bounded-hosted and zero-GitHub-meter self-hosted callers.
-- [`private-paid-ghas/`](private-paid-ghas/) — GHAS-enabled private repos.
+- [`private-paid-ghas/`](private-paid-ghas/) — private repos that have **explicitly
+  selected** Code Security / Secret Protection, including the SARIF security
+  bundle. Not the publisher default.
+- [`nddev/`](nddev/) — publisher-org callers: public free surfaces, and a
+  private-free self-hosted variant. Not a claim the publisher bought GHAS.
 
 Use-case groups shared by every tier: [`languages/`](languages/),
 [`quality/`](quality/), [`security/`](security/), [`testing/`](testing/),

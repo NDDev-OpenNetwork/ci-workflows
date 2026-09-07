@@ -14,16 +14,21 @@ looked like on one particular morning. Every figure was stale within days, each
 one invited a refresh commit, and the tier docs became the fastest-rotting files
 in a repository whose whole thesis is that unvalidated claims rot.
 
-So the rule is structural. Durable statements stay — which products the estate
-holds, why push protection is off, that a security configuration attaches
-atomically, that a budget cannot stop a licence-based product. Countable account
-state goes to the control plane.
+A later revision then claimed the publisher had already bought Enterprise Cloud,
+Code Security, Secret Protection and Code Quality. That is the same class of
+defect: a current purchase is account state, not a reusable-workflow contract.
+Durable statements stay — plan gates, that a security configuration attaches
+atomically, that a budget cannot stop a licence-based product, that paid
+programmes are explicitly selectable. Which products any particular
+organization currently holds goes to the operator of that account.
 
-Two patterns are rejected, chosen because both are unambiguously *observations*
-rather than contracts:
+Three patterns are rejected, chosen because they are unambiguously
+*observations* rather than contracts:
 
 * **inventory counts** — "N repositories", "N repos", "N active committers";
-* **cent-precision currency** — an invoice or an accrual, never a list price.
+* **cent-precision currency** — an invoice or an accrual, never a list price;
+* **publisher purchase claims** — that this estate or organization has already
+  bought Enterprise Cloud or the paid add-ons, or is "not on the free plan".
 
 A `$0` budget setting is a control, not an observation, and is allowed. List
 prices are product facts and belong in `catalog/product-facts.yml`, which is
@@ -49,6 +54,16 @@ INVENTORY = re.compile(
 )
 # $12.34 — cents mean somebody read an invoice. $0 and $10 are settings/prices.
 OBSERVED_SPEND = re.compile(r"\$\d[\d,]*\.\d{2}\b")
+# Current purchase state of the publisher. Plan gates ("private attestations
+# require Enterprise Cloud") must keep passing; these phrases do not.
+PUBLISHER_PURCHASE = re.compile(
+    r"has already bought"
+    r"|The NDDev estate is not on the free plan"
+    r"|this estate has Enterprise Cloud"
+    r"|organization has already bought"
+    r"|organization has bought Enterprise Cloud",
+    re.IGNORECASE,
+)
 
 # Generated files render catalog rows and are checked by their own drift gate.
 EXEMPT_DIRS = ("docs/generated",)
@@ -76,6 +91,7 @@ def check() -> list[str]:
             for pattern, label in (
                 (INVENTORY, "an estate inventory count"),
                 (OBSERVED_SPEND, "an observed spend figure"),
+                (PUBLISHER_PURCHASE, "a publisher purchase claim"),
             ):
                 hit = pattern.search(line)
                 if hit:
@@ -97,6 +113,9 @@ def _selftest() -> list[str]:
         "36 repositories on default setup",
         "$1.31 still accrued in August",
         "billed at $21 + $49 + $10 = $80.00",
+        "The NDDev estate is not on the free plan",
+        "organization has already bought — Enterprise Cloud",
+        "this estate has Enterprise Cloud",
     ]
     must_pass = [
         "$0 hard-stop budget at org and enterprise",
@@ -105,12 +124,16 @@ def _selftest() -> list[str]:
         "timeout-minutes: 30",
         "actions/checkout@3d3c42e5 # v7.0.1",
         "run 30702933166",
+        "private attestations require GitHub Enterprise Cloud",
+        "does not assume the publisher purchased Enterprise Cloud",
     ]
     for sample in must_flag:
-        if not (INVENTORY.search(sample) or OBSERVED_SPEND.search(sample)):
+        if not (INVENTORY.search(sample) or OBSERVED_SPEND.search(sample)
+                or PUBLISHER_PURCHASE.search(sample)):
             problems.append(f"check_public_docs self-test: missed {sample!r}")
     for sample in must_pass:
-        if INVENTORY.search(sample) or OBSERVED_SPEND.search(sample):
+        if INVENTORY.search(sample) or OBSERVED_SPEND.search(sample) \
+                or PUBLISHER_PURCHASE.search(sample):
             problems.append(f"check_public_docs self-test: false positive {sample!r}")
     return problems
 

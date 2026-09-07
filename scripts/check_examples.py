@@ -35,6 +35,7 @@ SELF_HOSTED_EXAMPLES = (
     "examples/nddev/os-capability-routing.yml",
     "examples/personal/security-selfhosted.yml",
     "examples/private-free/security-selfhosted.yml",
+    "examples/private-paid-ghas/security-selfhosted.yml",
 )
 
 

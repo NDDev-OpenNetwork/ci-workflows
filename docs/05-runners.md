@@ -149,10 +149,11 @@ every local reusable call that exposes a runner selector. A validator resolves
 those callees and rejects an omitted, expression-based, or self-hosted value,
 so a private-consumer default cannot silently reroute this public repository.
 
-Defence in depth: the estate's runner group sets
+Defence in depth: a private runner group should set
 `allows_public_repositories: false`, so even a mistaken `runs-on` in a public
-repository cannot reach the fleet — the job stays queued instead of executing.
-Treat that as the backstop, not the control.
+repository cannot reach that fleet — the job stays queued instead of executing.
+Treat that as the backstop, not the control. This library does not publish a
+live fleet inventory.
 
 ### Two independent runner settings
 
@@ -310,21 +311,17 @@ Reusables here default `runner` to `ubuntu-latest`. A default is a property of
 silently adopts whatever the next pin says. Name it anyway — and if you run your
 own fleet you must, because a hosted default will quietly meter you.
 
-That the default is safe today is recent. It was `amsterdam`, a private
-self-hosted label, until August 2026. Amsterdam is now a bastion/application
-host and not an Actions execution target. Current private Linux execution uses
-the per-class Drakkars labels
-`nddev-linux-fast`/`-standard`/`-integration`, backed by one-job ephemeral Incus
-containers under public fleet contract v2. Both ways a stale private default
-still bite:
+That the default is safe today is recent. It was a private self-hosted label
+until August 2026. Callers that still need self-hosted Linux pass their own
+labels; this library does not publish live hosts. Both ways a stale private
+default still bite:
 
-- **Outside this estate** the label does not resolve, so the job queues
-  forever against a runner that will never appear.
-- **Inside an estate, on a public repository**, `pull_request` executes
-  untrusted fork code — and a private default puts it on trusted private
-  infrastructure. GitHub's own guidance is blunt about this: "forks of your
-  public repository can potentially run dangerous code on your self-hosted
-  runner machine."
+- **On a caller that does not own that label** the job queues forever against a
+  runner that will never appear.
+- **On a public repository**, `pull_request` executes untrusted fork code —
+  and a private default puts it on trusted private infrastructure. GitHub's
+  own guidance is blunt about this: "forks of your public repository can
+  potentially run dangerous code on your self-hosted runner machine."
 
 So every caller states its runner, even when the pinned default already looks
 right. `scripts/check_examples.py` enforces this for every example outside

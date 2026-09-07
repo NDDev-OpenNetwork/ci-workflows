@@ -3,8 +3,9 @@
 # Before this file the tier model existed twice: as three columns per capability
 # in capabilities.yml (public_oss / private_free / private_paid), and as prose in
 # docs/16 and docs/17 describing modes the catalog could not express. The prose
-# drifted, silently, more than once — the $80 envelope described controls that do
-# not work and coverage numbers that had moved.
+# drifted, silently, more than once — a fixed-cost envelope described controls
+# that do not work and coverage numbers that had moved. Named paid profiles are
+# opt-in consumer programmes, not a claim that the publisher holds those products.
 #
 # So modes are declared here, validated by scripts/validate_profiles.py, and
 # rendered into docs/generated/profile-matrix.md. Prose may reference a profile;
@@ -257,7 +258,7 @@ profiles:
       compute promise depends on the declared self-hosted route.
 
   - id: public-enterprise-max
-    name: Public OSS under Enterprise governance
+    name: Public OSS under Enterprise Cloud with paid add-ons selected
     doc: docs/17-nddev-tier.md
     selectors:
       visibility: [public]
@@ -279,13 +280,16 @@ profiles:
       metered_lines: [ai-credits]
       product_facts: [github-actions-public-standard, github-code-quality-transition]
     rationale: >-
-      Everything public-free provides, plus enterprise rulesets and security
-      overview. Code Quality applies here, but its public per-committer rate is
-      disputed between GitHub's own sources, so no cost is compiled for it —
-      see the fact ledger.
+      Opt-in programme for a public repository whose organization independently
+      holds Enterprise Cloud and the three paid add-ons. Public CodeQL, secret
+      scanning, dependency review and attestations remain free on every plan;
+      Code Quality is the add-on that still bills here. Its public per-committer
+      rate is disputed between GitHub's own sources, so no cost is compiled for
+      it — see the fact ledger. Selecting this profile does not mean the
+      publisher holds these products.
 
   - id: enterprise-full-private-fixed80
-    name: NDDev estate — full paid private mode at a fixed $80/month
+    name: Private Enterprise Cloud with all paid add-ons at an itemised fixed envelope
     doc: docs/17-nddev-tier.md
     selectors:
       visibility: [private, internal]
@@ -298,10 +302,9 @@ profiles:
       codeql_mode: default
       code_quality_ai: disabled
       coverage_mode: gated
-      # The estate fleet gives every job a fresh Incus container, runs it once
-      # and destroys it — executed workers are never reused.
-      # That is `ephemeral`, and the distinction is the one ADR 0004 named as
-      # what would make a public fork safe on self-hosted hardware.
+      # One-job ephemeral workers: a public fork must never reuse a trusted
+      # machine. That is the distinction ADR 0004 named; the caller supplies
+      # the label. This profile does not publish a live fleet inventory.
       runner_mode: self-hosted-ephemeral
       governance_mode: solo-agent
       enforcement: active
@@ -320,8 +323,12 @@ profiles:
         allow_actions_overage: false
         active_committers: 1
     rationale: >-
-      The four licences are billed once per active committer, so the estate pays
-      the same whether one repository or fifty are enabled. Runner minutes are
-      absent because library and managed scans route to the ephemeral fleet;
-      remaining metered lines are driven to zero by spend guards. The fixed total holds only at
-      one active committer: a second adds $59 before anyone writes a workflow.
+      Opt-in programme for a private or internal repository whose organization
+      independently holds Enterprise Cloud and the three paid add-ons, and
+      chooses an itemised fixed envelope at one active committer. List prices
+      are catalog facts, not an invoice. Runner minutes stay off the GitHub
+      meter only when the caller actually routes to self-hosted compute.
+      Selecting this profile does not mean the publisher holds these products
+      or pays this envelope. The fixed total holds only at one active
+      committer: a second adds the three add-on licences before anyone writes
+      a workflow.

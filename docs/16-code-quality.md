@@ -99,8 +99,10 @@ javascript-typescript, python, ruby) and `ai_findings_option` (`disabled` /
 
 The UI path below is still the fastest way to do it by hand.
 
-1. **Enterprise** — an enterprise owner must allow Code Quality at the
-   enterprise level, or the org setting has no effect.
+1. **Enterprise, when the organization belongs to one** — GitHub's enablement
+   docs currently list an enterprise-owner allow step. A standalone
+   organization is not an Enterprise account and does not have that control;
+   resolve enablement from the live plan and the org Code quality settings.
 2. **Organization** — Settings → Security → **Code quality** → **Repository
    access**. This dropdown *is* the tier boundary:
    - `No repositories` — the whole org stays in the free tiers.
@@ -115,13 +117,12 @@ The UI path below is still the fastest way to do it by hand.
 Prefer `Selected repositories` + `Enforce access`: `All repositories` silently
 pulls every public repo into a paid product.
 
-> The NDDev estate runs `All repositories` + `Enforce access` on purpose. That is
-> not a contradiction of the advice above — it follows from the same arithmetic:
-> the licence bills once per active committer, so at one committer the fiftieth
-> repository costs exactly what the first one did. Apply the cautious default
-> whenever the committer count is greater than one, or when "every public repo"
-> would mean repos you do not control. See
-> [17 NDDev tier](17-nddev-tier.md#cost-envelope).
+> `All repositories` + `Enforce access` is a deliberate choice only when the
+> organization has actually purchased Code Quality and wants every repository
+> on that licence. This library does not assume the publisher did that. Apply
+> the cautious default (`Selected repositories` or `No repositories`) unless
+> entitlements are verified. See
+> [17 Paid organization programmes](17-nddev-tier.md).
 
 <a id="ai-findings"></a>
 ## AI findings are a second, separately metered product

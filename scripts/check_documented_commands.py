@@ -2,8 +2,8 @@
 """Documented tool commands must be the commands `ci-gate` actually runs.
 
 Four places in this repository told a contributor how to run zizmor locally and
-three of them were wrong, each in a different way. `AGENTS.md` and the
-`nddev-repo-flow` skill named `--persona regular`; `ci.yml` passes
+three of them were wrong, each in a different way. `AGENTS.md` once named
+`--persona regular`; `ci.yml` passes
 `--persona pedantic`, which adds `undocumented-permissions`, so following the
 brief gave a clean local run and a red required check. `CONTRIBUTING.md`
 carried a comment reading "regular persona, matches CI" directly above a

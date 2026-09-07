@@ -9,11 +9,11 @@ organization's self-hosted runner fleet, so its runner strategy is different.
 
 ## Why this doc exists
 
-The [NDDev estate tier](17-nddev-tier.md) records that the `NDDev-OpenNetwork`
-organization has bought Enterprise Cloud, Code Security, Secret Protection, and
-Code Quality, so its private repositories run the paid stack. **A repository
-owned by a personal account has none of that**, even if the same human owns both.
-Licenses attach to the organization, not to the user's personal namespace, so:
+Paid GitHub add-ons and Enterprise Cloud attach to an **organization** (or
+enterprise), not to a person's namespace. [17 Paid organization
+programmes](17-nddev-tier.md) is the opt-in guide for an organization that
+independently holds those products. **A repository owned by a personal account
+has none of that**, even if the same human owns both. So:
 
 - a private personal-account repo has **no GHAS** → no CodeQL, no native secret
   scanning, no dependency review;
