@@ -35,8 +35,9 @@ license your contribution under [AGPL-3.0-or-later](LICENSE).
 
 ## Non-negotiables for every workflow PR
 
-These are enforced by review, the self-CI `ci-gate`, `actionlint`, and `zizmor`.
-A PR that misses any of them will not be merged.
+These are enforced by review plus the focused local checks below (`validate_all`,
+`actionlint`, and `zizmor`). `ci-gate` still runs them remotely as truthful
+advisory evidence; ordinary merge does not wait on that remote context.
 
 1. **Full-SHA action pins with version comments.** Every `uses:` of a
    third-party action pins a 40-character commit SHA followed by a version
@@ -88,7 +89,7 @@ A PR that misses any of them will not be merged.
 
 ## Local checks
 
-Run these before opening a PR (they mirror the self-CI `ci-gate`):
+Run these before opening a PR (they are the focused checks `ci-gate` also runs):
 
 ```bash
 # Lint all workflow YAML
@@ -154,12 +155,13 @@ one command ended up disagreeing.
 
 ## Branch protection and CI
 
-`main` is protected: signed commits, required review plus code-owner review,
-linear history, no force-push or deletion, and the required `ci-gate` status
-check. All workflow files are owned by [@rldyourmnd](https://github.com/rldyourmnd)
-via [CODEOWNERS](.github/CODEOWNERS), so a maintainer review is always required.
-Open PRs against `main` from a topic branch; the `ci-gate` check (contract +
-actionlint + zizmor) must be green before merge.
+`main` is protected: signed commits, no force-push or deletion, merge commits
+only in the source ruleset, and no required general CI status check. `ci-gate`
+(core + touched validators, actionlint, zizmor, negative gates) stays truthful
+advisory evidence. Background workflows must stay truthful; they are not merge
+blockers. All workflow files are owned
+by [@rldyourmnd](https://github.com/rldyourmnd) via
+[CODEOWNERS](.github/CODEOWNERS). Open PRs against `main` from a topic branch.
 
 ## Releases
 

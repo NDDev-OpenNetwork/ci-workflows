@@ -6,6 +6,9 @@ matches directory, description present, no unresolved placeholders, bounded
 size), the fixed skill set, and — like a generated-docs drift check — that the
 mirror is byte-identical to the source. It plugs into validate_all via
 `check()`.
+
+Authored extra frontmatter (`license`, `compatibility`, and a `metadata:`
+mapping) is part of the product. Do not flatten `metadata` to a string.
 """
 from __future__ import annotations
 

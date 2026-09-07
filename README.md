@@ -338,10 +338,14 @@ has `pre` and `post` entry points that GitHub can execute even when a step-level
 
 `main` and release tags are protected by **rulesets** in
 [`.github/rulesets/`](.github/rulesets/) (pull-request-only merge commits,
-resolved review threads, signed commits, linear history, the strict `ci-gate`
-status check, and tag protection). The repository's solo-maintainer rule does
-not require an impossible self-approval; reusable projects with independent
-reviewers should require approvals and CODEOWNERS review. See
+resolved review threads, signed commits, no force-push or deletion, and tag
+protection). Ordinary merge in this repository does not wait on a required
+general CI status check. `ci-gate` still runs as truthful advisory evidence;
+Scorecard, CodeQL and runtime fixtures stay background evidence. Consumers
+may require `ci-gate` if they want a merge gate. The repository's
+solo-maintainer rule does not require an impossible self-approval; reusable
+projects with independent reviewers should require approvals and CODEOWNERS
+review. See
 [`docs/08-governance-rulesets.md`](docs/08-governance-rulesets.md) for the
 rulesets-first model and a migration guide from classic branch protection.
 

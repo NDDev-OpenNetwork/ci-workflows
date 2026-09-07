@@ -6,7 +6,7 @@ not a live GitHub state check.
 Shape is not the same as force, and this check used to assert only shape.
 `enforcement` was validated against an enum that accepts `disabled`, so the
 default-branch ruleset could have been switched off entirely and this gate would
-still have been green while the required `ci-gate` context protected nothing.
+still have been green while signatures and deletion rules protected nothing.
 Tag validation was a single boolean — "a tag ruleset exists" — even though the
 consumer-adoption skill tells every consumer that tags in this library are
 immutable, a promise that rests on three specific rules none of which were
@@ -19,8 +19,11 @@ import json
 import sys
 from pathlib import Path
 
+from ci_workflows_tools._strict_yaml import strict_load
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RULESETS_DIR = REPO_ROOT / ".github" / "rulesets"
+ANCHOR = REPO_ROOT / ".gds" / "repository.yaml"
 
 VALID_TARGETS = {"branch", "tag", "push"}
 VALID_ENFORCEMENT = {"active", "evaluate", "disabled"}
@@ -131,14 +134,28 @@ def check() -> list[str]:
             if "~DEFAULT_BRANCH" in include or "~ALL" in include:
                 saw_branch_default = True
                 if "required_status_checks" in rule_types:
-                    params = next(
-                        (r.get("parameters", {}) for r in rules
-                         if r.get("type") == "required_status_checks"), {})
-                    contexts = {c.get("context") for c in params.get("required_status_checks", [])}
-                    if "ci-gate" not in contexts:
-                        problems.append(f"{name}: default-branch ruleset must require the `ci-gate` status check")
-                else:
-                    problems.append(f"{name}: default-branch ruleset must include a `required_status_checks` rule")
+                    problems.append(
+                        f"{name}: default-branch ruleset must not require a "
+                        "general CI status check; ordinary merge does not wait "
+                        "on remote ci-gate"
+                    )
+                try:
+                    declared = {
+                        str(item)
+                        for item in (
+                            (strict_load(ANCHOR).get("verification") or {})
+                            .get("required_contexts") or []
+                        )
+                    }
+                except (OSError, ValueError) as exc:
+                    problems.append(f"{ANCHOR.name}: {exc}")
+                    declared = set()
+                if declared:
+                    problems.append(
+                        ".gds/repository.yaml verification.required_contexts "
+                        f"must be empty; ordinary merge does not wait on "
+                        f"{sorted(declared)}"
+                    )
         if target == "tag":
             saw_tag = True
             missing_tag_rules = REQUIRED_TAG_RULES - rule_types

@@ -61,7 +61,7 @@ jobs:
         with:
           version: 0.11.30
           # This workflow backs the `zizmor` job, which is in `ci-gate.needs`.
-          # A required gate must not take an unreviewed input.
+          # The self-CI aggregate must not take an unreviewed input.
           enable-cache: false
 
       - name: Run zizmor (SARIF)

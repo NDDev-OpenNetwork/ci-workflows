@@ -61,12 +61,13 @@ Touch this → also do this:
   Failed, cancelled, skipped and missing results prove nothing. Preserve the
   scope of actual fixture execution; static validation is not runtime evidence.
 - **a gate's behaviour** → the `shell-gates` and `dockerfile-gate` jobs in
-  `ci.yml` are inside `ci-gate`'s `needs`, so they **block the merge**. They lift
-  each gate's real step out of its workflow with
-  `scripts/negative_gate_probe.py` and run it twice: the broken fixture under
-  `tests/fixtures/negative/` must be rejected and the clean one accepted, for
-  every covered gate, `zizmor-no-sarif` among them. A gate that never fails is
-  not a gate, and a probe that never passes is not a test.
+  `ci.yml` are inside `ci-gate`'s `needs`. They remain focused self-CI evidence
+  (ordinary merge does not wait on remote `ci-gate`). They lift each gate's
+  real step out of its workflow with `scripts/negative_gate_probe.py` and run
+  it twice: the broken fixture under `tests/fixtures/negative/` must be
+  rejected and the clean one accepted, for every covered gate,
+  `zizmor-no-sarif` among them. A gate that never fails is not a gate, and a
+  probe that never passes is not a test.
 - **a catalog file** → run `generate_docs.py` through the isolated launcher above.
 - **a skill** → run `sync_skills.py` through the isolated launcher above.
 - **a product fact** → re-read its `source_urls` and correct it. Bumping the
@@ -101,6 +102,7 @@ the named script — its fixtures say what the contract is.
 | `capability.schema.yaml` is executed against `capabilities.yml`, not just shipped | `validate_catalog.py`, `_json_schema.py` |
 | Branch and tag rulesets are `active`, and release tags carry the immutability rules | `check_rulesets.py` |
 | A documented `zizmor`/`actionlint` command is the one `ci-gate` runs | `check_documented_commands.py` |
+| This repository's default-branch ruleset has no required general CI context | `check_rulesets.py` |
 | Every `CHANGELOG.md` release heading is a real tag, and dates run newest first | `check_release_ledger.py` |
 
 Two rules no validator can catch for you:
@@ -113,6 +115,8 @@ Two rules no validator can catch for you:
   Scorecard is the trap: it cannot run on a pull-request head, so it protects
   nothing while blocking every merge. The requirement can live in *classic*
   branch protection, where a ruleset-shaped investigation will not find it.
+  This repository does not require a general CI status check for ordinary
+  merge; consumers may still select `ci-gate` as theirs.
 
 ## Tier truth
 
@@ -128,9 +132,18 @@ a declared lane or green source check is not proof it ran on every platform.
 ## Git
 
 Conventional Commits under 100 chars, `git commit -s -S`, no `Co-Authored-By`.
-`main` is PR-only and takes **merge commits** (squash and rebase are disabled
-live), behind the required `ci-gate`. Fill the PR template; workflow changes owe
-a permissions diff and a threat-model note.
+`main` is PR-only and takes **merge commits**. Ordinary merge does not wait on
+a required general CI status check. `ci-gate` still runs (core validators,
+changed-path validators, actionlint, zizmor, and the negative shell/Dockerfile
+gates) and is truthful advisory evidence. Runtime fixtures, Scorecard, CodeQL,
+language packs and other self-workflows stay truthful background evidence: a
+failure remains a failure and opens an issue here. Prove a change with the
+local Commands above. Fill the PR template; workflow changes owe a permissions
+diff and a threat-model note.
+
+Source ruleset `.github/rulesets/branch-main.json` is merge-only, signed, and
+has no required general CI context. Live GitHub settings are not applied from
+this tree; a drift report belongs with the coordinator's plan→approve→apply.
 
 Releases are tag-driven and immutable: `VERSION` must equal the tag on one
 LF-terminated line, `CHANGELOG.md` must hold exactly one matching `## [X.Y.Z]`

@@ -17,9 +17,10 @@ Two drifts matter and this refuses both:
 * the branch loses one, so the anchor advertises assurance that no longer
   exists.
 
-`check_rulesets.py` already asserts the *tracked* `branch-main.json` requires
-`ci-gate`, but nothing compared the tracked ruleset to the live one, so a change
-made through the API left every file in this repository unchanged and green.
+`check_rulesets.py` asserts the tracked `branch-main.json` does not require a
+general CI status check. This script still compares that desired set (from
+`.gds/repository.yaml`) to the live ruleset, so a change made through the API
+cannot leave every file in this repository unchanged and green.
 
 Advisory tier: what a live ruleset says is a property of the repository's
 settings at this moment, not of the tree, and `AGENTS.md` is explicit that such

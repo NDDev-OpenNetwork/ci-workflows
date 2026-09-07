@@ -78,13 +78,15 @@ version-controlled and reviewable.
 | Block force-push (`non_fast_forward`) | No history rewrite |
 | Block deletion | Protect the branch |
 
-This is the recommended multi-maintainer baseline. This repository's live
-solo-maintainer variant still requires a pull request, merge-commit-only merge,
-resolved review threads, signed commits, linear history, no
-force-push/deletion, and the strict `ci-gate` check, but sets approvals to zero
-because GitHub does not allow an author to approve their own pull request.
-Projects with an independent reviewer should use the recommendation above.
-`ci-gate` is the aggregate gate job in `ci.yml`.
+This is the recommended multi-maintainer baseline for **consumers who want a
+merge gate**. This repository's own ruleset still requires a pull request,
+merge-commit-only merge, resolved review threads, signed commits, and no
+force-push/deletion, but it does **not** require a general CI status check:
+ordinary merge does not wait on remote `ci-gate`. `ci-gate` still runs here as
+truthful advisory evidence. Approvals are zero because GitHub does not allow
+an author to approve their own pull request. Projects with an independent
+reviewer should use the recommendation above. `ci-gate` is the aggregate job
+in `ci.yml`; requiring it remains a selectable consumer choice.
 
 ## Who owns which governance surface
 
@@ -94,7 +96,7 @@ have to re-derive it:
 
 | Surface | Owner | Status |
 | --- | --- | --- |
-| `.github/rulesets/branch-main.json` | this repository | Canonical desired state for ruleset `18506136`. Verified against the live API: `allowed_merge_methods: ["merge"]`, `ci-gate` strict, signed commits, thread resolution, zero approvals. |
+| `.github/rulesets/branch-main.json` | this repository | Canonical desired state for ruleset `21104086`: `allowed_merge_methods: ["merge"]`, signed commits, thread resolution, zero approvals, extra approval for unattributed changes, **no** required general CI status check. Live settings are not applied from this tree. |
 | `.github/rulesets/tag-semver.json`, `push-hygiene.json` | this repository | Canonical desired state for the repository's own tag and push rules. |
 | `NDDev baseline: *` rulesets | the estate control plane | Applied on top, not tracked here. Deleting or editing them from this repository would fight the reconciler. |
 | `.gds/compiled-policy.json` | GDS, generated | Generated from the estate policy sources; agrees with live state since the repository-tier override landed. Never edit it here. |

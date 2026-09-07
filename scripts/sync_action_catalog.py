@@ -5,6 +5,7 @@ import argparse
 import collections
 import pathlib
 import re
+import sys
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -44,7 +45,9 @@ def resolve_action_image(action: str, sha: str) -> str:
     )
 
 
-def workflow_pins(root: pathlib.Path) -> dict[str, tuple[str, str]]:
+def workflow_pins(
+    root: pathlib.Path, *, require_unique: bool = False
+) -> dict[str, tuple[str, str]]:
     found: dict[str, collections.Counter[tuple[str, str]]] = {}
     for path in sorted((root / ".github/workflows").glob("*.yml")):
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -57,8 +60,17 @@ def workflow_pins(root: pathlib.Path) -> dict[str, tuple[str, str]]:
     result: dict[str, tuple[str, str]] = {}
     for repository, identities in found.items():
         ranked = identities.most_common()
-        if len(ranked) > 1 and ranked[0][1] == ranked[1][1]:
-            raise ValueError(f"{repository} has no unique majority identity: {ranked}")
+        if len(ranked) > 1:
+            if require_unique:
+                raise ValueError(
+                    f"{repository} has mixed identities {ranked}; "
+                    "catalog-only cannot rewrite workflow files, so the catalog "
+                    "must not describe a pin the tree does not share"
+                )
+            if ranked[0][1] == ranked[1][1]:
+                raise ValueError(
+                    f"{repository} has no unique majority identity: {ranked}"
+                )
         result[repository] = ranked[0][0]
     return result
 
@@ -66,25 +78,34 @@ def workflow_pins(root: pathlib.Path) -> dict[str, tuple[str, str]]:
 def synchronize(
     root: pathlib.Path,
     image_resolver: Callable[[str, str], str] = resolve_action_image,
+    *,
+    catalog_only: bool = False,
 ) -> list[str]:
-    pins = workflow_pins(root)
+    pins = workflow_pins(root, require_unique=catalog_only)
     changed: list[str] = []
-    for path in sorted((root / ".github/workflows").glob("*.yml")):
-        before = path.read_text(encoding="utf-8")
-        output: list[str] = []
-        for line in before.splitlines():
-            match = PIN.search(line)
-            if match is not None:
-                reference, sha, version = match.groups()
-                repository = "/".join(reference.split("/")[:2])
-                expected = pins[repository]
-                if (sha, version) != expected:
-                    line = line[:match.start(2)] + expected[0] + line[match.end(2):match.start(3)] + expected[1] + line[match.end(3):]
-            output.append(line)
-        after = "\n".join(output) + "\n"
-        if after != before:
-            path.write_text(after, encoding="utf-8")
-            changed.append(str(path.relative_to(root)))
+    if not catalog_only:
+        for path in sorted((root / ".github/workflows").glob("*.yml")):
+            before = path.read_text(encoding="utf-8")
+            output: list[str] = []
+            for line in before.splitlines():
+                match = PIN.search(line)
+                if match is not None:
+                    reference, sha, version = match.groups()
+                    repository = "/".join(reference.split("/")[:2])
+                    expected = pins[repository]
+                    if (sha, version) != expected:
+                        line = (
+                            line[:match.start(2)]
+                            + expected[0]
+                            + line[match.end(2):match.start(3)]
+                            + expected[1]
+                            + line[match.end(3):]
+                        )
+                output.append(line)
+            after = "\n".join(output) + "\n"
+            if after != before:
+                path.write_text(after, encoding="utf-8")
+                changed.append(str(path.relative_to(root)))
 
     tools = root / "catalog/tools.yml"
     lines = tools.read_text(encoding="utf-8").splitlines()
@@ -155,8 +176,19 @@ def synchronize(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=pathlib.Path, default=pathlib.Path.cwd())
+    parser.add_argument(
+        "--catalog-only",
+        action="store_true",
+        help="update catalog and generated docs from the unique workflow pin "
+             "per action; fail closed on mixed identities; do not rewrite "
+             "workflow files (GITHUB_TOKEN cannot push them)",
+    )
     args = parser.parse_args()
-    changed = synchronize(args.root.resolve())
+    try:
+        changed = synchronize(args.root.resolve(), catalog_only=args.catalog_only)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
     print("\n".join(changed) if changed else "action-catalog-current")
     return 0
 

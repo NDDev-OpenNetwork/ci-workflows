@@ -3,7 +3,7 @@
 
 GitHub merge queue evaluates required status checks on the synthetic
 `merge_group` event. If a ruleset enables merge queue, this script ensures the
-self-CI workflow that publishes the required `ci-gate` check also listens for
+self-CI workflow that publishes the `ci-gate` aggregate also listens for
 `merge_group`.
 """
 from __future__ import annotations
