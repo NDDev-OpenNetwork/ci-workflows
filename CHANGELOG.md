@@ -18,7 +18,8 @@ The project follows Semantic Versioning.
 - Dependabot catalog convergence commits only catalog and generated docs, so
   the default `GITHUB_TOKEN` can push without `workflows` permission. This
   repository's merge gate remains `ci-gate`; wider self-workflows stay
-  background evidence.
+  background evidence. Authored skill `metadata:` mappings stay mappings;
+  native Codex `skills/list` is the discovery evidence.
 
 - Re-verify four vendor allowance records with staggered review dates, correct
   Ubicloud's monthly credit and Harness's conditional CI credit semantics, and
