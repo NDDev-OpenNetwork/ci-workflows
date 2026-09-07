@@ -77,7 +77,7 @@ jobs:
       contents: read
       # ghcr.io push and the registry layer cache authenticate with the
       # ambient token; both write to the caller's own package namespace.
-      packages: write
+      packages: write  # Push images and registry cache in the caller's package namespace.
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:

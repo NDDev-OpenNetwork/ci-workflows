@@ -7,6 +7,11 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Declare both git-submodule and reusable-workflow consumption in the GDS
+  module contract. Refresh its projection using the existing stable bundle.
+- Place the Docker publisher permission explanation inline so the pinned
+  pedantic audit recognizes it; workflow permissions and behavior are unchanged.
+
 ## [0.1.16] - 2026-09-02
 
 - `security-bundle` authenticates its exact called-workflow source fetch with

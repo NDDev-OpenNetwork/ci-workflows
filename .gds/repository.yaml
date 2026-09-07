@@ -57,7 +57,8 @@ agent:
 
 module:
   contract: "public"
-  consumption: ["git-submodule"]
+  # GitHub reusable workflows execute remotely; GDS models this as runtime-service.
+  consumption: ["git-submodule", "runtime-service"]
   compatibility: "commit-contract"
   pin_policy: "default-branch-commit"
   publication: {registry: "none", github_release: "required"}
