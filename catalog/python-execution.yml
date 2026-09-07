@@ -472,6 +472,9 @@
       "_workflow_yaml",
       "check_python_execution_contract"
     ],
+    "check_rulesets.py": [
+      "_strict_yaml"
+    ],
     "check_runner_routing.py": [
       "_strict_yaml",
       "_workflow_yaml",

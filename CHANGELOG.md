@@ -16,10 +16,12 @@ The project follows Semantic Versioning.
   pinned, not from `main`. Private attestations stay an Enterprise Cloud plan
   gate, independent of the three add-ons.
 - Dependabot catalog convergence commits only catalog and generated docs, so
-  the default `GITHUB_TOKEN` can push without `workflows` permission. This
-  repository's merge gate remains `ci-gate`; wider self-workflows stay
-  background evidence. Authored skill `metadata:` mappings stay mappings;
-  native Codex `skills/list` is the discovery evidence.
+  the default `GITHUB_TOKEN` can push without `workflows` permission.
+  Catalog-only follows the unique workflow pin per action and fails closed
+  when identities are mixed, so the catalog cannot describe a pin the tree
+  does not share. Ordinary merge in this repository does not require a
+  general CI status check; `ci-gate` stays truthful advisory evidence.
+  Authored skill `metadata:` mappings stay mappings.
 
 - Re-verify four vendor allowance records with staggered review dates, correct
   Ubicloud's monthly credit and Harness's conditional CI credit semantics, and

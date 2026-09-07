@@ -5,10 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # ci-gate is this repository's required context. A required check is never
-  # reported to a merge queue unless its workflow subscribes to merge_group,
-  # so without this an enabled queue would wait forever for a status that can
-  # never arrive.
+  # ci-gate is truthful advisory evidence here, not a required merge context.
+  # A status check is never reported to a merge queue unless its workflow
+  # subscribes to merge_group, so this stays for consumers who require
+  # ci-gate and for a later queue enablement.
   merge_group:
     types: [checks_requested]
   workflow_dispatch:
@@ -249,7 +249,7 @@ jobs:
   # notice one silently becoming a no-op.
   #
   # These live in ci.yml rather than in a workflow of their own because a
-  # required context must be caller-native: ci-gate's `needs` is this run's real
+  # aggregate must be caller-native: ci-gate's `needs` is this run's real
   # dependency graph, and nothing may cross a workflow boundary. They cannot be
   # a called reusable either — a self workflow must not be `on: workflow_call`,
   # since everything that is becomes part of the product consumers pin.
@@ -282,7 +282,7 @@ jobs:
           go-version: '1.24'
           # setup-go caches the module and build cache with no input at all.
           # This job is in `ci-gate.needs`, so that entry would be an unreviewed
-          # input to a required check. Found by deriving the required surface
+          # input to the self-CI aggregate. Found by deriving that surface
           # from the gate's own graph rather than from a hand-written list.
           cache: false
 
@@ -433,8 +433,8 @@ jobs:
       contents: read
     steps:
       # Caller-native: `needs` is this run's real dependency graph, so nothing
-      # crosses a workflow boundary and nothing can be substituted. This is the
-      # shape a required check must have — see docs/08 and gate.yml's header.
+      # crosses a workflow boundary and nothing can be substituted. Consumers
+      # who require `ci-gate` need this shape — see docs/08 and gate.yml.
       - name: Aggregate required results
         env:
           RESULTS: ${{ toJSON(needs) }}

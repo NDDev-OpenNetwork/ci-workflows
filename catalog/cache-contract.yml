@@ -190,25 +190,25 @@ refusals:
     action: astral-sh/setup-uv
     input: enable-cache
     value: false
-    reason: The blocking gate must not depend on an unreviewed input.
+    reason: The self-CI aggregate must not depend on an unreviewed input.
   - workflow: .github/workflows/ci.yml
     job: validate-touched
     action: astral-sh/setup-uv
     input: enable-cache
     value: false
-    reason: The blocking gate must not depend on an unreviewed input.
+    reason: The self-CI aggregate must not depend on an unreviewed input.
   - workflow: .github/workflows/ci.yml
     job: shell-gates
     action: astral-sh/setup-uv
     input: enable-cache
     value: false
-    reason: The blocking gate must not depend on an unreviewed input.
+    reason: The self-CI aggregate must not depend on an unreviewed input.
   - workflow: .github/workflows/ci.yml
     job: dockerfile-gate
     action: astral-sh/setup-uv
     input: enable-cache
     value: false
-    reason: The blocking gate must not depend on an unreviewed input.
+    reason: The self-CI aggregate must not depend on an unreviewed input.
   - workflow: .github/workflows/ci.yml
     job: shell-gates
     action: actions/setup-go
@@ -216,8 +216,8 @@ refusals:
     value: false
     reason: >-
       setup-go caches the module and build cache with no input at all, and this
-      job is in `ci-gate.needs`. Found by deriving the required surface from the
-      gate's own graph; the hand-written list had not named it.
+      job is in `ci-gate.needs`. Found by deriving the aggregate surface from
+      the gate's own graph; the hand-written list had not named it.
   - workflow: .github/workflows/zizmor-sarif.yml
     job: zizmor
     action: astral-sh/setup-uv
@@ -226,7 +226,7 @@ refusals:
     reason: >-
       This workflow backs the `zizmor` job, which is in `ci-gate.needs`. The
       contract's own closing paragraph used to assert that the undeclared
-      remainder could not reach a required check; this is the counter-example.
+      remainder could not reach the aggregate; this is the counter-example.
 
 # Everything else is left to the producer's default on purpose, and there is now
 # exactly one such place: `python-ci.yml`, which sets `enable-cache: true`
@@ -237,6 +237,6 @@ refusals:
 # where a poisoned entry cannot reach a release or a required check". That was
 # false: `zizmor-sarif.yml` is called by the `zizmor` job, which is in
 # `ci-gate.needs`, and it took setup-uv's default. The refusals below are no
-# longer a hand-written list -- `check_cache_contract.py` derives the required
+# longer a hand-written list -- `check_cache_contract.py` derives the aggregate
 # jobs from `ci-gate`'s own `needs` graph, follows local `uses:` into the called
 # workflow, and demands a refusal for every cache-capable step it finds there.

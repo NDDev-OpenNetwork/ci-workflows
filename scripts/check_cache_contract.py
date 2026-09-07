@@ -20,12 +20,12 @@ Three rules, all properties of the tree:
   job no longer exists are both findings, because a contract that names things
   that are gone stops being read.
 * **The required surface is derived, not listed.** `ci-gate`'s own `needs` graph
-  says which jobs a merge depends on, and a `uses:` job is followed into the
-  workflow it calls. Any step in that surface running an action that caches by
-  default must carry a declared refusal. The hand-written list missed exactly
-  this: `zizmor-sarif.yml` backs the required `zizmor` job and took setup-uv's
-  default, while the contract's own closing paragraph asserted that the
-  undeclared remainder could not reach a required check.
+  says which jobs the self-CI aggregate depends on, and a `uses:` job is
+  followed into the workflow it calls. Any step in that surface running an
+  action that caches by default must carry a declared refusal. The hand-written
+  list missed exactly this: `zizmor-sarif.yml` backs the `zizmor` job and took
+  setup-uv's default, while the contract's own closing paragraph asserted that
+  the undeclared remainder could not reach the aggregate.
 
 What this cannot see, stated plainly rather than implied: an action that caches
 by default and exposes no input at all is invisible to static analysis, and
@@ -164,7 +164,7 @@ def _action(step: dict[str, Any]) -> str:
 
 
 def _required_surface() -> set[tuple[str, str]]:
-    """Every (workflow, job) a merge depends on, read from `ci-gate`'s own graph.
+    """Every (workflow, job) the self-CI aggregate depends on, from `ci-gate`.
 
     A `uses:` job is followed into the workflow it calls, because that is where
     its steps actually live -- and where the cache-capable step that started all

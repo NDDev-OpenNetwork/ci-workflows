@@ -2,7 +2,7 @@
 """Reusable-workflow contract: every workflow except the self workflows
 (`ci.yml`, `release.yml`) must be reusable (`on: workflow_call`). The self
 workflows must NOT be reusable, and `ci.yml` must expose the `ci-gate` job that
-branch protection requires as a status check. Caller-provided command runners
+aggregates focused self-CI as truthful advisory evidence. Caller-provided command runners
 must also fail on the first failing command instead of returning the status of
 only the final command. The Go pack's history-depth input remains a typed,
 backward-compatible pass-through to checkout.
@@ -267,7 +267,7 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
     ci = load_yaml((workflow_files()[0].parent / "ci.yml"))
     jobs = ci.get("jobs", {}) or {}
     if "ci-gate" not in jobs:
-        problems.append("ci.yml: missing required `ci-gate` job (branch-protection status check)")
+        problems.append("ci.yml: missing `ci-gate` aggregate job (advisory evidence, not a required merge context)")
 
     # Run 34091935173 failed because this job committed workflow files and
     # GITHUB_TOKEN cannot push them without `workflows` permission. Catalog

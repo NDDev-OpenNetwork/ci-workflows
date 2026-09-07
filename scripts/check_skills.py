@@ -8,11 +8,7 @@ mirror is byte-identical to the source. It plugs into validate_all via
 `check()`.
 
 Authored extra frontmatter (`license`, `compatibility`, and a `metadata:`
-mapping) is part of the product. Native Codex CLI `skills/list` discovers
-these skills from `.agents/skills` with that mapping (verified 2026-09-07 in
-this repository cwd: `ci-consumer-adoption`, scope=repo, enabled, no errors).
-A checker that accepts only scalar `name` and `description` is not this
-repository's runtime contract. Do not flatten `metadata` to a string.
+mapping) is part of the product. Do not flatten `metadata` to a string.
 """
 from __future__ import annotations
 

@@ -91,6 +91,8 @@ jobs:
           # GITHUB_TOKEN cannot push workflow-file updates without the
           # `workflows` permission. Dependabot already owns those files; this
           # job only commits catalog and generated docs derived from them.
+          # sync_action_catalog.py --catalog-only requires a unique pin per
+          # action across workflow files and fails closed on mixed identities.
           if git diff --quiet -- catalog docs/generated; then
             echo "catalog already converged"
           else
