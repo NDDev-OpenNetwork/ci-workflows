@@ -57,12 +57,13 @@ free maintainability substitutes are listed there.
 The three tiers describe what GitHub *offers*. This library is published from a
 GitHub Organization, not an Enterprise account, and it does **not** assume the
 publisher purchased Enterprise Cloud, Code Security, Secret Protection, or Code
-Quality. [17 Paid organization programmes](17-nddev-tier.md) is the opt-in
-guide for consumers who independently hold those products. Public repositories
-still get free CodeQL, SARIF, dependency review, Scorecard and attestations.
-Private repositories without those purchases use the private-free programme and
-`release-supply-chain-free.yml`; attested private releases require Enterprise
-Cloud.
+Quality. A live GitHub plan belongs to one organization; do not copy one
+account's plan onto another. [17 Paid organization programmes](17-nddev-tier.md)
+is the opt-in guide for consumers who independently hold those products. Public
+repositories still get free CodeQL, SARIF, dependency review, Scorecard and
+attestations. Private repositories without those purchases use the private-free
+programme and `release-supply-chain-free.yml`; attested private releases require
+Enterprise Cloud.
 
 ### Personal-account repositories
 

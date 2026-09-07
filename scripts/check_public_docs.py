@@ -59,6 +59,9 @@ OBSERVED_SPEND = re.compile(r"\$\d[\d,]*\.\d{2}\b")
 PUBLISHER_PURCHASE = re.compile(
     r"has already bought"
     r"|The NDDev estate is not on the free plan"
+    r"|this organization is on the free plan"
+    r"|the publisher is on the free plan"
+    r"|NDDev-OpenNetwork is on the free plan"
     r"|this estate has Enterprise Cloud"
     r"|organization has already bought"
     r"|organization has bought Enterprise Cloud",
@@ -114,6 +117,8 @@ def _selftest() -> list[str]:
         "$1.31 still accrued in August",
         "billed at $21 + $49 + $10 = $80.00",
         "The NDDev estate is not on the free plan",
+        "this organization is on the free plan",
+        "NDDev-OpenNetwork is on the free plan",
         "organization has already bought — Enterprise Cloud",
         "this estate has Enterprise Cloud",
     ]
@@ -126,6 +131,8 @@ def _selftest() -> list[str]:
         "run 30702933166",
         "private attestations require GitHub Enterprise Cloud",
         "does not assume the publisher purchased Enterprise Cloud",
+        "A live GitHub plan belongs to one organization",
+        "resolve it from the live plan",
     ]
     for sample in must_flag:
         if not (INVENTORY.search(sample) or OBSERVED_SPEND.search(sample)

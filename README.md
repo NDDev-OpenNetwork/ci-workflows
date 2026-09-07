@@ -41,8 +41,9 @@ in [`catalog/product-facts.yml`](catalog/product-facts.yml). See
 
 This library is published from a **GitHub Organization**, not an Enterprise
 account, and it does **not** assume the publisher purchased Enterprise Cloud,
-Code Security, Secret Protection, or Code Quality. Paid programmes stay
-explicitly selectable for other consumers — see
+Code Security, Secret Protection, or Code Quality. A live GitHub plan belongs
+to one organization; do not copy one account's plan onto another. Paid
+programmes stay explicitly selectable for other consumers — see
 [`docs/17-nddev-tier.md`](docs/17-nddev-tier.md). Public repositories still get
 the free GitHub security surfaces (CodeQL, SARIF, dependency review, Scorecard,
 attestations). Private repositories without those purchases use the

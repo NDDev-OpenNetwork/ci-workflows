@@ -22,9 +22,13 @@ account. The public generic library:
   Scorecard, or artifact attestations — those are free on public repositories on
   every current GitHub plan.
 
-When a function depends on Free versus Team, resolve it from the live plan and
-from [`catalog/product-facts.yml`](../catalog/product-facts.yml). Do not copy a
-plan name into this document as if it were a durable product fact.
+When a function depends on Free versus Team, resolve it from **that
+organization's** live plan and from
+[`catalog/product-facts.yml`](../catalog/product-facts.yml). A live GitHub
+`plan.name` belongs to one organization. Observing it for one account does not
+describe any other organization, including other NDDev accounts, and this
+library does not copy that field here. Do not treat "organization" as Free, as
+Team, or as Enterprise until that organization's own plan is read.
 
 This repository itself is **public** and runs the
 `public-free-standalone` programme: CodeQL, zizmor with SARIF, dependency

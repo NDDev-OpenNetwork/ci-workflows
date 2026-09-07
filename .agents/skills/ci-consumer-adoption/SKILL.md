@@ -41,8 +41,11 @@ cd /tmp/ci-workflows
 python3.13 -I -B -m venv --copies .venv
 uv pip install --python .venv/bin/python --require-hashes -r requirements-ci.txt
 
-# Default: no paid add-ons. Public Free/Team keep CodeQL and attestations.
+# Pass THIS consumer organization's live plan. Do not copy another
+# organization's observed plan. Public no-addon shapes keep CodeQL and
+# attestations on current GitHub plans whether the org is Free or Team:
 .venv/bin/python -I -B scripts/check_python_execution_contract.py --launch resolve_profile.py -- --visibility public --plan free
+.venv/bin/python -I -B scripts/check_python_execution_contract.py --launch resolve_profile.py -- --visibility public --plan team
 # Explicit paid opt-in only when those products are independently held:
 # --visibility private --plan enterprise-cloud \
 #   --code-security --secret-protection --code-quality
@@ -68,12 +71,13 @@ Pick the tier doc first; it decides which reusables are even legal to call:
 
 The publisher is a GitHub Organization, not an Enterprise account, and this
 library does not assume it purchased Code Security, Secret Protection, Code
-Quality, or Enterprise Cloud. Do not copy the paid examples into a private
-repository that has not bought those products. The inverse trap also exists:
-an organization that **did** buy them and then follows private-free will
-discard attested releases. Check entitlements before believing a tier table.
-Prices and quotas live in `catalog/product-facts.yml`; never quote them from
-memory or from a skill.
+Quality, or Enterprise Cloud. A live GitHub plan belongs to one organization;
+do not copy one account's plan onto another. Do not copy the paid examples into
+a private repository that has not bought those products. The inverse trap also
+exists: an organization that **did** buy them and then follows private-free
+will discard attested releases. Check entitlements before believing a tier
+table. Prices and quotas live in `catalog/product-facts.yml`; never quote them
+from memory or from a skill.
 
 ## 2. Pin — to a released tag, by full SHA
 

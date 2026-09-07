@@ -10,7 +10,8 @@ The project follows Semantic Versioning.
 - Stop treating the publisher as an Enterprise Cloud buyer of Code Security,
   Secret Protection and Code Quality. Paid programmes stay explicitly
   selectable; public CodeQL, SARIF, Scorecard and attestations stay. Private
-  repositories without those purchases use the private-free programme.
+  repositories without those purchases use the private-free programme. A live
+  GitHub plan belongs to one organization and is not copied between accounts.
 
 - Re-verify four vendor allowance records with staggered review dates, correct
   Ubicloud's monthly credit and Harness's conditional CI credit semantics, and
