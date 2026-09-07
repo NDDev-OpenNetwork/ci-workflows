@@ -7,6 +7,10 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Add optional `check_name` to the private-free security bundle so callers can
+  retain an existing required check identity when migrating away from SARIF
+  publication, with all four scanners and evidence artifacts preserved.
+
 - Synchronize pins by catalog action family, preserving independent subpath actions
   and reusable workflows in the same repository. Apply the reviewed dependency
   updates from #92 with matching catalog and transitive-image records; historical

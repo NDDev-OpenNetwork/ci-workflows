@@ -104,9 +104,19 @@ and replace its placeholder runner label with a private, isolated fleet label.
 
 `private-security-bundle-free.yml` runs actionlint, zizmor, OSV-Scanner and
 Gitleaks in one private Linux placement. All four gates execute before the job
-aggregates failure. The job always uploads one-day evidence containing the
+aggregates failure. After scanning runs, the job uploads one-day evidence containing the
 actionlint log plus Zizmor, OSV and fully redacted Gitleaks SARIF reports; it
 does not require or attempt a paid code-scanning upload.
+
+When migrating an existing caller from `nddev-security-bundle.yml`, preserve
+its caller job key/name and inspect the exact required check context. The free
+workflow defaults its inner job name to
+`actionlint + zizmor + OSV + gitleaks (no SARIF)`. Set the optional `check_name`
+to `actionlint + zizmor + OSV + gitleaks` when that is the existing protected
+inner name. This input affects only the displayed check name; it does not alter
+scanner execution, failure handling, artifact evidence or token permissions.
+The caller needs only `contents: read`; no Code Security feature or
+`security-events: write` permission is required by this variant.
 
 Use this workflow when placement latency and fleet contention cost more than
 the limited failure-domain isolation of four separate jobs. Public fork code

@@ -299,6 +299,7 @@ capabilities:
       - "Private repositories only; public forks must never reach self-hosted capacity"
       - "SARIF remains an artifact rather than a code-scanning upload because private-free repositories have no security-events entitlement"
       - "Four gates share one failure domain, but every gate executes before aggregate failure"
+      - "Optional check_name preserves the inner job display name during required-check migration; caller prefix and scanner enforcement remain separate"
       - "Called-workflow implementation is fetched at exact job.workflow_sha outside the caller workspace"
       - "Gitleaks evidence is fully redacted before the always-uploaded one-day artifact is created"
     deprecations: null
