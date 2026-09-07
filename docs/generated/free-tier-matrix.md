@@ -12,8 +12,8 @@ past its expiry, so a stale tier claim cannot silently mislead adopters.
 | `appcircle-always-free` | Appcircle | Always Free | public, private | Free | build-count-quota | 20 builds/month | vendor-verified | 2026-08-10 | 2026-10-02 |
 | `bitbucket-free` | Atlassian | Bitbucket Cloud Free + Pipelines | public, private | Free | recurring-quota | 50 build-minutes/month | official | 2026-08-10 | 2026-09-25 |
 | `bitrise-hobby` | Bitrise | Hobby plan | private | Hobby | credit-quota | 300 credits/month | vendor-verified | 2026-08-10 | 2026-10-02 |
-| `blacksmith-free` | Blacksmith | Free GitHub Actions runner pool | public, private | Free | recurring-quota | 3000 runner-minutes/month | vendor-verified | 2026-08-10 | 2026-09-04 |
-| `buddy-free` | Buddy | Free plan | public, private | Free | resource-quota | 300 pipeline-gb-minutes/month | vendor-verified | 2026-08-10 | 2026-09-04 |
+| `blacksmith-free` | Blacksmith | Free GitHub Actions runner pool | public, private | Free | recurring-quota | 3000 runner-minutes/month | vendor-verified | 2026-09-07 | 2026-10-01 |
+| `buddy-free` | Buddy | Free plan | public, private | Free | resource-quota | 300 pipeline-gb-minutes/month | vendor-verified | 2026-09-07 | 2026-10-03 |
 | `buildkite-personal` | Buildkite | Personal plan hosted agents | public, private | Personal | recurring-quota | 500 linux-vcpu-minutes/month | official | 2026-08-10 | 2026-09-25 |
 | `circleci-free` | CircleCI | Free plan | public, private | Free | credit-quota | 30000 credits/month | official | 2026-08-10 | 2026-09-18 |
 | `circleci-open-source` | CircleCI | Open Source plan credits | public | Approved OSS | application-grant | 400000 credits/month | official | 2026-08-10 | 2026-09-18 |
@@ -41,14 +41,14 @@ past its expiry, so a stale tier claim cannot silently mislead adopters.
 | `gitlab-free-hosted` | GitLab | GitLab.com Free compute | public, private | Free | recurring-quota | 400 compute-minutes/month | official | 2026-08-10 | 2026-09-11 |
 | `gitlab-open-source-program` | GitLab | GitLab for Open Source | public | Ultimate for qualifying OSS | application-grant | 50000 compute-minutes/month | official | 2026-08-10 | 2026-09-11 |
 | `google-cloud-build-free` | Google Cloud | Cloud Build free tier | public, private | Google Cloud Free Tier | recurring-quota | 2500 e2-standard-2-build-minutes/month | official | 2026-08-10 | 2026-10-16 |
-| `harness-free` | Harness | Continuous Delivery & Git Experience Free | public, private | Free | credit-quota | 2000 credits/month | vendor-verified | 2026-08-10 | 2026-09-04 |
+| `harness-free` | Harness | Harness Cloud CI Free | public, private | Free | credit-quota | 2000 credits/month | conditional | 2026-09-07 | 2026-09-17 |
 | `teamcity-professional` | JetBrains | TeamCity Professional | public, private, internal | Professional | zero-license-self-hosted | unmetered (build-minutes) | official | 2026-08-10 | 2026-10-23 |
 | `azure-pipelines-private` | Microsoft Azure DevOps | Azure Pipelines private projects | private | Free included parallel job | recurring-quota | 1800 hosted-minutes/month | official | 2026-08-10 | 2026-09-25 |
 | `azure-pipelines-public-retirement` | Microsoft Azure DevOps | Azure DevOps public projects | public | Legacy only | retiring | 0 new-public-projects/feature | deprecated | 2026-07-11 | 2027-01-01 |
 | `semaphore-cloud-free` | Semaphore | Cloud free recurring credit | public, private | Free | credit-quota | 15 usd-credits/month | official | 2026-08-10 | 2026-09-25 |
 | `semaphore-community` | Semaphore | Semaphore Community Edition | public, private, internal | Community | zero-license-self-hosted | unmetered (build-minutes) | official | 2026-08-10 | 2026-09-25 |
 | `travis-open-source-conditional` | Travis CI | Open source credits | public | OSS grant | application-grant | credits | conditional | 2026-08-10 | 2026-10-23 |
-| `ubicloud-free` | Ubicloud | GitHub Actions runners monthly credit | public, private | Pay-as-you-go with recurring credit | credit-quota | 2 usd-credits/month | vendor-verified | 2026-08-10 | 2026-09-04 |
+| `ubicloud-free` | Ubicloud | GitHub Actions runners monthly credit | public, private | Pay-as-you-go with recurring credit | credit-quota | 2.5 usd-credits/month | vendor-verified | 2026-09-07 | 2026-09-23 |
 
 ---
 Generated from catalog/product-facts.yml.

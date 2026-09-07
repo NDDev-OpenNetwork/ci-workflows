@@ -7,6 +7,9 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Re-verify four vendor allowance records with staggered review dates, correct
+  Ubicloud's monthly credit and Harness's conditional CI credit semantics, and
+  align the disclosed Checkov image tag with the existing pinned action.
 - Publish unsuccessful completed self-workflow attempts as unassigned,
   repository-local CI evidence; preserve actual conclusions and exact attempts.
 - Accept exact matching development-commit comments and correct nested action
