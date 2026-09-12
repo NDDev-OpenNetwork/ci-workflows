@@ -12,11 +12,20 @@ Authorization headers cannot combine with actions/checkout's scoped token.
 """
 from __future__ import annotations
 
+import base64
+import hashlib
+import io
+import json
+import os
 import re
+import subprocess
+import tempfile
+import zipfile
 import shlex
 import sys
 from pathlib import Path
 
+from ci_workflows_tools.check_python_execution_contract import clean_environment
 from ci_workflows_tools._runners import is_standard_hosted, resolve_runner_labels
 from ci_workflows_tools._workflow_yaml import SELF_WORKFLOWS, get_on, is_reusable, load_yaml, workflow_files
 
@@ -169,6 +178,30 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
         problems.append(
             "nddev-security-bundle.yml: redacted evidence must upload exactly once with one-day retention"
         )
+
+    # Transport failure is recoverable only when complete evidence survives.
+    for filename, variable in (
+        ("nddev-security-bundle.yml", "NDDEV_SECURITY_BUNDLE_SCRIPT"),
+        ("private-security-bundle-free.yml", "PRIVATE_SECURITY_BUNDLE_SCRIPT"),
+    ):
+        workflow = load_yaml(workflow_root / filename)
+        job = workflow["jobs"]["security-bundle"]
+        steps = job["steps"]
+        upload = next((step for step in steps if step.get("id") == "evidence_artifact"), {})
+        fallback = next((step for step in steps if step.get("name") == "Preserve security evidence in the run log"), {})
+        if (upload.get("continue-on-error") is not True
+                or fallback.get("if") != "${{ !cancelled() && steps.evidence_artifact.outcome == 'failure' }}"
+                or fallback.get("continue-on-error")
+                or f'$(dirname "${variable}")/security_evidence_to_log.sh' not in fallback.get("run", "")):
+            problems.append(f"{filename}: upload failure must require the exact checked log fallback")
+        scan = next(step for step in steps if step.get("id") == "scan")
+        if filename == "private-security-bundle-free.yml" and scan.get("continue-on-error"):
+            problems.append(f"{filename}: scanner failure must remain blocking")
+        if filename == "nddev-security-bundle.yml" and not any(
+                step.get("if") == "${{ steps.scan.outcome == 'failure' }}"
+                and step.get("run") == "exit 1" for step in steps):
+            problems.append(f"{filename}: deferred scanner failure must still be enforced")
+    problems.extend(_probe_security_evidence(workflow_root.parents[1]))
 
     for filename in sorted(isolated_checkout_workflows):
         workflow = load_yaml(workflow_root / filename)
@@ -582,6 +615,65 @@ def _job_defaults_pin_the_shell() -> list[str]:
                     "one instead of merging, so this silently drops the file's own "
                     "`shell: bash` and every run step becomes PowerShell on Windows"
                 )
+    return problems
+
+
+
+def _probe_security_evidence(root: Path) -> list[str]:
+    """Round-trip actual fallback bytes, and reject incomplete or unsafe inputs."""
+    script = root / "scripts" / "security_evidence_to_log.sh"
+    names = ("private-security-actionlint.log", "private-security-zizmor.sarif",
+             "private-security-osv.sarif", "private-security-gitleaks.sarif")
+    problems: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="security-evidence-probe-") as directory:
+        target = Path(directory)
+        summary = target / "summary.md"
+        summary.touch()
+        expected = {name: (b"::error::literal diagnostic\n" if name.endswith(".log")
+                           else b'{"version":"2.1.0","runs":[]}\n') for name in names}
+        env = clean_environment({"RUNNER_TEMP": str(target), "GITHUB_REPOSITORY": "example-org/example",
+               "GITHUB_SHA": "a" * 40, "GITHUB_RUN_ID": "123", "GITHUB_RUN_ATTEMPT": "1",
+               "GITHUB_STEP_SUMMARY": str(summary)})
+        def run():
+            return subprocess.run(["bash", str(script)], env=env, capture_output=True,
+                                  text=True, timeout=10, check=False)
+        for name, raw in expected.items():
+            (target / name).write_bytes(raw)
+        try:
+            first, second = run(), run()
+            if first.returncode or second.returncode or first.stdout != second.stdout:
+                return ["security evidence: valid inputs must produce one deterministic archive"]
+            lines = first.stdout.splitlines()
+            digest = lines[0].split()[1]
+            end = lines.index("SECURITY_EVIDENCE_V1_END " + digest)
+            raw = base64.b64decode("".join(lines[1:end]), validate=True)
+            if hashlib.sha256(raw).hexdigest() != digest or len(raw) != int(lines[0].split()[2]):
+                problems.append("security evidence: archive digest or length mismatch")
+            with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                if set(archive.namelist()) != set(names) | {"SHA256SUMS", "identity.json"}:
+                    problems.append("security evidence: archive lost or added a report")
+                for name, content in expected.items():
+                    if archive.read(name) != content:
+                        problems.append("security evidence: report bytes changed")
+                for line in archive.read("SHA256SUMS").decode().splitlines():
+                    sha, name = line.split("  ")
+                    if hashlib.sha256(archive.read(name)).hexdigest() != sha:
+                        problems.append("security evidence: member digest mismatch")
+                if json.loads(archive.read("identity.json"))["run_id"] != "123":
+                    problems.append("security evidence: run identity missing")
+            victim = target / names[1]
+            for case in ("missing", "symlink", "fifo", "oversized", "invalid-sarif"):
+                victim.unlink(missing_ok=True)
+                if case == "symlink": victim.symlink_to(target / names[2])
+                elif case == "fifo": os.mkfifo(victim)
+                elif case == "oversized":
+                    with victim.open("wb") as file: file.truncate(4 * 1024 * 1024 + 1)
+                elif case == "invalid-sarif": victim.write_text("{}")
+                failed = run()
+                if failed.returncode == 0 or "SECURITY_EVIDENCE_V1_BEGIN" in failed.stdout:
+                    problems.append(f"security evidence: accepted {case} report")
+        except (OSError, ValueError, KeyError, subprocess.TimeoutExpired, zipfile.BadZipFile) as error:
+            problems.append(f"security evidence probe failed: {error}")
     return problems
 
 

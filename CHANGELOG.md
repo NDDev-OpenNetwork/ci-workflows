@@ -7,6 +7,13 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Re-verify GitLab Free and Open Source allowances against current primary
+  sources, with separate review deadlines and explicit eligibility conditions.
+
+- Preserve complete redacted private security evidence in a bounded, checksummed
+  run-log ZIP when artifact upload fails. Scanner enforcement and failed fallback
+  remain blocking; no new token permission or external storage is required.
+
 - Add optional `check_name` to the private-free security bundle so callers can
   retain an existing required check identity when migrating away from SARIF
   publication, with all four scanners and evidence artifacts preserved.

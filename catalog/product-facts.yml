@@ -617,16 +617,18 @@ facts:
   conditions:
   - Shared-runner use may require identity/payment verification
   - Own runners do not consume hosted compute quota
-  - 10 GiB project storage
+  - 10 GiB adjustable storage
+  - Five users per top-level group on Free
   payment_method: may-be-required-for-shared-runners
   overage: purchase additional compute or use own runners
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-11'
+  verified_at: '2026-09-13'
+  expires_after: '2026-10-12'
   source_urls:
   - https://about.gitlab.com/pricing/
-  notes: []
+  notes:
+  - "Re-verified 2026-09-13: the official pricing page still lists 400 compute minutes per month, 10 GiB adjustable storage, and five users per top-level group; creating a Free account needs no card, while shared-runner verification remains separate."
 - id: gitlab-open-source-program
   provider: GitLab
   product: GitLab for Open Source
@@ -643,6 +645,8 @@ facts:
     multipliers: {}
   conditions:
   - Qualification and acceptance required
+  - Compute minutes use the program-specific cost factor
+  - Program membership does not include support
   - Project must remain eligible under program rules
   - Membership must be renewed annually or the account is downgraded
   - The program page states the compute-minute grant alongside an annual renewal cycle without naming
@@ -651,11 +655,13 @@ facts:
   overage: program/plan dependent
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-11'
+  verified_at: '2026-09-13'
+  expires_after: '2026-10-15'
   source_urls:
   - https://about.gitlab.com/solutions/open-source/join/
+  - https://about.gitlab.com/pricing/
   notes:
+  - "Re-verified 2026-09-13: the official programme page retains the Ultimate grant and 50,000 compute minutes, public OSI-licensed non-profit eligibility and annual renewal; the pricing page states the Ultimate monthly allowance. Community subscriptions currently cannot purchase GitLab Credits."
   - 'Re-verified 2026-08-10: grant is GitLab Ultimate (self-managed or SaaS) including 50,000 compute
     minutes, gated on OSI-approved licence, public visibility and non-profit status, applied for
     through the Customers Portal and renewed annually.'
