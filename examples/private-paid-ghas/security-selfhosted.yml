@@ -1,3 +1,5 @@
+# If artifact storage is unavailable, complete redacted reports are preserved
+# as a checksummed ZIP in the security evidence fallback step log.
 # Private repository WITH GitHub Code Security, on a caller-owned self-hosted
 # label. This is an explicit paid opt-in: zizmor keeps SARIF upload. Callers
 # without Code Security must use examples/private-free/security-selfhosted.yml

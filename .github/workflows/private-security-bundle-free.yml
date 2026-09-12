@@ -215,6 +215,8 @@ jobs:
         run: "$PRIVATE_SECURITY_BUNDLE_SCRIPT"
 
       - name: Upload redacted security evidence
+        id: evidence_artifact
+        continue-on-error: true # a failed upload must complete the checked log fallback
         # Only when the gates actually ran; see the note in
         # nddev-security-bundle.yml. `always()` here turned a bootstrap failure
         # into a missing-SARIF message that named the wrong step.
@@ -230,3 +232,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           compression-level: 9
+
+      - name: Preserve security evidence in the run log
+        if: ${{ !cancelled() && steps.evidence_artifact.outcome == 'failure' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash "$(dirname "$PRIVATE_SECURITY_BUNDLE_SCRIPT")/security_evidence_to_log.sh"

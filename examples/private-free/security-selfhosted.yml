@@ -1,3 +1,5 @@
+# If artifact storage is unavailable, complete redacted reports are preserved
+# as a checksummed ZIP in the security evidence fallback step log.
 # Private security suite with zero GitHub Actions compute meter.
 # Replace `private-ci` with an isolated ephemeral runner label registered only
 # to private repositories. Destroy the worker after one job; cost control must not

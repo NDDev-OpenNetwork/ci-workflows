@@ -524,7 +524,8 @@
     ],
     "check_workflow_contracts.py": [
       "_runners",
-      "_workflow_yaml"
+      "_workflow_yaml",
+      "check_python_execution_contract"
     ],
     "compile_evidence_plan.py": [
       "_strict_yaml",
@@ -664,16 +665,16 @@
         "profile": "isolated-python-fixture"
       }
     },
-    "check_gate_contract.py": {
-      "_run": {
-        "count": 1,
-        "profile": "isolated-python-fixture"
-      }
-    },
     "check_consumer_skill_contract.py": {
       "_git": {
         "count": 1,
         "profile": "external-tool"
+      }
+    },
+    "check_gate_contract.py": {
+      "_run": {
+        "count": 1,
+        "profile": "isolated-python-fixture"
       }
     },
     "check_maintenance_report_contract.py": {
@@ -778,6 +779,12 @@
     },
     "check_side_effect_fixture_contract.py": {
       "_run_with_fake_gh": {
+        "count": 1,
+        "profile": "shell-fixture"
+      }
+    },
+    "check_workflow_contracts.py": {
+      "run": {
         "count": 1,
         "profile": "shell-fixture"
       }

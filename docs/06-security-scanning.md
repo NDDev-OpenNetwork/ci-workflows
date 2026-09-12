@@ -99,3 +99,28 @@ All three can emit SARIF for upload on public/GHAS repos. See
 
 ---
 Last verified: 2026-07-10
+
+## Private security evidence when artifact storage is unavailable
+
+Both consolidated private security workflows first upload their redacted reports
+as a one-day artifact. If that transport fails, the exact called-workflow source
+captures all four reports into a deterministic ZIP and writes its base64 bytes
+to the fallback step's run log. The job summary records the ZIP digest and its
+location. This uses the run's existing visibility and log retention, without
+new credentials, permissions, or an external storage service.
+
+The archive is delimited by `SECURITY_EVIDENCE_V1_BEGIN <sha256> <bytes>` and
+`SECURITY_EVIDENCE_V1_END <sha256>`. To recover it, obtain the fallback step's log,
+decode the base64 lines between those markers, verify the ZIP's SHA-256 and byte
+count, then verify its `SHA256SUMS`. `identity.json` binds repository, source
+commit, workflow run and attempt. It contains the actionlint log and all three
+SARIF files, including fully redacted Gitleaks evidence.
+
+The fallback refuses missing, symlinked, non-regular, changing, malformed, or
+oversized reports (4 MiB per report). An incomplete archive is never emitted.
+Failure of both delivery paths fails the job. A scanner failure also remains
+blocking after successful evidence delivery; an upload warning is not a clean
+security finding.
+
+GitHub artifact storage and run logs are distinct retention surfaces. Storage
+quota updates can take time; see the official [Actions billing documentation](https://docs.github.com/en/billing/concepts/product-billing/github-actions).

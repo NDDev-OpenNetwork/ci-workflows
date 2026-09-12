@@ -271,6 +271,7 @@ capabilities:
       - "Private repositories only; a public fork must never reach a self-hosted runner"
       - "Requires GitHub Code Security because zizmor SARIF upload is preserved; private-free callers keep the no-SARIF workflows"
       - "Four gates share one failure domain, but the script executes and summarizes every gate before returning failure"
+      - "Artifact upload failure requires a complete bounded redacted ZIP with SHA-256 and run identity in the run log; failure of both transports fails the job"
       - "The called workflow fetches its implementation from job.workflow_repository at exact job.workflow_sha outside the caller workspace"
       - "Downloaded actionlint, OSV-Scanner, and gitleaks artifacts are checksum-pinned; zizmor is uvx version-pinned"
     deprecations: null
@@ -301,7 +302,7 @@ capabilities:
       - "Four gates share one failure domain, but every gate executes before aggregate failure"
       - "Optional check_name preserves the inner job display name during required-check migration; caller prefix and scanner enforcement remain separate"
       - "Called-workflow implementation is fetched at exact job.workflow_sha outside the caller workspace"
-      - "Gitleaks evidence is fully redacted before the always-uploaded one-day artifact is created"
+      - "Gitleaks evidence is fully redacted before the one-day artifact upload; a failed upload requires a complete bounded ZIP with SHA-256 and run identity in the run log"
     deprecations: null
     last_verified: "2026-08-22"
     sources:
