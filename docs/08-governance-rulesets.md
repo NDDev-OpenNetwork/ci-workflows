@@ -96,7 +96,7 @@ have to re-derive it:
 
 | Surface | Owner | Status |
 | --- | --- | --- |
-| `.github/rulesets/branch-main.json` | this repository | Canonical desired state for ruleset `21104086`: `allowed_merge_methods: ["merge"]`, signed commits, thread resolution, zero approvals, extra approval for unattributed changes, **no** required general CI status check. Live settings are not applied from this tree. |
+| `.github/rulesets/branch-main.json` | this repository | Canonical desired state for ruleset `21104086`: `allowed_merge_methods: ["merge"]`, signed commits, thread resolution, zero approvals, **no** extra approval for unattributed agent commits, **no** required general CI status check. Live settings are not applied from this tree. |
 | `.github/rulesets/tag-semver.json`, `push-hygiene.json` | this repository | Canonical desired state for the repository's own tag and push rules. |
 | `NDDev baseline: *` rulesets | the estate control plane | Applied on top, not tracked here. Deleting or editing them from this repository would fight the reconciler. |
 | `.gds/compiled-policy.json` | GDS, generated | Generated from the estate policy sources; agrees with live state since the repository-tier override landed. Never edit it here. |
