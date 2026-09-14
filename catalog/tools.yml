@@ -523,13 +523,13 @@ tools:
 
   - id: ci-feedback
     name: NDDev-OpenNetwork/github-actions/.github/workflows/ci-feedback.yml
-    homepage: "https://github.com/NDDev-OpenNetwork/github-actions/blob/a0dc5592333dcfdf2a3d239ed1f2b128899e5482/.github/workflows/ci-feedback.yml"
+    homepage: "https://github.com/NDDev-OpenNetwork/github-actions/blob/6064b7d98a4e6b852de7572de12b8889e8fbfe38/.github/workflows/ci-feedback.yml"
     kind: action
-    current_version: "commit:a0dc5592333dcfdf2a3d239ed1f2b128899e5482"
-    pin: "NDDev-OpenNetwork/github-actions/.github/workflows/ci-feedback.yml@a0dc5592333dcfdf2a3d239ed1f2b128899e5482"
+    current_version: "commit:6064b7d98a4e6b852de7572de12b8889e8fbfe38"
+    pin: "NDDev-OpenNetwork/github-actions/.github/workflows/ci-feedback.yml@6064b7d98a4e6b852de7572de12b8889e8fbfe38"
     used_by:
       - .github/workflows/ci-feedback-events.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-15"
     notes: >-
       Published development commit, not a stable release claim. The trusted
       publisher reads completed job metadata and writes unassigned issues in
