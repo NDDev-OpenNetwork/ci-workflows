@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.17] - 2026-09-15
+
 - Re-verify GitLab Free and Open Source allowances against current primary
   sources, with separate review deadlines and explicit eligibility conditions.
 
