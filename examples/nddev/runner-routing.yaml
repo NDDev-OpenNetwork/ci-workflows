@@ -4,12 +4,12 @@
 # self-hosted label has entered the queue.
 schema: nddev-ci-runner-map/v1
 fleet_contract:
-  repository: NDDev-OpenNetwork/github-actions
-  minimum_contract_version: 2
-  worker_kind: incus-container
-  ephemeral: true
+  repository: NDDev-OpenNetwork/github-actions-light
+  minimum_contract_version: 1
+  worker_kind: official-actions-runner
+  ephemeral: false
   jobs_per_worker: 1
-  executed_worker_disposition: destroy
+  executed_worker_disposition: persist
 routes:
   linux:
     hosted:
@@ -17,15 +17,15 @@ routes:
       backend: github-hosted-standard
       capabilities: [container-runtime]
     fast:
-      runner: nddev-linux-fast
+      runner: nddev-linux
       backend: self-hosted
       capabilities: []
     standard:
-      runner: nddev-linux-standard
+      runner: nddev-linux
       backend: self-hosted
       capabilities: []
     integration:
-      runner: nddev-linux-integration
+      runner: nddev-linux
       backend: self-hosted
       capabilities: [container-runtime]
   macos:
