@@ -20,12 +20,12 @@ BACKENDS = {"self-hosted", "github-hosted-standard"}
 VISIBILITIES = {"public", "private", "internal"}
 KNOWN_CAPABILITIES = {"container-runtime"}
 FLEET_CONTRACT = {
-    "repository": "NDDev-OpenNetwork/github-actions",
-    "minimum_contract_version": 2,
-    "worker_kind": "incus-container",
-    "ephemeral": True,
+    "repository": "NDDev-OpenNetwork/github-actions-light",
+    "minimum_contract_version": 1,
+    "worker_kind": "official-actions-runner",
+    "ephemeral": False,
     "jobs_per_worker": 1,
-    "executed_worker_disposition": "destroy",
+    "executed_worker_disposition": "persist",
 }
 
 
@@ -227,9 +227,9 @@ def check() -> list[str]:
         return problems
 
     positive = (
-        (".github/workflows/actionlint.yml", "linux", "fast", "private", "nddev-linux-fast"),
-        (".github/workflows/go-ci.yml", "linux", "standard", "private", "nddev-linux-standard"),
-        (".github/workflows/secret-scan.yml", "linux", "integration", "private", "nddev-linux-integration"),
+        (".github/workflows/actionlint.yml", "linux", "fast", "private", "nddev-linux"),
+        (".github/workflows/go-ci.yml", "linux", "standard", "private", "nddev-linux"),
+        (".github/workflows/secret-scan.yml", "linux", "integration", "private", "nddev-linux"),
         (".github/workflows/go-ci.yml", "macos", "hosted", "private", "macos-latest"),
         (".github/workflows/go-ci.yml", "windows", "hosted", "private", "windows-latest"),
         (".github/workflows/swift-ci.yml", "macos", "hosted", "public", "macos-latest"),
@@ -270,9 +270,9 @@ def check() -> list[str]:
     caller_path = REPO_ROOT / "examples" / "nddev" / "os-capability-routing.yml"
     caller = strict_load(caller_path)
     caller_expectations = {
-        "linux-fast": (".github/workflows/actionlint.yml", "nddev-linux-fast"),
-        "linux-standard": (".github/workflows/go-ci.yml", "nddev-linux-standard"),
-        "linux-integration": (".github/workflows/secret-scan.yml", "nddev-linux-integration"),
+        "linux-fast": (".github/workflows/actionlint.yml", "nddev-linux"),
+        "linux-standard": (".github/workflows/go-ci.yml", "nddev-linux"),
+        "linux-integration": (".github/workflows/secret-scan.yml", "nddev-linux"),
         "macos-hosted": (".github/workflows/go-ci.yml", "macos-latest"),
         "windows-hosted": (".github/workflows/go-ci.yml", "windows-latest"),
     }

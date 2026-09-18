@@ -14,17 +14,17 @@ jobs:
     permissions: { contents: read }
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/actionlint.yml@<sha>
     with:
-      runner: nddev-linux-fast
+      runner: nddev-linux
   linux-standard:
     permissions: { contents: read }
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/go-ci.yml@<sha>
     with:
-      runner: nddev-linux-standard
+      runner: nddev-linux
   linux-integration:
     permissions: { contents: read }
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/secret-scan.yml@<sha>
     with:
-      runner: nddev-linux-integration
+      runner: nddev-linux
   macos-hosted:
     permissions: { contents: read }
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/go-ci.yml@<sha>
