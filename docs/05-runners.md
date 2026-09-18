@@ -277,9 +277,9 @@ estate-neutral declaration with an operator mapping. The NDDev example is
 | Requested route | Concrete backend |
 | --- | --- |
 | Linux `hosted` | `ubuntu-latest`, standard GitHub-hosted/public-safe |
-| Linux `fast` | `nddev-linux-fast`, shell-only |
-| Linux `standard` | `nddev-linux-standard`, normal build/test |
-| Linux `integration` | `nddev-linux-integration`, container runtime |
+| Linux `fast` | `nddev-linux`, official persistent `actions/runner` |
+| Linux `standard` | `nddev-linux`, official persistent `actions/runner` |
+| Linux `integration` | `nddev-linux` with Docker, official persistent `actions/runner` |
 | macOS `hosted` | `macos-latest`, standard GitHub-hosted |
 | Windows `hosted` | `windows-latest`, standard GitHub-hosted |
 
