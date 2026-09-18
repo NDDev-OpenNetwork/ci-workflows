@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.18] - 2026-09-18
+
 - Align the NDDev runner-routing example and `fleet_contract` with official
   `nddev-linux` slots (`github-actions-light`). The previous GARM/Incus
   container contract is no longer the public current contract.
