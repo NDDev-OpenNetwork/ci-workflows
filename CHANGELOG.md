@@ -7,6 +7,15 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.20] - 2026-09-19
+
+- Re-verify three expired product facts (`circleci-free`,
+  `circleci-open-source`, `harness-free`) against their recorded
+  `source_urls`; all claims still hold verbatim. Carries the
+  `rust-supply-chain` toolchain fix unchanged from the 0.1.19 tag —
+  that tag exists but its release was never published because release
+  preflight declined on the expired facts; pin `0.1.20`.
+
 ## [0.1.19] - 2026-09-19
 
 - `rust-supply-chain`: the `audit` and `machete` jobs now install the Rust
