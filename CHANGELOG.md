@@ -7,6 +7,13 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- `rust-supply-chain`: the `audit` and `machete` jobs now install the Rust
+  toolchain named by the existing `toolchain` input before invoking `cargo`.
+  Both previously ran `cargo <tool>` with no setup step, so they depended on a
+  toolchain being ambient on the runner image — true for `ubuntu-latest` and
+  some self-hosted slots, false for others, where the job failed with
+  `cargo: command not found`. Caller interface unchanged.
+
 ## [0.1.18] - 2026-09-18
 
 - Align the NDDev runner-routing example and `fleet_contract` with official
