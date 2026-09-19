@@ -688,8 +688,8 @@ facts:
   overage: upgrade or wait for reset
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-18'
+  verified_at: '2026-09-19'
+  expires_after: '2026-10-20'
   source_urls:
   - https://circleci.com/pricing/
   notes: []
@@ -714,8 +714,8 @@ facts:
   overage: plan dependent
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-18'
+  verified_at: '2026-09-19'
+  expires_after: '2026-10-22'
   source_urls:
   - https://circleci.com/open-source/
   notes: []
@@ -1089,8 +1089,8 @@ facts:
   overage: upgrade/purchase
   status: conditional
   source_authority: vendor
-  verified_at: '2026-09-07'
-  expires_after: '2026-09-17'
+  verified_at: '2026-09-19'
+  expires_after: '2026-10-27'
   source_urls:
   - https://www.harness.io/pricing
   - https://github.com/harness/developer-hub/blob/main/docs/continuous-integration/get-started/ci-subscription-mgmt.md
