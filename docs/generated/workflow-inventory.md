@@ -7,6 +7,7 @@
 | `.github/workflows/benchmark-compare.yml` | `benchmark-compare` | ga |
 | `.github/workflows/benchmark.yml` | `benchmark` | ga |
 | `.github/workflows/ci-feedback-events.yml` | internal | internal |
+| `.github/workflows/ci-feedback.yml` | `ci-feedback` | ga |
 | `.github/workflows/ci.yml` | internal | internal |
 | `.github/workflows/clusterfuzzlite.yml` | `clusterfuzzlite-fuzzing` | ga |
 | `.github/workflows/codeql.yml` | internal | internal |
@@ -69,4 +70,4 @@
 | `.github/workflows/zizmor-sarif.yml` | `zizmor` | ga |
 
 ---
-Source data verified through: 2026-09-01
+Source data verified through: 2026-09-19

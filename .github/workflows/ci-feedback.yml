@@ -1,0 +1,45 @@
+name: Reusable CI feedback
+
+on:
+  workflow_call:
+    inputs:
+      run-id:
+        required: true
+        type: string
+      run-attempt:
+        required: true
+        type: string
+      allow-in-progress:
+        description: Report completed failed jobs on an unfinished exact attempt.
+        required: false
+        default: false
+        type: boolean
+
+permissions: {}
+
+concurrency:
+  group: ci-feedback-${{ github.repository_id }}-${{ github.run_id }}-${{ inputs.run-id }}-${{ inputs.run-attempt }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    name: Publish unassigned CI evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      actions: read # Read exact completed run and job metadata.
+      issues: write # Publish bounded failure evidence in the caller repository.
+    steps:
+      # Trusted immutable action code only. No checkout of the triggering PR.
+      # The action lives beside this workflow: the previous home moved to
+      # NDDev-Archive, and an archived repository cannot serve a reusable
+      # call, so every caller of the old path failed at resolution.
+      # A same-repository `uses:` is bound to the caller's own commit: the
+      # strongest pin is the checkout itself, so the unpinned-uses audit does
+      # not apply.
+      - uses: ./actions/ci-feedback  # zizmor: ignore[unpinned-uses]
+        with:
+          run-id: ${{ inputs.run-id }}
+          run-attempt: ${{ inputs.run-attempt }}
+          allow-in-progress: ${{ inputs.allow-in-progress }}
+          token: ${{ github.token }}

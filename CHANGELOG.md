@@ -7,6 +7,17 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- `ci-feedback`: vendor the reusable workflow and its composite action into
+  this repository. Their home `NDDev-OpenNetwork/github-actions` moved to
+  `NDDev-Archive/github-actions-garm` on 2026-09-17, and an archived
+  repository cannot serve a `workflow_call`, so every caller of
+  `ci-feedback-events.yml` failed at resolution. The workflow now lives at
+  `.github/workflows/ci-feedback.yml` and the action at `actions/ci-feedback/`;
+  callers reference the same-repository path. Other repositories' own
+  `ci-feedback-events.yml` files still point at the archived path and need the
+  same repoint. `tool-cache` action references are repointed at the moved
+  repository (same pinned commit).
+
 ## [0.1.20] - 2026-09-19
 
 - Re-verify three expired product facts (`circleci-free`,
