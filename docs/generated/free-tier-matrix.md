@@ -15,8 +15,8 @@ past its expiry, so a stale tier claim cannot silently mislead adopters.
 | `blacksmith-free` | Blacksmith | Free GitHub Actions runner pool | public, private | Free | recurring-quota | 3000 runner-minutes/month | vendor-verified | 2026-09-07 | 2026-10-01 |
 | `buddy-free` | Buddy | Free plan | public, private | Free | resource-quota | 300 pipeline-gb-minutes/month | vendor-verified | 2026-09-07 | 2026-10-03 |
 | `buildkite-personal` | Buildkite | Personal plan hosted agents | public, private | Personal | recurring-quota | 500 linux-vcpu-minutes/month | official | 2026-08-10 | 2026-09-25 |
-| `circleci-free` | CircleCI | Free plan | public, private | Free | credit-quota | 30000 credits/month | official | 2026-08-10 | 2026-09-18 |
-| `circleci-open-source` | CircleCI | Open Source plan credits | public | Approved OSS | application-grant | 400000 credits/month | official | 2026-08-10 | 2026-09-18 |
+| `circleci-free` | CircleCI | Free plan | public, private | Free | credit-quota | 30000 credits/month | official | 2026-09-19 | 2026-10-20 |
+| `circleci-open-source` | CircleCI | Open Source plan credits | public | Approved OSS | application-grant | 400000 credits/month | official | 2026-09-19 | 2026-10-22 |
 | `cirrus-ci-shutdown` | Cirrus Labs | Cirrus CI hosted service | public, private | All | shutdown | 0 available-builds/feature | deprecated | 2026-07-11 | — |
 | `codemagic-personal` | Codemagic | Personal plan | public, private | Personal | recurring-quota | 500 macos-build-minutes/month | vendor-verified | 2026-08-10 | 2026-10-02 |
 | `github-actions-larger-runners` | GitHub | Actions larger runners | public, private, internal | Team, Enterprise Cloud, eligible plans | paid-only | 0 included-minutes/month | official | 2026-08-10 | 2026-10-09 |
@@ -41,7 +41,7 @@ past its expiry, so a stale tier claim cannot silently mislead adopters.
 | `gitlab-free-hosted` | GitLab | GitLab.com Free compute | public, private | Free | recurring-quota | 400 compute-minutes/month | official | 2026-09-13 | 2026-10-12 |
 | `gitlab-open-source-program` | GitLab | GitLab for Open Source | public | Ultimate for qualifying OSS | application-grant | 50000 compute-minutes/month | official | 2026-09-13 | 2026-10-15 |
 | `google-cloud-build-free` | Google Cloud | Cloud Build free tier | public, private | Google Cloud Free Tier | recurring-quota | 2500 e2-standard-2-build-minutes/month | official | 2026-08-10 | 2026-10-16 |
-| `harness-free` | Harness | Harness Cloud CI Free | public, private | Free | credit-quota | 2000 credits/month | conditional | 2026-09-07 | 2026-09-17 |
+| `harness-free` | Harness | Harness Cloud CI Free | public, private | Free | credit-quota | 2000 credits/month | conditional | 2026-09-19 | 2026-10-27 |
 | `teamcity-professional` | JetBrains | TeamCity Professional | public, private, internal | Professional | zero-license-self-hosted | unmetered (build-minutes) | official | 2026-08-10 | 2026-10-23 |
 | `azure-pipelines-private` | Microsoft Azure DevOps | Azure Pipelines private projects | private | Free included parallel job | recurring-quota | 1800 hosted-minutes/month | official | 2026-08-10 | 2026-09-25 |
 | `azure-pipelines-public-retirement` | Microsoft Azure DevOps | Azure DevOps public projects | public | Legacy only | retiring | 0 new-public-projects/feature | deprecated | 2026-07-11 | 2027-01-01 |
