@@ -41,6 +41,7 @@ groups:
       - .github/workflows/benchmark-compare.yml
       - .github/workflows/benchmark.yml
       - .github/workflows/clusterfuzzlite.yml
+      - .github/workflows/ci-feedback.yml
       - .github/workflows/coverage-gate.yml
       - .github/workflows/cpp-ci.yml
       - .github/workflows/dart-flutter-ci.yml

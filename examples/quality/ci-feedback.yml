@@ -1,0 +1,20 @@
+# CI feedback caller. Replace @<sha> with a pinned full commit SHA.
+# Fires when a named workflow run completes in failure, and publishes bounded
+# evidence to a repository-local issue. The reusable reads completed-run
+# metadata only; source-run code and artifacts are never executed.
+name: CI feedback
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: ["ci"]
+    types: [completed]
+permissions: {}
+jobs:
+  feedback:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    permissions:
+      actions: read # Read exact completed run and job metadata.
+      issues: write # Publish bounded failure evidence in this repository.
+    uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/ci-feedback.yml@<sha>
+    with:
+      run-id: ${{ format('{0}', github.event.workflow_run.id) }}
+      run-attempt: ${{ format('{0}', github.event.workflow_run.run_attempt) }}

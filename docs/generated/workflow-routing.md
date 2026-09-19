@@ -9,6 +9,7 @@ an operating system this table does not list for it.
 | `.github/workflows/actionlint.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/benchmark-compare.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/benchmark.yml` | `linux-shell` | linux | shell only |
+| `.github/workflows/ci-feedback.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/clusterfuzzlite.yml` | `linux-shell` | linux | shell only |
 | `.github/workflows/container-ci.yml` | `linux-container` | linux | container-runtime |
 | `.github/workflows/coverage-gate.yml` | `linux-shell` | linux | shell only |

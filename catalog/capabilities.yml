@@ -1805,3 +1805,26 @@ capabilities:
     last_verified: "2026-08-04"
     sources:
       - "https://github.com/google/clusterfuzzlite"
+
+  - id: ci-feedback
+    name: CI failure feedback to repository issue
+    cluster: actions-core
+    status: ga
+    public_oss: free
+    private_free: free
+    private_paid: available
+    workflow: .github/workflows/ci-feedback.yml
+    example: examples/quality/ci-feedback.yml
+    required_permissions:
+      - "actions: read"
+      - "issues: write"
+    required_settings:
+      - "GitHub Actions enabled on the repository"
+    risks:
+      - "workflow_run runs with write scope on the caller repository; the reusable reads completed-run metadata only and never checks out or executes source-run code"
+      - "Vendored from NDDev-OpenNetwork/github-actions 6064b7d9 after that repository moved to NDDev-Archive/github-actions-garm on 2026-09-17; archived repositories cannot serve workflow_call, so callers pinned to the old path must repoint to this repository"
+    deprecations: null
+    last_verified: "2026-09-19"
+    sources:
+      - "https://github.com/NDDev-Archive/github-actions-garm/blob/6064b7d98a4e6b852de7572de12b8889e8fbfe38/.github/workflows/ci-feedback.yml"
+      - "https://docs.github.com/en/actions/sharing-automations/reusing-workflows"

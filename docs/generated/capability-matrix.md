@@ -4,6 +4,7 @@
 | Capability | Cluster | Status | Public OSS | Private free | Private paid | Workflow | Example |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | actionlint workflow linter (`actionlint`) | actions-core | ga | free | free | available | `.github/workflows/actionlint.yml` | `examples/private-free/security.yml` |
+| CI failure feedback to repository issue (`ci-feedback`) | actions-core | ga | free | free | available | `.github/workflows/ci-feedback.yml` | `examples/quality/ci-feedback.yml` |
 | Coverage gate (`coverage-gate`) | actions-core | ga | free | conditional | available | `.github/workflows/coverage-gate.yml` | `examples/quality/coverage-gate.yml` |
 | C/C++ CI (`cpp-ci`) | actions-core | ga | free | conditional | available | `.github/workflows/cpp-ci.yml` | `examples/languages/cpp.yml` |
 | Cross-platform smoke test (`cross-platform-smoke`) | actions-core | ga | free | free | available | `.github/workflows/cross-platform-smoke.yml` | `examples/infra/cross-platform.yml` |
@@ -84,4 +85,4 @@
 | SLSA build provenance (`slsa-build-provenance`) | supply-chain | ga | free | paid | conditional | `.github/workflows/release-supply-chain.yml` | `-` |
 
 ---
-Source data verified through: 2026-09-01
+Source data verified through: 2026-09-19
