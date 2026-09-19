@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.19] - 2026-09-19
+
 - `rust-supply-chain`: the `audit` and `machete` jobs now install the Rust
   toolchain named by the existing `toolchain` input before invoking `cargo`.
   Both previously ran `cargo <tool>` with no setup step, so they depended on a
