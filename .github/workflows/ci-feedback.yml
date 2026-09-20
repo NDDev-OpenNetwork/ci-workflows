@@ -31,13 +31,13 @@ jobs:
       issues: write # Publish bounded failure evidence in the caller repository.
     steps:
       # Trusted immutable action code only. No checkout of the triggering PR.
-      # The action lives beside this workflow: the previous home moved to
-      # NDDev-Archive, and an archived repository cannot serve a reusable
-      # call, so every caller of the old path failed at resolution.
-      # A same-repository `uses:` is bound to the caller's own commit: the
-      # strongest pin is the checkout itself, so the unpinned-uses audit does
-      # not apply.
-      - uses: ./actions/ci-feedback  # zizmor: ignore[unpinned-uses]
+      # The action lives beside this workflow, but `./` in a called workflow
+      # resolves against the CALLER's workspace, not this repository: with no
+      # checkout the workspace is empty, and with one it holds the caller's
+      # tree. Either way `./actions/ci-feedback` cannot resolve, which is how
+      # 0.1.21 shipped this path broken for every reusable caller. Name the
+      # repository explicitly and pin it.
+      - uses: NDDev-OpenNetwork/ci-workflows/actions/ci-feedback@96215b32fbc751716b5c0b758a7a7ca202246574  # 0.1.23
         with:
           run-id: ${{ inputs.run-id }}
           run-attempt: ${{ inputs.run-attempt }}
