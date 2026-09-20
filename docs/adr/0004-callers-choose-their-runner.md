@@ -74,6 +74,13 @@ Dependabot bump would have flipped it.
   **Update 2026-09-07:** `examples/nddev/` remains a caller-owned map, not a live
   fleet inventory and not a claim the publisher holds Enterprise Cloud or paid
   GitHub security products. The default-must-be-hosted rule is unchanged.
+
+  **Update 2026-09-20:** the GARM/Incus class vocabulary is retired. Private
+  Linux work now runs on official `actions/runner` slots behind the single
+  label `nddev-linux`; the tiered `nddev-linux-*` names survive only in this
+  dated record. The caller-chooses rule is unchanged: the public library still
+  defaults to `ubuntu-latest` and an estate caller names `nddev-linux`
+  explicitly.
 - The same trap exists in the platform API: a `PATCH` to code-scanning default
   setup that omits `runner_type` resets it to `standard`, silently moving a
   private repository off the fleet. Send the field on every write.
