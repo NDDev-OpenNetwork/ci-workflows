@@ -7,6 +7,35 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.24] - 2026-09-20
+
+- **Fix a reusable workflow that could not reach its own vendored actions.**
+  `./actions/...` in a called workflow resolves against the *caller's*
+  workspace, never this repository. Five `uses:` were written that way while
+  vendoring, and each one fails at job setup for every cross-repository
+  caller:
+  - `ci-feedback.yml` has used `./actions/ci-feedback` since 0.1.21. It runs
+    no checkout, so the workspace is empty and the step cannot resolve. The
+    job only fires on a failed conclusion, so it stayed hidden until
+    2026-09-20, when `github-device-sync` run 35541640707 reported
+    `Can't find 'action.yml' ... under
+    /home/runner/work/github-device-sync/github-device-sync/actions/ci-feedback`.
+    Every reusable caller of the CI-feedback path has been silently unable to
+    publish evidence for three releases.
+  - `private-security-bundle-free.yml` gained four `./actions/tool-cache`
+    references in 0.1.22/0.1.23, replacing the fully-qualified
+    `NDDev-Archive/github-actions-garm/actions/tool-cache@468af475` that
+    worked. It *does* check out the caller, so the path resolved into the
+    caller's tree: `setup-systems` run 35541466805 failed with
+    `Can't find 'action.yml' ... under .../setup-systems/setup-systems/actions/tool-cache`.
+
+  All five now name the repository explicitly and pin it:
+  `NDDev-OpenNetwork/ci-workflows/actions/<name>@96215b32`. That commit is
+  0.1.23, which is where both actions already live, so the pin is real and
+  immutable. Vendoring the action was correct; addressing it with `./` was
+  not, and the distinction is that a reusable workflow has no path to its own
+  repository unless it names it.
+
 ## [0.1.23] - 2026-09-20
 
 - `tool-cache`: vendor the composite action into `actions/tool-cache/`
