@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 """Every third-party `uses:` must be pinned to a full 40-char commit SHA with a
 version comment. Local reusable calls (`./.github/...`) are exempt.
+
+A called workflow additionally may not reach a local *action* through `./`.
+`./` resolves against the caller's workspace, never against the repository
+holding the workflow, so `uses: ./actions/x` inside a `workflow_call` workflow
+fails at job setup for every cross-repository consumer. This exemption used to
+skip all `./` refs as "local reusable workflow", which is how five such
+references shipped across 0.1.21..0.1.23 and broke both the CI-feedback path
+and the private security bundle for every real caller.
 """
 from __future__ import annotations
 
 import re
 import sys
 
-from ci_workflows_tools._workflow_yaml import workflow_files
+from ci_workflows_tools._workflow_yaml import is_reusable, load_yaml, workflow_files
 
 # `uses: owner/repo[/path]@<40-hex>  # vX.Y.Z`
 USES_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<ref>\S+)(?P<rest>.*)$")
@@ -24,6 +32,11 @@ PIN_COMMENT_RE = re.compile(r"#\s*(v?\d+\.\d+(?:\.\d+)?[\w.+-]*|\d{4}-\d{2}-\d{2
 
 DEVELOPMENT_COMMENT_RE = re.compile(r"^\s*#\s*commit:([0-9a-f]{40})(?:\s|$)")
 
+# `./.github/workflows/name.yml` is a same-repository reusable *workflow* call,
+# which GitHub resolves against this repository. Anything else behind `./` is a
+# local action path and is resolved in the caller's workspace instead.
+LOCAL_WORKFLOW_RE = re.compile(r"^\./\.github/workflows/[A-Za-z0-9._-]+\.ya?ml$")
+
 
 def supported_pin_comment(ref: str, comment: str) -> bool:
     if re.match(r"^\s*#\s*commit:", comment):
@@ -35,6 +48,11 @@ def supported_pin_comment(ref: str, comment: str) -> bool:
 def check() -> list[str]:
     problems: list[str] = _selftest()
     for path in workflow_files():
+        try:
+            reusable = is_reusable(load_yaml(path))
+        except Exception as exc:  # a malformed workflow is another check's finding
+            problems.append(f"{path.name}: cannot read workflow triggers: {exc}")
+            reusable = False
         for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             m = USES_RE.match(line)
             if not m:
@@ -43,7 +61,14 @@ def check() -> list[str]:
             rest = m.group("rest")
             where = f"{path.name}:{lineno}"
             if ref.startswith("./"):
-                continue  # local reusable workflow
+                if reusable and not LOCAL_WORKFLOW_RE.match(ref):
+                    problems.append(
+                        f"{where}: a called workflow cannot reach a local action through "
+                        f"`./`; it resolves in the caller's workspace, not this "
+                        f"repository. Name and pin the repository "
+                        f"(owner/repo/path@<sha>): {ref}"
+                    )
+                continue  # local reusable workflow call
             if ref.startswith("docker://"):
                 if not DIGEST_RE.search(ref):
                     problems.append(f"{where}: docker image not digest-pinned: {ref}")
