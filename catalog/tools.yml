@@ -521,22 +521,6 @@ tools:
       - .github/workflows/zizmor-sarif.yml
     last_verified: "2026-07-20"
 
-  - id: nddev-tool-cache
-    name: NDDev-Archive/github-actions-garm/actions/tool-cache
-    homepage: "https://github.com/NDDev-Archive/github-actions-garm/tree/main/actions/tool-cache"
-    kind: action
-    current_version: "v1.2.0"
-    pin: "NDDev-Archive/github-actions-garm/actions/tool-cache@468af475a08210020502f74588b2c98ba4c01696"
-    used_by:
-      - .github/workflows/private-security-bundle-free.yml
-    last_verified: "2026-09-01"
-    notes: >-
-      Signed tag v1.0.1 resolves to the exact pinned repository commit and
-      mirrors structured fetch evidence into the runner diagnostic bundle.
-      Checksum-addressed immutable tool artifacts use the caller's injected
-      trust-scoped RustFS identity on private runners and the same verified
-      upstream fallback on GitHub-hosted runners.
-
   - id: setup-bun
     name: oven-sh/setup-bun
     homepage: "https://github.com/oven-sh/setup-bun"

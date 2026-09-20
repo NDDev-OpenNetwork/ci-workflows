@@ -7,6 +7,18 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- `tool-cache`: vendor the composite action into `actions/tool-cache/`
+  (byte-identical to `NDDev-Archive/github-actions-garm` `468af475`) and
+  repoint the four `uses:` in `private-security-bundle-free.yml` to the
+  same-repository path. An archived dependency cannot receive fixes; the live
+  copy now lives beside the workflow that runs it, matching the `ci-feedback`
+  vendoring in 0.1.21.
+- Examples and docs: the retired GARM label classes (`nddev-linux-standard`,
+  `nddev-linux-untrusted`, `nddev-linux-integration`) are replaced by the live
+  `nddev-linux` label in `docs/03`, `examples/nddev/security-private-selfhosted.yml`,
+  and the `deny_runner`/`docker-build` comments; ADR-0004 records the cutover
+  as a dated amendment.
+
 ## [0.1.21] - 2026-09-20
 
 - `ci-feedback`: vendor the reusable workflow and its composite action into

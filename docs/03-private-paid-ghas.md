@@ -65,8 +65,8 @@ jobs:
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/public-codeql.yml@<full-sha>
     with:
       languages: '["python","actions"]'
-      runner: nddev-linux-standard
-      dependabot_runner: nddev-linux-untrusted
+      runner: nddev-linux
+      dependabot_runner: nddev-linux
   zizmor:
     permissions:
       contents: read

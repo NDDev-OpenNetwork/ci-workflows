@@ -11,7 +11,7 @@ name: docker-build
 # ubuntu-latest and the nddev images); `cache: none` disables caching.
 #
 # Runner contract: any Linux runner with a Docker daemon -- ubuntu-latest or
-# a docker-capable nddev class (nddev-linux-integration and friends). Pushing
+# a docker-capable nddev class (nddev-linux and friends). Pushing
 # to ghcr.io authenticates with the ambient workflow token, which needs
 # `packages: write` in the caller when push or a ghcr cache ref is used.
 
