@@ -50,6 +50,7 @@ KNOWN_UNRELEASED_TAGS: dict[str, str] = {
     "0.1.4": "tag target still declared VERSION 0.1.3; preflight rejected run 32620039075",
     "0.1.5": "historical 0.1.4 tag lacked a release heading; preflight rejected run 32748217729",
     "0.1.7": "timezone-dependent ledger date rejected release run 32764221081",
+    "0.1.22": "timezone-dependent ledger date rejected release run 35540240146",
 }
 
 

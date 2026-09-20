@@ -7,7 +7,7 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-## [0.1.22] - 2026-09-21
+## [0.1.23] - 2026-09-20
 
 - `tool-cache`: vendor the composite action into `actions/tool-cache/`
   (byte-identical to `NDDev-Archive/github-actions-garm` `468af475`) and
