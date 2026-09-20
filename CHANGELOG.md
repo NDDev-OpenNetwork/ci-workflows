@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.21] - 2026-09-20
+
 - `ci-feedback`: vendor the reusable workflow and its composite action into
   this repository. Their home `NDDev-OpenNetwork/github-actions` moved to
   `NDDev-Archive/github-actions-garm` on 2026-09-17, and an archived
