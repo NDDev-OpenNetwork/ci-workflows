@@ -7,6 +7,13 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.25] - 2026-09-21
+
+- **Refuse `./action` refs inside `workflow_call` workflows.** `./` in a
+  called workflow resolves against the caller's workspace, never this
+  repository's, so `uses: ./actions/x` in a reusable fails at job setup for
+  every cross-repository consumer. `check_pinned_actions.py` now rejects the
+  pattern; the affected workflows were repaired in 0.1.24.
 - **Scheduled tool refresh, 2026-09-21.** Bumped twelve action pins and three
   CLI pins to their current upstream releases: codeql-action v4.38.1,
   setup-android v4.0.4, setup-r v2.14.0, codecov-action v7.1.1, typos
