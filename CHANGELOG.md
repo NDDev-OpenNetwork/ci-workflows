@@ -7,13 +7,20 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Fixed
+## [0.1.26] - 2026-09-21
 
-- `dependabot-catalog-convergence` now builds the trusted tool environment and
-  launches `sync_action_catalog.py` through the execution-contract launcher.
-  The bare `python3 -I` invocation could not resolve the `ci_workflows_tools`
-  verified-file-spec package, so every convergence run since the sibling-import
-  migration failed with `ModuleNotFoundError`.
+- **`dependabot-catalog-convergence` repaired.** The job now builds the
+  trusted tool environment and launches `sync_action_catalog.py` through the
+  execution-contract launcher. The bare `python3 -I` invocation could not
+  resolve the `ci_workflows_tools` verified-file-spec package, so every
+  convergence run since the sibling-import migration failed with
+  `ModuleNotFoundError`. The workflow is registered in the catalog `used_by`
+  for `setup-python` and `setup-uv` like every other consumer.
+- **Catalog review record.** `setup-rust-toolchain` v2.0.0 review outcome is
+  now persisted in `catalog/tools.yml`: the major bump stays held because the
+  implicit `RUSTFLAGS=-D warnings` default becomes `build.warnings` (cargo
+  >= 1.97), which would silently weaken the gate for callers on older
+  toolchains. The Dependabot PR remains the tracking surface.
 
 ## [0.1.25] - 2026-09-21
 
