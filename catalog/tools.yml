@@ -556,8 +556,8 @@ tools:
     name: actions-rust-lang/setup-rust-toolchain
     homepage: "https://github.com/actions-rust-lang/setup-rust-toolchain"
     kind: action
-    current_version: "v1.17.0"
-    pin: "actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659"
+    current_version: "v2.0.0"
+    pin: "actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f"
     notes: >-
       Upstream v2.0.0 released; major bump held pending input-contract
       review. Track before next refresh.
