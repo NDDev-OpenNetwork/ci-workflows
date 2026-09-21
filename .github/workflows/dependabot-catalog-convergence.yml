@@ -79,8 +79,28 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
           persist-credentials: true
           path: candidate
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.13"
+          update-environment: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4  # v10.1.0
+        with:
+          version: 0.11.30
+          enable-cache: false
+      - name: Build trusted tool environment
+        env:
+          PYTHON_PATH: ${{ steps.python.outputs.python-path }}
+        run: |
+          "$PYTHON_PATH" -I -B -m venv --copies trusted/.venv
+          uv pip install --python trusted/.venv/bin/python --require-hashes -r trusted/requirements-ci.txt
       - name: Synchronize derived action declarations
-        run: python3 -I trusted/scripts/sync_action_catalog.py --root candidate --catalog-only
+        run: >-
+          trusted/.venv/bin/python -I -B
+          trusted/scripts/check_python_execution_contract.py
+          --launch sync_action_catalog.py -- --root candidate --catalog-only
       - name: Commit converged declarations
         id: commit
         working-directory: candidate
