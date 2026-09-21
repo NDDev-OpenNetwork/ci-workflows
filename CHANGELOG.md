@@ -7,6 +7,18 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- **Scheduled tool refresh, 2026-09-21.** Bumped twelve action pins and three
+  CLI pins to their current upstream releases: codeql-action v4.38.1,
+  setup-android v4.0.4, setup-r v2.14.0, codecov-action v7.1.1, typos
+  v1.50.2, checkov-action v12.3125.0, github-action-benchmark v1.22.2,
+  setup-uv v10.1.0, setup-java v6.0.1, setup-buildx-action v4.4.1,
+  build-push-action v7.4.0, install-action v2.87.17; osv-scanner 2.6.0,
+  semgrep 1.177.0 and syft 1.52.0 with re-verified release checksums.
+  `setup-rust-toolchain` stays on v1.17.0 (upstream v2.0.0 is a major bump
+  pending input-contract review) and `zizmor` stays on 1.26.1 (upstream
+  v1.30.1 reports 65 new low findings on this tree, held for dedicated
+  triage). Every catalog `last_verified` restamped to the audit date.
+
 ## [0.1.24] - 2026-09-20
 
 - **Fix a reusable workflow that could not reach its own vendored actions.**

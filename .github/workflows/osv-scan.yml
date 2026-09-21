@@ -19,11 +19,11 @@ on:
         default: '--recursive .'
       osv_scanner_version:
         type: string
-        default: '2.5.0'
+        default: '2.6.0'
       osv_scanner_sha256:
         description: 'SHA256 of osv-scanner_linux_amd64 from the release SHA256SUMS.'
         type: string
-        default: 'edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c'
+        default: 'ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108'
       timeout_minutes:
         type: number
         default: 15

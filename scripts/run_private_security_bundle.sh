@@ -6,8 +6,8 @@ umask 077
 readonly actionlint_version=1.7.12
 readonly actionlint_sha256=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
 readonly zizmor_version=1.26.1
-readonly osv_version=2.5.0
-readonly osv_sha256=edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c
+readonly osv_version=2.6.0
+readonly osv_sha256=ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108
 readonly gitleaks_version=8.30.1
 readonly gitleaks_sha256=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
 readonly gitleaks_size=8230402

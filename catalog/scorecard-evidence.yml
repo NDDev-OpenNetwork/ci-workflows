@@ -66,7 +66,7 @@ category_contract:
     guid: null
   source_urls:
     - https://github.com/ossf/scorecard/blob/v5.5.0/pkg/scorecard/sarif.go
-    - https://github.com/github/codeql-action/blob/cdf488f595d80d6e07e03d4674febd5ab45fa938/src/upload-lib.ts
+    - https://github.com/github/codeql-action/blob/1c5b675653bb5c22dbe9b12b556ec555138e09fd/src/upload-lib.ts
     - https://docs.github.com/en/code-security/reference/code-scanning/sarif-files/sarif-support-for-code-scanning
 attempts:
   - attempt: 1
