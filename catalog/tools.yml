@@ -559,8 +559,12 @@ tools:
     current_version: "v1.17.0"
     pin: "actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659"
     notes: >-
-      Upstream v2.0.0 released; major bump held pending input-contract
-      review. Track before next refresh.
+      Upstream v2.0.0 reviewed 2026-09-21: it replaces the implicit
+      `RUSTFLAGS=-D warnings` default with `build.warnings` (default `deny`)
+      via `CARGO_BUILD_WARNINGS`, which needs cargo >= 1.97. Callers pinning
+      older toolchains would silently lose the deny-warnings gate, so the
+      bump waits for an explicit contract decision — the Dependabot PR is the
+      tracking surface.
     used_by:
       - .github/workflows/benchmark.yml
       - .github/workflows/benchmark-compare.yml
