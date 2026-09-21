@@ -1,7 +1,7 @@
 # External tools referenced by ci-workflows.
 # Machine-readable source of truth. Mirrored by docs/. Enforced by scripts/validate_catalog.py.
 # Action `pin` values are full commit SHAs (tags are mutable); CLIs pin by version/checksum and use null here.
-# Last verified: 2026-08-13
+# Last verified: 2026-09-21
 
 tools:
   - id: aqtinstall
@@ -12,7 +12,7 @@ tools:
     pin: "3.3.0"
     used_by:
       - .github/workflows/qt-ci.yml
-    last_verified: "2026-08-15"
+    last_verified: "2026-09-21"
     notes: >-
       Installed from requirements-qt.txt, a hash-locked closure of 28 packages,
       rather than resolved at run time. Pinning the two top-level names left
@@ -27,7 +27,7 @@ tools:
     pin: "1.1.3"
     used_by:
       - .github/workflows/qt-ci.yml
-    last_verified: "2026-08-15"
+    last_verified: "2026-09-21"
     notes: aqtinstall's archive backend; locked in the same closure.
     lock: requirements-qt.txt
     lock_sha256: "e8fd018f0ce1d2f8f23d1fe9ce674e384e98e3fc1ac34386e2fa769fede16185"
@@ -41,7 +41,7 @@ tools:
       - .github/workflows/actionlint.yml
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/private-security-bundle-free.yml
-    last_verified: "2026-07-04"
+    last_verified: "2026-09-21"
 
   - id: zizmor
     name: zizmor
@@ -49,12 +49,16 @@ tools:
     kind: cli
     current_version: "1.26.1"
     pin: null
+    notes: >-
+      Upstream v1.30.1 exists; its new audits report 65 low findings on this
+      tree (self-repository et al). Held for a dedicated triage PR — the
+      self-CI zizmor job fails on any finding at or above 'low'.
     used_by:
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/zizmor-sarif.yml
       - .github/workflows/zizmor-no-sarif.yml
-    last_verified: "2026-07-04"
+    last_verified: "2026-09-21"
 
   - id: gitleaks
     name: gitleaks
@@ -67,28 +71,28 @@ tools:
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/private-security-bundle-free.yml
       - .github/workflows/secret-scan.yml
-    last_verified: "2026-08-13"
+    last_verified: "2026-09-21"
 
   - id: trivy
     name: Trivy
     homepage: "https://github.com/aquasecurity/trivy"
     kind: cli
-    current_version: "v0.72.0"
+    current_version: "v0.74.0"
     pin: null
     used_by:
       - .github/workflows/container-ci.yml
-    last_verified: "2026-07-04"
+    last_verified: "2026-09-21"
 
   - id: syft
     name: Syft
     homepage: "https://github.com/anchore/syft"
     kind: cli
-    current_version: "v1.46.0"
-    pin: "linux_amd64 size:28342623 sha256:d654f678b709eb53c393d38519d5ed7d2e57205529404018614cfefa0fb2b5ca; linux_arm64 size:25829350 sha256:9fafef4db4f032ce81008d3a1529985d41ceb6ccdf2b388c9ce2f1ed7d32082e"
+    current_version: "v1.52.0"
+    pin: "linux_amd64 size:29289629 sha256:caeedb81fb0491615f1ebd1761e4145d41ee86dd2cc7bf80669f9f5ad9d6133d; linux_arm64 size:26744986 sha256:c46d5e4c28e12aa4c5becfaa343ef1c7f89045b6b895f2c21d471c62db09c706"
     used_by:
       - .github/workflows/release-supply-chain.yml
       - .github/workflows/release-supply-chain-free.yml
-    last_verified: "2026-07-11"
+    last_verified: "2026-09-21"
 
   - id: harden-runner
     name: step-security/harden-runner
@@ -108,20 +112,20 @@ tools:
       - .github/workflows/public-scorecard.yml
       - .github/workflows/release.yml
       - .github/workflows/zizmor-sarif.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-21"
 
   - id: codeql-action
     name: github/codeql-action
     homepage: "https://github.com/github/codeql-action"
     kind: action
-    current_version: "v4.37.9"
-    pin: "github/codeql-action@cdf488f595d80d6e07e03d4674febd5ab45fa938"
+    current_version: "v4.38.1"
+    pin: "github/codeql-action@1c5b675653bb5c22dbe9b12b556ec555138e09fd"
     used_by:
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/public-scorecard.yml
       - .github/workflows/zizmor-sarif.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-21"
 
   - id: dependency-review-action
     name: actions/dependency-review-action
@@ -131,7 +135,7 @@ tools:
     pin: "actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294"
     used_by:
       - .github/workflows/public-dependency-review.yml
-    last_verified: "2026-07-04"
+    last_verified: "2026-09-21"
 
   - id: scorecard-action
     name: ossf/scorecard-action
@@ -143,7 +147,7 @@ tools:
       - .github/workflows/public-scorecard-analysis.yml
       - .github/workflows/public-scorecard.yml
       - .github/workflows/public-scorecard-json.yml
-    last_verified: "2026-07-04"
+    last_verified: "2026-09-21"
 
   - id: attest
     name: actions/attest
@@ -153,7 +157,7 @@ tools:
     pin: "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6"
     used_by:
       - .github/workflows/release-supply-chain.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-21"
 
   - id: attest-build-provenance
     name: actions/attest-build-provenance
@@ -163,7 +167,7 @@ tools:
     pin: "actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8"
     used_by:
       - .github/workflows/release-supply-chain.yml
-    last_verified: "2026-07-04"
+    last_verified: "2026-09-21"
 
   - id: checkout
     name: actions/checkout
@@ -228,7 +232,7 @@ tools:
       - .github/workflows/web-ci.yml
       - .github/workflows/zizmor-no-sarif.yml
       - .github/workflows/zizmor-sarif.yml
-    last_verified: "2026-07-04"
+    last_verified: "2026-09-21"
 
   - id: setup-python
     name: actions/setup-python
@@ -249,7 +253,7 @@ tools:
       - .github/workflows/runtime-fixtures.yml
       - .github/workflows/runtime-fixtures-event-write.yml
       - .github/workflows/runtime-fixtures-languages.yml
-    last_verified: "2026-07-04"
+    last_verified: "2026-09-21"
 
   - id: upload-artifact
     name: actions/upload-artifact
@@ -268,7 +272,7 @@ tools:
       - .github/workflows/release-supply-chain.yml
       - .github/workflows/runtime-fixtures-languages.yml
       - .github/workflows/secret-scan.yml
-    last_verified: "2026-08-22"
+    last_verified: "2026-09-21"
 
 
   - id: ccache-action
@@ -280,7 +284,7 @@ tools:
     used_by:
       - .github/workflows/cpp-ci.yml
       - .github/workflows/qt-ci.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-21"
 
   - id: setup-gradle
     name: gradle/actions/setup-gradle
@@ -290,18 +294,18 @@ tools:
     pin: "gradle/actions@9c971963bec38e04b3d30dcc455b5382be2fdbfb"
     used_by:
       - .github/workflows/kotlin-android-ci.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-21"
 
   - id: setup-android
     name: android-actions/setup-android
     homepage: "https://github.com/android-actions/setup-android"
     kind: action
-    current_version: "v4.0.1"
-    pin: "android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699"
+    current_version: "v4.0.4"
+    pin: "android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd"
     used_by:
       - .github/workflows/kotlin-android-ci.yml
       - .github/workflows/runtime-fixtures-languages.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-21"
 
   - id: setup-swift
     name: swift-actions/setup-swift
@@ -311,27 +315,27 @@ tools:
     pin: "swift-actions/setup-swift@364295d9c23900ce04d4e5cc708387921b4e50f9"
     used_by:
       - .github/workflows/swift-ci.yml
-    last_verified: "2026-07-25"
+    last_verified: "2026-09-21"
 
   - id: setup-r
     name: r-lib/actions/setup-r
     homepage: "https://github.com/r-lib/actions"
     kind: action
-    current_version: "v2.13.0"
-    pin: "r-lib/actions@465b7d8e732ca3921382b1674c59bada9cbf3399"
+    current_version: "v2.14.0"
+    pin: "r-lib/actions@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05"
     used_by:
       - .github/workflows/r-ci.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-21"
 
   - id: codecov-action
     name: codecov/codecov-action
     homepage: "https://github.com/codecov/codecov-action"
     kind: action
-    current_version: "v7.0.0"
-    pin: "codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f"
+    current_version: "v7.1.1"
+    pin: "codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5"
     used_by:
       - .github/workflows/coverage-gate.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-21"
 
   - id: coveralls-action
     name: coverallsapp/github-action
@@ -341,7 +345,7 @@ tools:
     pin: "coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329"
     used_by:
       - .github/workflows/coverage-gate.yml
-    last_verified: "2026-08-05"
+    last_verified: "2026-09-21"
 
   - id: lychee-action
     name: lycheeverse/lychee-action
@@ -351,17 +355,17 @@ tools:
     pin: "lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8"
     used_by:
       - .github/workflows/docs-quality.yml
-    last_verified: "2026-07-12"
+    last_verified: "2026-09-21"
 
   - id: typos-action
     name: crate-ci/typos
     homepage: "https://github.com/crate-ci/typos"
     kind: action
-    current_version: "v1.50.0"
-    pin: "crate-ci/typos@4d9c206a77c041268485162b8e2579ad7a5cb9a3"
+    current_version: "v1.50.2"
+    pin: "crate-ci/typos@512fc24f32f44ab01972217aaaf3dc86ec234d53"
     used_by:
       - .github/workflows/docs-quality.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-21"
 
   - id: markdownlint-cli2-action
     name: DavidAnson/markdownlint-cli2-action
@@ -371,7 +375,7 @@ tools:
     pin: "DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff"
     used_by:
       - .github/workflows/docs-quality.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-21"
 
   - id: commitlint-action
     name: wagoid/commitlint-github-action
@@ -381,7 +385,7 @@ tools:
     pin: "wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed"
     used_by:
       - .github/workflows/pr-hygiene.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-21"
 
   - id: semantic-pull-request
     name: amannn/action-semantic-pull-request
@@ -391,7 +395,7 @@ tools:
     pin: "amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50"
     used_by:
       - .github/workflows/pr-hygiene.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-21"
 
   - id: labeler
     name: actions/labeler
@@ -401,7 +405,7 @@ tools:
     pin: "actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13"
     used_by:
       - .github/workflows/pr-hygiene.yml
-    last_verified: "2026-07-12"
+    last_verified: "2026-09-21"
 
   - id: stale
     name: actions/stale
@@ -411,29 +415,29 @@ tools:
     pin: "actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93"
     used_by:
       - .github/workflows/pr-hygiene.yml
-    last_verified: "2026-08-05"
+    last_verified: "2026-09-21"
 
   - id: osv-scanner
     name: osv-scanner
     homepage: "https://github.com/google/osv-scanner"
     kind: cli
-    current_version: "v2.5.0"
+    current_version: "v2.6.0"
     pin: null
     used_by:
       - .github/workflows/osv-scan.yml
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/private-security-bundle-free.yml
-    last_verified: "2026-08-15"
+    last_verified: "2026-09-21"
 
   - id: semgrep
     name: semgrep
     homepage: "https://github.com/semgrep/semgrep"
     kind: cli
-    current_version: "v1.170.0"
+    current_version: "v1.177.0"
     pin: null
     used_by:
       - .github/workflows/semgrep-ci.yml
-    last_verified: "2026-07-21"
+    last_verified: "2026-09-21"
 
   - id: anchore-scan-action
     name: anchore/scan-action
@@ -443,7 +447,7 @@ tools:
     pin: "anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439"
     used_by:
       - .github/workflows/grype-scan.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-21"
 
   - id: hadolint
     name: hadolint
@@ -453,28 +457,28 @@ tools:
     pin: null
     used_by:
       - .github/workflows/hadolint-ci.yml
-    last_verified: "2026-08-10"
+    last_verified: "2026-09-21"
 
   - id: checkov-action
     name: bridgecrewio/checkov-action
     homepage: "https://github.com/bridgecrewio/checkov-action"
     kind: action
-    current_version: "v12.3122.0"
-    pin: "bridgecrewio/checkov-action@f967808197a8d784d3e72919f38c3ff0cda7884e"
+    current_version: "v12.3125.0"
+    pin: "bridgecrewio/checkov-action@444c9db6fa75e2d9c19ebf1fde7322089be9009e"
     used_by:
       - .github/workflows/iac-scan.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-21"
 
   - id: github-action-benchmark
     name: benchmark-action/github-action-benchmark
     homepage: "https://github.com/benchmark-action/github-action-benchmark"
     kind: action
-    current_version: "v1.22.1"
-    pin: "benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba"
+    current_version: "v1.22.2"
+    pin: "benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc"
     used_by:
       - .github/workflows/benchmark.yml
       - .github/workflows/benchmark-compare.yml
-    last_verified: "2026-07-08"
+    last_verified: "2026-09-21"
 
   - id: setup-node
     name: actions/setup-node
@@ -487,7 +491,7 @@ tools:
       - .github/workflows/benchmark-compare.yml
       - .github/workflows/mutation-testing.yml
       - .github/workflows/node-ci.yml
-    last_verified: "2026-07-25"
+    last_verified: "2026-09-21"
 
   - id: cache
     name: actions/cache
@@ -498,14 +502,14 @@ tools:
     used_by:
       - .github/workflows/dart-flutter-ci.yml
       - .github/workflows/qt-ci.yml
-    last_verified: "2026-08-14"
+    last_verified: "2026-09-21"
 
   - id: setup-uv
     name: astral-sh/setup-uv
     homepage: "https://github.com/astral-sh/setup-uv"
     kind: action
-    current_version: "v10.0.1"
-    pin: "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d"
+    current_version: "v10.1.0"
+    pin: "astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4"
     used_by:
       - .github/workflows/ci.yml
       - .github/workflows/maintenance.yml
@@ -519,7 +523,7 @@ tools:
       - .github/workflows/sql-ci.yml
       - .github/workflows/zizmor-no-sarif.yml
       - .github/workflows/zizmor-sarif.yml
-    last_verified: "2026-07-20"
+    last_verified: "2026-09-21"
 
   - id: setup-bun
     name: oven-sh/setup-bun
@@ -530,7 +534,7 @@ tools:
     used_by:
       - .github/workflows/node-ci.yml
       - .github/workflows/web-ci.yml
-    last_verified: "2026-07-20"
+    last_verified: "2026-09-21"
 
   - id: setup-go
     name: actions/setup-go
@@ -544,7 +548,7 @@ tools:
       - .github/workflows/go-ci.yml
       - .github/workflows/public-codeql.yml
       - .github/workflows/ci.yml
-    last_verified: "2026-07-12"
+    last_verified: "2026-09-21"
 
   - id: setup-rust-toolchain
     name: actions-rust-lang/setup-rust-toolchain
@@ -552,6 +556,9 @@ tools:
     kind: action
     current_version: "v1.17.0"
     pin: "actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659"
+    notes: >-
+      Upstream v2.0.0 released; major bump held pending input-contract
+      review. Track before next refresh.
     used_by:
       - .github/workflows/benchmark.yml
       - .github/workflows/benchmark-compare.yml
@@ -559,7 +566,7 @@ tools:
       - .github/workflows/mutation-testing.yml
       - .github/workflows/rust-ci.yml
       - .github/workflows/rust-supply-chain.yml
-    last_verified: "2026-07-12"
+    last_verified: "2026-09-21"
 
   - id: setup-dotnet
     name: actions/setup-dotnet
@@ -569,19 +576,19 @@ tools:
     pin: "actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68"
     used_by:
       - .github/workflows/dotnet-ci.yml
-    last_verified: "2026-07-12"
+    last_verified: "2026-09-21"
 
   - id: setup-java
     name: actions/setup-java
     homepage: "https://github.com/actions/setup-java"
     kind: action
-    current_version: "v6.0.0"
-    pin: "actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c"
+    current_version: "v6.0.1"
+    pin: "actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6"
     used_by:
       - .github/workflows/java-ci.yml
       - .github/workflows/kotlin-android-ci.yml
       - .github/workflows/runtime-fixtures-languages.yml
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-21"
 
   - id: setup-terraform
     name: hashicorp/setup-terraform
@@ -592,7 +599,7 @@ tools:
     used_by:
       - .github/workflows/terraform-ci.yml
       - .github/workflows/ci.yml
-    last_verified: "2026-07-12"
+    last_verified: "2026-09-21"
 
   - id: trivy-action
     name: aquasecurity/trivy-action
@@ -602,7 +609,7 @@ tools:
     pin: "aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25"
     used_by:
       - .github/workflows/container-ci.yml
-    last_verified: "2026-07-12"
+    last_verified: "2026-09-21"
 
   - id: docker-login-action
     name: docker/login-action
@@ -612,27 +619,27 @@ tools:
     pin: "docker/login-action@dbcb813823bdd20940b903addbd779551569679f"
     used_by:
       - .github/workflows/docker-build.yml
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-21"
 
   - id: docker-setup-buildx-action
     name: docker/setup-buildx-action
     homepage: "https://github.com/docker/setup-buildx-action"
     kind: action
-    current_version: "v4.3.0"
-    pin: "docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e"
+    current_version: "v4.4.1"
+    pin: "docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069"
     used_by:
       - .github/workflows/docker-build.yml
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-21"
 
   - id: docker-build-push-action
     name: docker/build-push-action
     homepage: "https://github.com/docker/build-push-action"
     kind: action
-    current_version: "v7.3.0"
-    pin: "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a"
+    current_version: "v7.4.0"
+    pin: "docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc"
     used_by:
       - .github/workflows/docker-build.yml
-    last_verified: "2026-09-01"
+    last_verified: "2026-09-21"
 
   # Registered late: these three workflows (rust-supply-chain, clusterfuzzlite)
   # shipped without catalog entries because the pin validators check pin format,
@@ -646,17 +653,17 @@ tools:
     pin: "EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25"
     used_by:
       - .github/workflows/rust-supply-chain.yml
-    last_verified: "2026-08-12"
+    last_verified: "2026-09-21"
 
   - id: taiki-e-install-action
     name: taiki-e/install-action
     homepage: "https://github.com/taiki-e/install-action"
     kind: action
-    current_version: "v2.87.2"
-    pin: "taiki-e/install-action@1ed6d7be6168f6c9046541087ff549b6bc581fdf"
+    current_version: "v2.87.17"
+    pin: "taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73"
     used_by:
       - .github/workflows/rust-supply-chain.yml
-    last_verified: "2026-09-07"
+    last_verified: "2026-09-21"
 
   # Upstream tags no release, so the pin comment carries the commit date rather
   # than a version. Bump it by picking a newer commit deliberately, not by
@@ -669,4 +676,4 @@ tools:
     pin: "google/clusterfuzzlite@52ecc61cb587ee99c26825a112a21abf19c7448c"
     used_by:
       - .github/workflows/clusterfuzzlite.yml
-    last_verified: "2026-08-12"
+    last_verified: "2026-09-21"

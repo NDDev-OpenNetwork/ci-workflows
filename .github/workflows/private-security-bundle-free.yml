@@ -183,8 +183,8 @@ jobs:
       - name: Restore OSV-Scanner binary
         uses: NDDev-OpenNetwork/ci-workflows/actions/tool-cache@96215b32fbc751716b5c0b758a7a7ca202246574  # 0.1.23
         with:
-          url: https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_linux_amd64
-          sha256: edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c
+          url: https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_linux_amd64
+          sha256: ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108
           output: ${{ runner.temp }}/private-security-tools/osv-scanner
           max-bytes: '268435456'
 

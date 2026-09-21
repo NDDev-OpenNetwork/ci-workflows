@@ -442,11 +442,11 @@ jobs:
           RELEASE_RUNNER_ARCH: ${{ runner.arch }}
           RELEASE_RUNNER_OS: ${{ runner.os }}
           SYFT_CHECK_FOR_APP_UPDATE: 'false'
-          SYFT_LINUX_ARM64_SHA256: 9fafef4db4f032ce81008d3a1529985d41ceb6ccdf2b388c9ce2f1ed7d32082e
-          SYFT_LINUX_ARM64_SIZE: '25829350'
-          SYFT_LINUX_X64_SHA256: d654f678b709eb53c393d38519d5ed7d2e57205529404018614cfefa0fb2b5ca
-          SYFT_LINUX_X64_SIZE: '28342623'
-          SYFT_VERSION: '1.46.0'
+          SYFT_LINUX_ARM64_SHA256: c46d5e4c28e12aa4c5becfaa343ef1c7f89045b6b895f2c21d471c62db09c706
+          SYFT_LINUX_ARM64_SIZE: '26744986'
+          SYFT_LINUX_X64_SHA256: caeedb81fb0491615f1ebd1761e4145d41ee86dd2cc7bf80669f9f5ad9d6133d
+          SYFT_LINUX_X64_SIZE: '29289629'
+          SYFT_VERSION: '1.52.0'
         run: |
           set -euo pipefail
           umask 077
