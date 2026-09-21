@@ -245,6 +245,7 @@ tools:
       - .github/workflows/benchmark.yml
       - .github/workflows/ci.yml
       - .github/workflows/cross-platform-smoke.yml
+      - .github/workflows/dependabot-catalog-convergence.yml
       - .github/workflows/maintenance.yml
       - .github/workflows/mutation-testing.yml
       - .github/workflows/private-static.yml
@@ -512,6 +513,7 @@ tools:
     pin: "astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4"
     used_by:
       - .github/workflows/ci.yml
+      - .github/workflows/dependabot-catalog-convergence.yml
       - .github/workflows/maintenance.yml
       - .github/workflows/nddev-security-bundle.yml
       - .github/workflows/private-static.yml
