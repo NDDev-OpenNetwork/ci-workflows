@@ -7,6 +7,14 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Fixed
+
+- `dependabot-catalog-convergence` now builds the trusted tool environment and
+  launches `sync_action_catalog.py` through the execution-contract launcher.
+  The bare `python3 -I` invocation could not resolve the `ci_workflows_tools`
+  verified-file-spec package, so every convergence run since the sibling-import
+  migration failed with `ModuleNotFoundError`.
+
 ## [0.1.25] - 2026-09-21
 
 - **Refuse `./action` refs inside `workflow_call` workflows.** `./` in a
