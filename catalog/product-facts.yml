@@ -742,11 +742,13 @@ facts:
   overage: private repositories require trial or paid plan
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-25'
+  verified_at: '2026-09-28'
+  expires_after: '2026-11-14'
   source_urls:
   - https://www.appveyor.com/pricing/
-  notes: []
+  notes:
+  - 'Re-verified 2026-09-28: page still lists Free OSS with unlimited public
+    projects, 1 concurrent hosted job, 5 self-hosted jobs, 60-minute job cap.'
 - id: semaphore-cloud-free
   provider: Semaphore
   product: Cloud free recurring credit
@@ -771,14 +773,16 @@ facts:
   overage: upgrade/add payment
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-25'
+  verified_at: '2026-09-28'
+  expires_after: '2026-11-17'
   source_urls:
   - https://semaphore.io/pricing
-  notes: []
+  notes:
+  - 'Re-verified 2026-09-28: $15 free credits per month (≈2,000 Ubuntu x64
+    2-vCPU minutes), 20 GB egress and 100 GB storage included, 9.6 GB cache.'
 - id: semaphore-community
   provider: Semaphore
-  product: Semaphore Community Edition
+  product: Semaphore Open Source (Community Edition)
   surface: self-hosted-ci
   repository_visibility:
   - public
@@ -798,11 +802,14 @@ facts:
   overage: infrastructure costs apply
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-25'
+  verified_at: '2026-09-28'
+  expires_after: '2026-11-20'
   source_urls:
-  - https://semaphore.io/community
-  notes: []
+  - https://semaphore.io/open-source
+  notes:
+  - 'Re-verified 2026-09-28: the /community page now 404s; the edition lives at
+    /open-source branded "Semaphore Open Source" with a "Community Edition"
+    column — $0, self-hosted, unlimited users and concurrency.'
 - id: azure-pipelines-private
   provider: Microsoft Azure DevOps
   product: Azure Pipelines private projects
@@ -829,13 +836,16 @@ facts:
   overage: purchase parallel jobs
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-25'
+  verified_at: '2026-09-28'
+  expires_after: '2026-11-24'
   source_urls:
   - https://learn.microsoft.com/en-us/azure/devops/pipelines/licensing/concurrent-jobs
   notes:
   - 'Re-verified 2026-08-10: 1,800 minutes/month, one hosted parallel job, 60-minute job limit,
     360 minutes per job on the paid tier with no monthly limit.'
+  - 'Re-verified 2026-09-28: unchanged — 1,800 hosted minutes/month, one free
+    job at 60 minutes each, Microsoft-hosted free tier still opt-in via Azure
+    subscription; public projects still convert to private in 2027.'
 - id: azure-pipelines-public-retirement
   provider: Microsoft Azure DevOps
   product: Azure DevOps public projects
@@ -886,41 +896,48 @@ facts:
   overage: purchase build minutes or upgrade
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-25'
+  verified_at: '2026-09-28'
+  expires_after: '2026-11-27'
   source_urls:
   - https://www.atlassian.com/software/bitbucket/pricing
-  notes: []
+  notes:
+  - 'Re-verified 2026-09-28: Free still up to 5 users, unlimited public/private
+    repositories, 1 GB LFS, 50 build minutes/month.'
 - id: buildkite-personal
   provider: Buildkite
-  product: Personal plan hosted agents
+  product: Free plan hosted agents
   surface: hosted-ci
   repository_visibility:
   - public
   - private
   plans:
-  - Personal
+  - Free
   model: recurring-quota
   allowance:
-    value: 500
+    value: 2000
     unit: linux-vcpu-minutes
     period: month
     multipliers: {}
   conditions:
-  - 3 concurrent jobs
-  - 1 user
-  - 90-day retention
+  - Up to 5 users
+  - Up to 10 concurrent jobs
+  - 30-day build retention
+  - 250k test executions per month
   - Small AMD64 hosted agents
   - Agent/self-hosted economics differ
   payment_method: not-required
   overage: upgrade or self-host
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-09-25'
+  verified_at: '2026-09-28'
+  expires_after: '2026-12-01'
   source_urls:
   - https://buildkite.com/pricing/
-  notes: []
+  notes:
+  - 'Re-verified 2026-09-28 and corrected: the plan is now named Free (was
+    Personal), with 2,000 Linux vCPU minutes (was 500), up to 10 concurrent
+    jobs (was 3), up to 5 users (was 1), 30-day build retention (was 90-day),
+    and 250k test executions/month.'
 - id: google-cloud-build-free
   provider: Google Cloud
   product: Cloud Build free tier
@@ -1030,12 +1047,15 @@ facts:
   overage: metered billing
   status: vendor-verified
   source_authority: vendor
-  verified_at: '2026-09-07'
-  expires_after: '2026-09-23'
+  verified_at: '2026-09-28'
+  expires_after: '2026-12-04'
   source_urls:
   - https://www.ubicloud.com/docs/about/pricing
   - https://www.ubicloud.com/docs/github-actions-integration/quickstart
-  notes: []
+  notes:
+  - 'Re-verified 2026-09-28: every account still gets a $2.5/month credit,
+    advertised as equivalent to 1,250 minutes of runner time at the two-vCPU
+    premium rate.'
 - id: buddy-free
   provider: Buddy
   product: Free plan

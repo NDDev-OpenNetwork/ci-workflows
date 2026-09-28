@@ -8,13 +8,13 @@ past its expiry, so a stale tier claim cannot silently mislead adopters.
 | Fact | Provider | Product | Visibility | Plans | Model | Allowance | Status | Verified | Expires |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `aws-codebuild-free` | AWS | CodeBuild free tier | public, private | AWS Free Tier | recurring-quota | 100 ec2-build-minutes/month | official | 2026-08-10 | 2026-10-16 |
-| `appveyor-public` | AppVeyor | Free open-source plan | public | Free OSS | public-unmetered | unmetered (projects) | official | 2026-08-10 | 2026-09-25 |
+| `appveyor-public` | AppVeyor | Free open-source plan | public | Free OSS | public-unmetered | unmetered (projects) | official | 2026-09-28 | 2026-11-14 |
 | `appcircle-always-free` | Appcircle | Always Free | public, private | Free | build-count-quota | 20 builds/month | vendor-verified | 2026-08-10 | 2026-10-02 |
-| `bitbucket-free` | Atlassian | Bitbucket Cloud Free + Pipelines | public, private | Free | recurring-quota | 50 build-minutes/month | official | 2026-08-10 | 2026-09-25 |
+| `bitbucket-free` | Atlassian | Bitbucket Cloud Free + Pipelines | public, private | Free | recurring-quota | 50 build-minutes/month | official | 2026-09-28 | 2026-11-27 |
 | `bitrise-hobby` | Bitrise | Hobby plan | private | Hobby | credit-quota | 300 credits/month | vendor-verified | 2026-08-10 | 2026-10-02 |
 | `blacksmith-free` | Blacksmith | Free GitHub Actions runner pool | public, private | Free | recurring-quota | 3000 runner-minutes/month | vendor-verified | 2026-09-07 | 2026-10-01 |
 | `buddy-free` | Buddy | Free plan | public, private | Free | resource-quota | 300 pipeline-gb-minutes/month | vendor-verified | 2026-09-07 | 2026-10-03 |
-| `buildkite-personal` | Buildkite | Personal plan hosted agents | public, private | Personal | recurring-quota | 500 linux-vcpu-minutes/month | official | 2026-08-10 | 2026-09-25 |
+| `buildkite-personal` | Buildkite | Free plan hosted agents | public, private | Free | recurring-quota | 2000 linux-vcpu-minutes/month | official | 2026-09-28 | 2026-12-01 |
 | `circleci-free` | CircleCI | Free plan | public, private | Free | credit-quota | 30000 credits/month | official | 2026-09-19 | 2026-10-20 |
 | `circleci-open-source` | CircleCI | Open Source plan credits | public | Approved OSS | application-grant | 400000 credits/month | official | 2026-09-19 | 2026-10-22 |
 | `cirrus-ci-shutdown` | Cirrus Labs | Cirrus CI hosted service | public, private | All | shutdown | 0 available-builds/feature | deprecated | 2026-07-11 | — |
@@ -43,12 +43,12 @@ past its expiry, so a stale tier claim cannot silently mislead adopters.
 | `google-cloud-build-free` | Google Cloud | Cloud Build free tier | public, private | Google Cloud Free Tier | recurring-quota | 2500 e2-standard-2-build-minutes/month | official | 2026-08-10 | 2026-10-16 |
 | `harness-free` | Harness | Harness Cloud CI Free | public, private | Free | credit-quota | 2000 credits/month | conditional | 2026-09-19 | 2026-10-27 |
 | `teamcity-professional` | JetBrains | TeamCity Professional | public, private, internal | Professional | zero-license-self-hosted | unmetered (build-minutes) | official | 2026-08-10 | 2026-10-23 |
-| `azure-pipelines-private` | Microsoft Azure DevOps | Azure Pipelines private projects | private | Free included parallel job | recurring-quota | 1800 hosted-minutes/month | official | 2026-08-10 | 2026-09-25 |
+| `azure-pipelines-private` | Microsoft Azure DevOps | Azure Pipelines private projects | private | Free included parallel job | recurring-quota | 1800 hosted-minutes/month | official | 2026-09-28 | 2026-11-24 |
 | `azure-pipelines-public-retirement` | Microsoft Azure DevOps | Azure DevOps public projects | public | Legacy only | retiring | 0 new-public-projects/feature | deprecated | 2026-07-11 | 2027-01-01 |
-| `semaphore-cloud-free` | Semaphore | Cloud free recurring credit | public, private | Free | credit-quota | 15 usd-credits/month | official | 2026-08-10 | 2026-09-25 |
-| `semaphore-community` | Semaphore | Semaphore Community Edition | public, private, internal | Community | zero-license-self-hosted | unmetered (build-minutes) | official | 2026-08-10 | 2026-09-25 |
+| `semaphore-cloud-free` | Semaphore | Cloud free recurring credit | public, private | Free | credit-quota | 15 usd-credits/month | official | 2026-09-28 | 2026-11-17 |
+| `semaphore-community` | Semaphore | Semaphore Open Source (Community Edition) | public, private, internal | Community | zero-license-self-hosted | unmetered (build-minutes) | official | 2026-09-28 | 2026-11-20 |
 | `travis-open-source-conditional` | Travis CI | Open source credits | public | OSS grant | application-grant | credits | conditional | 2026-08-10 | 2026-10-23 |
-| `ubicloud-free` | Ubicloud | GitHub Actions runners monthly credit | public, private | Pay-as-you-go with recurring credit | credit-quota | 2.5 usd-credits/month | vendor-verified | 2026-09-07 | 2026-09-23 |
+| `ubicloud-free` | Ubicloud | GitHub Actions runners monthly credit | public, private | Pay-as-you-go with recurring credit | credit-quota | 2.5 usd-credits/month | vendor-verified | 2026-09-28 | 2026-12-04 |
 
 ---
 Generated from catalog/product-facts.yml.

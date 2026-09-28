@@ -7,6 +7,20 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- **Seven product facts re-verified after the `0.1.27` preflight stop.** The
+  `product-facts-calendar` release gate correctly refused tag `0.1.27`:
+  `appveyor-public`, `semaphore-cloud-free`, `semaphore-community`,
+  `azure-pipelines-private`, `bitbucket-free`, `buildkite-personal` and
+  `ubicloud-free` had all passed their `expires_after`. Each was re-read
+  against its `source_urls` on 2026-09-28 and carries a staggered new
+  `expires_after`. Three records needed correction, not just a date bump:
+  Buildkite's plan is now named Free with 2,000 Linux vCPU minutes/month
+  (was Personal/500), up to 10 concurrent jobs (was 3), up to 5 users
+  (was 1) and 30-day retention (was 90); Semaphore's community edition moved
+  from `/community` (404) to `/open-source` and is branded Semaphore Open
+  Source; Ubicloud's credit statement was reconfirmed. No GitHub release
+  exists for tag `0.1.27` — publication was stopped before the publish job.
+
 ## [0.1.27] - 2026-09-28
 
 - **`rust-supply-chain` tool defaults refreshed.** `cargo_audit_version`
