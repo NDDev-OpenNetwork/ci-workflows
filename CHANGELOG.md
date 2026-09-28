@@ -7,6 +7,15 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.29] - 2026-09-28
+
+- **Publishable re-cut of `0.1.28`.** Tag `0.1.28` was pushed as an unsigned
+  lightweight ref carrying no `nddev-public-release-promotion/v2` record, so
+  the promotion gate correctly refused it — and release tags are immutable,
+  so it cannot be updated in place. This tag is the signed annotated
+  promotion-record tag the content always needed. Tree content is identical
+  to `0.1.28`; no GitHub release exists for `0.1.27` or `0.1.28`.
+
 ## [0.1.28] - 2026-09-28
 
 - **Seven product facts re-verified after the `0.1.27` preflight stop.** The
