@@ -7,6 +7,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.28] - 2026-09-28
+
 - **Seven product facts re-verified after the `0.1.27` preflight stop.** The
   `product-facts-calendar` release gate correctly refused tag `0.1.27`:
   `appveyor-public`, `semaphore-cloud-free`, `semaphore-community`,
