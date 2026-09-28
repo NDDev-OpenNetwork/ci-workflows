@@ -7,6 +7,11 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- **`rust-supply-chain` tool defaults refreshed.** `cargo_audit_version`
+  now defaults to 0.22.2 and `cargo_machete_version` to 0.9.2, the current
+  upstream releases. Both remain caller-overridable inputs; only the
+  default moved.
+
 ## [0.1.26] - 2026-09-21
 
 - **`dependabot-catalog-convergence` repaired.** The job now builds the
