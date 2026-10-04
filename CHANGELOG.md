@@ -7,6 +7,9 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- **Bump urllib3 to 2.8.0 in `requirements-qt.txt`** (recompiled via
+  `uv pip compile --upgrade-package urllib3`): the osv-scan runtime fixture
+  flagged PYSEC-2026-4176 and PYSEC-2026-4177 on the pinned 2.7.0.
 - **Fix the dependabot-catalog-convergence update-branch guard.** A bound
   pull request already current with the base made the API answer
   `no new commits`, which matched neither the success pattern nor a real
