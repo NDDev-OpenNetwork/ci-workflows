@@ -39,6 +39,9 @@ fi
 cd "$ROOT"
 if [ ! -e "$PYTHON_ENV" ]; then
   python_binary=$("$uv_binary" python find 3.13.14)
+  # A symlinked interpreter records the link's directory as the venv `home`,
+  # so a --copies binary resolves prefix/../lib there and loses its stdlib.
+  python_binary=$("$python_binary" -c 'import os,sys; print(os.path.realpath(sys.executable))')
   "$python_binary" -I -B -m venv --copies "$PYTHON_ENV"
   PYTHON_ENV_OWNED=1
 fi
