@@ -9,16 +9,16 @@ past its expiry, so a stale tier claim cannot silently mislead adopters.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `aws-codebuild-free` | AWS | CodeBuild free tier | public, private | AWS Free Tier | recurring-quota | 100 ec2-build-minutes/month | official | 2026-08-10 | 2026-10-16 |
 | `appveyor-public` | AppVeyor | Free open-source plan | public | Free OSS | public-unmetered | unmetered (projects) | official | 2026-09-28 | 2026-11-14 |
-| `appcircle-always-free` | Appcircle | Always Free | public, private | Free | build-count-quota | 20 builds/month | vendor-verified | 2026-08-10 | 2026-10-02 |
+| `appcircle-always-free` | Appcircle | Always Free | public, private | Free | build-count-quota | 20 builds/month | vendor-verified | 2026-10-04 | 2026-11-17 |
 | `bitbucket-free` | Atlassian | Bitbucket Cloud Free + Pipelines | public, private | Free | recurring-quota | 50 build-minutes/month | official | 2026-09-28 | 2026-11-27 |
-| `bitrise-hobby` | Bitrise | Hobby plan | private | Hobby | credit-quota | 300 credits/month | vendor-verified | 2026-08-10 | 2026-10-02 |
-| `blacksmith-free` | Blacksmith | Free GitHub Actions runner pool | public, private | Free | recurring-quota | 3000 runner-minutes/month | vendor-verified | 2026-09-07 | 2026-10-01 |
-| `buddy-free` | Buddy | Free plan | public, private | Free | resource-quota | 300 pipeline-gb-minutes/month | vendor-verified | 2026-09-07 | 2026-10-03 |
+| `bitrise-hobby` | Bitrise | Hobby plan | private | Hobby | credit-quota | 300 credits/month | vendor-verified | 2026-10-04 | 2026-11-18 |
+| `blacksmith-free` | Blacksmith | Free GitHub Actions runner pool | public, private | Free | recurring-quota | 3000 runner-minutes/month | vendor-verified | 2026-10-04 | 2026-11-14 |
+| `buddy-free` | Buddy | Free plan | public, private | Free | resource-quota | 300 pipeline-gb-minutes/month | vendor-verified | 2026-10-04 | 2026-11-15 |
 | `buildkite-personal` | Buildkite | Free plan hosted agents | public, private | Free | recurring-quota | 2000 linux-vcpu-minutes/month | official | 2026-09-28 | 2026-12-01 |
 | `circleci-free` | CircleCI | Free plan | public, private | Free | credit-quota | 30000 credits/month | official | 2026-09-19 | 2026-10-20 |
 | `circleci-open-source` | CircleCI | Open Source plan credits | public | Approved OSS | application-grant | 400000 credits/month | official | 2026-09-19 | 2026-10-22 |
 | `cirrus-ci-shutdown` | Cirrus Labs | Cirrus CI hosted service | public, private | All | shutdown | 0 available-builds/feature | deprecated | 2026-07-11 | — |
-| `codemagic-personal` | Codemagic | Personal plan | public, private | Personal | recurring-quota | 500 macos-build-minutes/month | vendor-verified | 2026-08-10 | 2026-10-02 |
+| `codemagic-personal` | Codemagic | Personal plan | public, private | Personal | recurring-quota | 500 macos-build-minutes/month | vendor-verified | 2026-10-04 | 2026-11-16 |
 | `github-actions-larger-runners` | GitHub | Actions larger runners | public, private, internal | Team, Enterprise Cloud, eligible plans | paid-only | 0 included-minutes/month | official | 2026-08-10 | 2026-10-09 |
 | `github-actions-private-free-org` | GitHub | Actions included usage | private | Free organization | recurring-quota | 2000 runner-minutes/month | official | 2026-08-13 | 2026-11-02 |
 | `github-actions-private-free-personal` | GitHub | Actions included usage | private | Free personal | recurring-quota | 2000 runner-minutes/month | official | 2026-08-13 | 2026-10-31 |
