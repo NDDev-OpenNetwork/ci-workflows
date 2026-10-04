@@ -57,7 +57,11 @@ jobs:
             exit 1
           fi
           response="$(gh api --method PUT "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}/update-branch" -f "expected_head_sha=${current_head}" 2>&1)" || {
-            if ! grep -Fq 'already up to date' <<<"$response"; then
+            if grep -Eq 'already up to date|no new commits' <<<"$response"; then
+              # A branch that is already current is success, not failure;
+              # the poll below must not wait on an update that never ran.
+              response="already up to date"
+            else
               printf '%s\n' "$response" >&2
               exit 1
             fi
