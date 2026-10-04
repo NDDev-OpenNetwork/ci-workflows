@@ -7,6 +7,12 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- **Fix the dependabot-catalog-convergence update-branch guard.** A bound
+  pull request already current with the base made the API answer
+  `no new commits`, which matched neither the success pattern nor a real
+  error — the job exited before converging the catalog and left
+  dependabot bumps red on `tool-registry`/`catalog`.
+
 ## [0.1.29] - 2026-09-28
 
 - **Publishable re-cut of `0.1.28`.** Tag `0.1.28` was pushed as an unsigned
