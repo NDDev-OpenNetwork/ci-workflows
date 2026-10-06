@@ -131,10 +131,14 @@ run_osv() {
 }
 
 cd "$GITHUB_WORKSPACE"
+run_gitleaks() {
+  bash "$(dirname "${BASH_SOURCE[0]}")/prepare_gitleaks_history.sh" "$gitleaks_scan_scope" || return
+  gitleaks "${gitleaks_args[@]}"
+}
 run_gate actionlint run_actionlint
 run_gate zizmor run_zizmor
 run_gate osv-scanner run_osv
-run_gate gitleaks gitleaks "${gitleaks_args[@]}"
+run_gate gitleaks run_gitleaks
 
 for report in "$zizmor_sarif" "$osv_sarif" "$gitleaks_sarif"; do
   if ! jq -e '(.version == "2.1.0") and (.runs | type == "array")' "$report" >/dev/null; then

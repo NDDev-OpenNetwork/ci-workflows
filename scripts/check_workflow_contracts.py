@@ -202,6 +202,8 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
                 and step.get("run") == "exit 1" for step in steps):
             problems.append(f"{filename}: deferred scanner failure must still be enforced")
     problems.extend(_probe_security_evidence(workflow_root.parents[1]))
+    problems.extend(_probe_security_bundle_source(workflow_root.parents[1]))
+    problems.extend(_probe_gitleaks_history(workflow_root.parents[1]))
 
     for filename in sorted(isolated_checkout_workflows):
         workflow = load_yaml(workflow_root / filename)
@@ -674,6 +676,136 @@ def _probe_security_evidence(root: Path) -> list[str]:
                     problems.append(f"security evidence: accepted {case} report")
         except (OSError, ValueError, KeyError, subprocess.TimeoutExpired, zipfile.BadZipFile) as error:
             problems.append(f"security evidence probe failed: {error}")
+    return problems
+
+
+def _security_fixture_process(args: list[str], cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(args, cwd=cwd, env=env, capture_output=True, text=True,
+                          timeout=30, check=False)
+
+
+def _security_fixture_repo(target: Path, env: dict[str, str]) -> str:
+    target.mkdir()
+    for args in (["git", "init", "--quiet"],
+                 ["git", "config", "uploadpack.allowFilter", "true"],
+                 ["git", "config", "uploadpack.allowAnySHA1InWant", "true"]):
+        result = _security_fixture_process(args, target, env)
+        if result.returncode:
+            raise ValueError(result.stderr)
+    (target / "fixture.txt").write_text("synthetic history fixture\n")
+    (target / "scripts").mkdir()
+    (target / "scripts" / "run_private_security_bundle.sh").write_text("#!/bin/bash\nexit 0\n")
+    for args in (["git", "add", "."],
+                 ["git", "commit", "--quiet", "--no-gpg-sign", "-m", "fixture"],
+                 ["git", "rev-parse", "HEAD"]):
+        result = _security_fixture_process(args, target, env)
+        if result.returncode:
+            raise ValueError(result.stderr)
+    return result.stdout.strip()
+
+
+def _security_fixture_env(target: Path) -> dict[str, str]:
+    config = target / "gitconfig"
+    config.touch()
+    return clean_environment({
+        "GIT_CONFIG_GLOBAL": str(config), "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_AUTHOR_NAME": "Fixture", "GIT_COMMITTER_NAME": "Fixture",
+        "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+        "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+        "GIT_TERMINAL_PROMPT": "0", "GH_TOKEN": "synthetic-fixture-only",
+        "RUNNER_TEMP": str(target),
+    })
+
+
+def _probe_security_bundle_source(root: Path) -> list[str]:
+    """Execute both YAML steps twice against one runner temp with stale files."""
+    problems: list[str] = []
+    try:
+        with tempfile.TemporaryDirectory(prefix="security-source-probe-") as directory:
+            target = Path(directory)
+            env = _security_fixture_env(target)
+            fixture = target / "origin"
+            oid = _security_fixture_repo(fixture, env)
+            rewritten = _security_fixture_process(
+                ["git", "config", "--global", f"url.{fixture.as_uri()}.insteadOf",
+                 "https://github.com/example-org/fixture.git"], target, env)
+            if rewritten.returncode:
+                return ["security source fixture could not configure its local origin"]
+            for filename, prefix, variable in (
+                ("private-security-bundle-free.yml", "private-security-bundle-source", "PRIVATE_SECURITY_BUNDLE_SCRIPT"),
+                ("nddev-security-bundle.yml", "nddev-security-bundle-source", "NDDEV_SECURITY_BUNDLE_SCRIPT"),
+            ):
+                workflow = load_yaml(root / ".github" / "workflows" / filename)
+                step = next(s for s in workflow["jobs"]["security-bundle"]["steps"]
+                            if s.get("name") == "Fetch exact called-workflow implementation")
+                stale = target / prefix
+                stale.mkdir()
+                sentinel = stale / "fixture.txt"
+                sentinel.write_text("preserve stale runner file\n")
+                output = target / (prefix + ".env")
+                run_env = dict(env, GITHUB_ENV=str(output), WORKFLOW_REPOSITORY="example-org/fixture",
+                               WORKFLOW_SHA=oid, FETCH_TOKEN="synthetic-fixture-only",
+                               GITHUB_TOKEN="synthetic-fixture-only")
+                for _ in range(2):
+                    result = _security_fixture_process(["bash", "-c", step["run"]], target, run_env)
+                    if result.returncode:
+                        problems.append(f"{filename}: exact checkout failed with stale runner files")
+                        break
+                else:
+                    paths = [line.split("=", 1)[1] for line in output.read_text().splitlines()
+                             if line.startswith(variable + "=")]
+                    if len(paths) != 2 or len(set(paths)) != 2 or not all(Path(p).is_file() for p in paths):
+                        problems.append(f"{filename}: repeated calls did not get distinct complete checkouts")
+                    original = re.sub(r'^source_root=.*$', f'source_root="$RUNNER_TEMP/{prefix}"',
+                                      step["run"], count=1, flags=re.MULTILINE)
+                    failed = _security_fixture_process(["bash", "-c", original], target, run_env)
+                    if failed.returncode == 0:
+                        problems.append(f"{filename}: shared-directory negative control did not fail")
+                if sentinel.read_text() != "preserve stale runner file\n":
+                    problems.append(f"{filename}: stale runner file was modified")
+    except (OSError, ValueError, KeyError, StopIteration, subprocess.TimeoutExpired) as error:
+        problems.append(f"security source probe failed: {error}")
+    return problems
+
+
+def _probe_gitleaks_history(root: Path) -> list[str]:
+    """Hydrate a real partial clone; reject missing history without fake green."""
+    problems: list[str] = []
+    try:
+        with tempfile.TemporaryDirectory(prefix="security-history-probe-") as directory:
+            target = Path(directory)
+            env = _security_fixture_env(target)
+            fixture = target / "origin"
+            _security_fixture_repo(fixture, env)
+            helper = root / "scripts" / "prepare_gitleaks_history.sh"
+            for case in ("available", "unavailable"):
+                checkout = target / case
+                cloned = _security_fixture_process(
+                    ["git", "clone", "--quiet", "--filter=blob:none", "--no-checkout",
+                     fixture.as_uri(), str(checkout)], target, env)
+                if cloned.returncode:
+                    return ["gitleaks history fixture could not create a partial clone"]
+                missing = _security_fixture_process(
+                    ["git", "rev-list", "--objects", "--missing=print", "HEAD"], checkout, env)
+                if not any(line.startswith("?") for line in missing.stdout.splitlines()):
+                    return ["gitleaks history fixture did not contain missing blobs"]
+                if case == "unavailable":
+                    _security_fixture_process(["git", "remote", "set-url", "origin",
+                                               (target / "absent.git").as_uri()], checkout, env)
+                result = _security_fixture_process(["bash", str(helper), "ref-history"], checkout, env)
+                if (result.returncode == 0) != (case == "available"):
+                    problems.append(f"gitleaks history: wrong outcome for {case} promisor origin")
+                if case == "available":
+                    after = _security_fixture_process(
+                        ["git", "rev-list", "--objects", "--missing=print", "HEAD"], checkout, env)
+                    if any(line.startswith("?") for line in after.stdout.splitlines()):
+                        problems.append("gitleaks history: successful hydration left missing blobs")
+                stored = _security_fixture_process(
+                    ["git", "config", "--local", "--get-regexp", "extraheader"], checkout, env)
+                if stored.stdout or "synthetic-fixture-only" in result.stdout + result.stderr:
+                    problems.append("gitleaks history: authorization escaped its process environment")
+    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+        problems.append(f"gitleaks history probe failed: {error}")
     return problems
 
 

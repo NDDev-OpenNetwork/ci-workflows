@@ -91,7 +91,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          source_root="$RUNNER_TEMP/nddev-security-bundle-source"
+          umask 077
+          source_root="$(mktemp -d "$RUNNER_TEMP/nddev-security-bundle-source.XXXXXXXX")"
           git init --quiet "$source_root"
           git -C "$source_root" remote add origin \
             "https://github.com/${WORKFLOW_REPOSITORY}.git"
