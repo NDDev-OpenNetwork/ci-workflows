@@ -7,6 +7,9 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Give both private security bundles a fresh implementation checkout for each
+  invocation, preserving stale runner files. Materialize the selected Git
+  history before Gitleaks and fail when any required object is unavailable.
 - **Bump urllib3 to 2.8.0 in `requirements-qt.txt`** (recompiled via
   `uv pip compile --upgrade-package urllib3`): the osv-scan runtime fixture
   flagged PYSEC-2026-4176 and PYSEC-2026-4177 on the pinned 2.7.0.

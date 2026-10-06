@@ -272,7 +272,8 @@ capabilities:
       - "Requires GitHub Code Security because zizmor SARIF upload is preserved; private-free callers keep the no-SARIF workflows"
       - "Four gates share one failure domain, but the script executes and summarizes every gate before returning failure"
       - "Artifact upload failure requires a complete bounded redacted ZIP with SHA-256 and run identity in the run log; failure of both transports fails the job"
-      - "The called workflow fetches its implementation from job.workflow_repository at exact job.workflow_sha outside the caller workspace"
+      - "The called workflow fetches its implementation from job.workflow_repository at exact job.workflow_sha into a fresh invocation-specific directory outside the caller workspace"
+      - "Selected Git history is materialized with process-only authentication before Gitleaks; unavailable objects fail the scan"
       - "Downloaded actionlint, OSV-Scanner, and gitleaks artifacts are checksum-pinned; zizmor is uvx version-pinned"
     deprecations: null
     last_verified: "2026-08-21"
@@ -301,7 +302,8 @@ capabilities:
       - "SARIF remains an artifact rather than a code-scanning upload because private-free repositories have no security-events entitlement"
       - "Four gates share one failure domain, but every gate executes before aggregate failure"
       - "Optional check_name preserves the inner job display name during required-check migration; caller prefix and scanner enforcement remain separate"
-      - "Called-workflow implementation is fetched at exact job.workflow_sha outside the caller workspace"
+      - "Called-workflow implementation is fetched at exact job.workflow_sha into a fresh invocation-specific directory outside the caller workspace"
+      - "Selected Git history is materialized with process-only authentication before Gitleaks; unavailable objects fail the scan"
       - "Gitleaks evidence is fully redacted before the one-day artifact upload; a failed upload requires a complete bounded ZIP with SHA-256 and run identity in the run log"
       - "The tool-cache action is vendored at actions/tool-cache from NDDev-Archive/github-actions-garm 468af475; an archived dependency cannot receive fixes, so the live copy lives beside the workflow that runs it"
     deprecations: null

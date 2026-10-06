@@ -787,6 +787,10 @@
       "run": {
         "count": 1,
         "profile": "shell-fixture"
+      },
+      "_security_fixture_process": {
+        "count": 1,
+        "profile": "external-tool-fixture"
       }
     },
     "generate_android_fixture_provenance.py": {

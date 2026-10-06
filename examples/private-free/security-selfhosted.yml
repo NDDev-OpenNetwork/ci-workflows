@@ -1,3 +1,5 @@
+# Each security call uses a fresh implementation directory and verifies that
+# the selected Git history is available before scanning.
 # If artifact storage is unavailable, complete redacted reports are preserved
 # as a checksummed ZIP in the security evidence fallback step log.
 # Private security suite with zero GitHub Actions compute meter.
