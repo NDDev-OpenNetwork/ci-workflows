@@ -25,6 +25,12 @@ jobs:
       runner: private-ci
       # Optional: keep a pre-existing inner job name when moving from the SARIF bundle.
       check_name: actionlint + zizmor + OSV + gitleaks
+    # Optional, for callers with private submodules: each declared submodule
+    # is checked out at its recorded gitlink before scanning. Without it,
+    # stale submodule worktrees on a reused runner are emptied rather than
+    # scanned at whatever revision an earlier job left behind.
+    # secrets:
+    #   submodule_deploy_keys: ${{ secrets.SUBMODULE_DEPLOY_KEYS }}
   validate:
     permissions: { contents: read }
     uses: NDDev-OpenNetwork/ci-workflows/.github/workflows/private-static.yml@<sha>

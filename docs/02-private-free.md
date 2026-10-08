@@ -118,6 +118,17 @@ scanner execution, failure handling, artifact evidence or token permissions.
 The caller needs only `contents: read`; no Code Security feature or
 `security-events: write` permission is required by this variant.
 
+Callers whose repository declares git submodules get one extra behaviour:
+the caller checkout never touches submodule worktrees, and a reused
+self-hosted worktree keeps whatever revision an earlier job left behind —
+a recursive scan would otherwise read yesterday's lockfile as this commit's.
+Pass `submodule_deploy_keys` (one `path base64-ssh-private-key` line per
+declared path) and each submodule is checked out at its recorded gitlink
+and verified before the gates run; omit it and stale submodule worktrees
+are emptied instead, so the scan still describes the commit it ran on. A
+declared path without a matching key fails the job — a partial view is a
+wrong scan.
+
 Use this workflow when placement latency and fleet contention cost more than
 the limited failure-domain isolation of four separate jobs. Public fork code
 must remain on GitHub-hosted runners and must never call this private lane.

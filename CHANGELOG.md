@@ -7,6 +7,16 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- **Fix `private-security-bundle-free` scanning stale submodule worktrees.**
+  On a reused self-hosted worktree the caller checkout leaves previously
+  cloned submodules untouched (`git clean -ffdx` does not remove an
+  initialized submodule — its path is a tracked gitlink), so the recursive
+  gates read whatever revision an earlier job left behind. A new optional
+  `submodule_deploy_keys` secret carries `path base64-ssh-private-key` pairs;
+  when supplied, every declared submodule is checked out at its recorded
+  gitlink and verified before scanning, and when absent stale submodule
+  worktrees are emptied so leftovers can never report as this commit's
+  content.
 - Give both private security bundles a fresh implementation checkout for each
   invocation, preserving stale runner files. Materialize the selected Git
   history before Gitleaks and fail when any required object is unavailable.
