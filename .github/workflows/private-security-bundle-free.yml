@@ -35,6 +35,17 @@ on:
         description: 'Artifact name for redacted machine-readable security evidence.'
         type: string
         default: 'private-security-evidence'
+    secrets:
+      submodule_deploy_keys:
+        description: >-
+          Optional newline-separated "path base64-ssh-private-key" pairs, one
+          per submodule path declared in .gitmodules. When supplied, each
+          declared submodule is checked out at its recorded gitlink before
+          scanning, so the gates read the pinned revision rather than
+          whatever worktree a reused runner left behind. When absent, stale
+          submodule worktrees are removed before scanning instead of being
+          reported as this commit's content.
+        required: false
 
 permissions: {}
 
@@ -74,6 +85,103 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Synchronize declared submodules to their recorded gitlinks
+        shell: bash
+        env:
+          SUBMODULE_DEPLOY_KEYS: ${{ secrets.submodule_deploy_keys }}
+        run: |
+          set -euo pipefail
+          umask 077
+
+          if [ ! -f .gitmodules ]; then
+            exit 0
+          fi
+          paths=$(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' \
+            | awk '{print $2}')
+          if [ -z "$paths" ]; then
+            exit 0
+          fi
+
+          # The checkout above does not touch submodule worktrees, and on a
+          # reused self-hosted worktree `git clean -ffdx` does not remove an
+          # initialized submodule either — its path is a tracked gitlink, not
+          # an untracked file. Whatever an earlier job left behind is then
+          # what a recursive scan reads, and it reports yesterday's lockfile
+          # as this commit's. Measured 2026-10-08 on a consumer superproject:
+          # the gate failed a commit pinning a fixed dependency over a
+          # lockfile left at the vulnerable revision by the previous job.
+          #
+          # So every declared path is put in a known state here: checked out
+          # at its recorded gitlink when the caller supplied a key for it,
+          # emptied when it did not — never scanned at whatever revision the
+          # last job happened to leave.
+          if [ -z "$SUBMODULE_DEPLOY_KEYS" ]; then
+            for path in $paths; do
+              if [ -n "$(ls -A "$path" 2>/dev/null || true)" ]; then
+                rm -rf -- "${path:?}/"* "${path:?}/".[!.]* 2>/dev/null || rm -rf -- "${path:?}"
+                mkdir -p "$path"
+                printf 'emptied   %s (no key; a leftover would have been scanned)\n' "$path"
+              fi
+            done
+            echo "submodule_deploy_keys not supplied: scanning the caller tree only."
+            exit 0
+          fi
+
+          # github.com:22 is not open on every runner class — discover the
+          # endpoint once rather than assume it, the same discovery the
+          # called-workflow fetch above performs for HTTPS.
+          mkdir -p "$HOME/.ssh"
+          host=github.com
+          port=22
+          if ssh-keyscan -T 5 -p 22 github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null; then
+            :
+          elif ssh-keyscan -T 10 -p 443 ssh.github.com >> "$HOME/.ssh/known_hosts" 2>&1; then
+            host=ssh.github.com
+            port=443
+          else
+            echo "github.com answered on neither 22 nor 443; submodules cannot be fetched."
+            exit 1
+          fi
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          keydir="$(mktemp -d "$RUNNER_TEMP/submodule-keys.XXXXXXXX")"
+          declare -A keys=()
+          while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            keys["${line%% *}"]="${line#* }"
+          done <<< "$SUBMODULE_DEPLOY_KEYS"
+
+          git submodule init
+          failed=0
+          for path in $paths; do
+            want=$(git ls-tree HEAD "$path" | awk '{print $3}')
+            if [ -z "${keys[$path]:-}" ]; then
+              echo "$path is declared in .gitmodules but has no deploy key"
+              echo "in submodule_deploy_keys — a partial view is a wrong scan."
+              failed=1
+              continue
+            fi
+            name=$(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' \
+              | awk -v p="$path" '$2 == p {print $1}' | sed -E 's/^submodule\.(.*)\.path$/\1/')
+            url=$(git config -f .gitmodules --get "submodule.$name.url")
+            repo=$(printf '%s' "$url" | sed -E 's#.*github\.com[:/]##; s#\.git$##')
+            keyfile="$keydir/$(printf '%s' "$name" | tr -c 'A-Za-z0-9._-' '_').key"
+            printf '%s' "${keys[$path]}" | base64 -d > "$keyfile"
+            chmod 600 "$keyfile"
+            # `.git/config` only, so the tracked `.gitmodules` stays untouched.
+            git config "submodule.$name.url" "ssh://git@$host:$port/$repo.git"
+            GIT_SSH_COMMAND="ssh -i $keyfile -o IdentitiesOnly=yes -o IdentityAgent=none -o StrictHostKeyChecking=yes" \
+              git submodule update --init --force --depth 1 -- "$path"
+            got=$(git -C "$path" rev-parse HEAD)
+            if [ "$got" != "$want" ]; then
+              echo "$path checked out $got but the gitlink records $want — refusing to scan."
+              failed=1
+              continue
+            fi
+            printf 'pinned    %s <- %s (%s)\n' "$path" "$repo" "${want:0:12}"
+          done
+          test "$failed" -eq 0
 
       - name: Fetch exact called-workflow implementation
         shell: bash
