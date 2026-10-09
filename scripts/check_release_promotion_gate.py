@@ -7,6 +7,7 @@ import copy
 import datetime as dt
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -207,6 +208,13 @@ def _check_renderer() -> list[str]:
         root = Path(raw)
         bin_dir = root / "bin"
         bin_dir.mkdir()
+        # macOS installs these outside /usr/bin. Keep the controlled PATH,
+        # but bind its real prerequisites instead of silently losing them.
+        for name in ("jq", "sha256sum"):
+            executable = shutil.which(name)
+            if executable is None:
+                return [f"public promotion renderer fixture requires {name}"]
+            (bin_dir / name).symlink_to(executable)
         payloads = {
             f"repos/{PUBLIC_REPOSITORY}/actions/runs/1": _evidence_payload("public-ci"),
             f"repos/{PUBLIC_REPOSITORY}/actions/jobs/22": _evidence_payload("public-contract"),
@@ -239,7 +247,8 @@ def _check_renderer() -> list[str]:
             env=env, check=False,
         )
         if result.returncode != 0:
-            return [f"public promotion renderer failed: {result.stderr.strip()}"]
+            return [f"public promotion renderer failed (exit {result.returncode}): "
+                    f"{result.stderr.strip()} {result.stdout.strip()}"]
         try:
             rendered = json.loads(result.stdout)
         except json.JSONDecodeError as exc:
