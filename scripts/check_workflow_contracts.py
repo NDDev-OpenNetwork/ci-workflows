@@ -72,7 +72,7 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
         or (rust_jobs.get("machete", {}) or {}).get("runs-on") != "${{ inputs.runner }}"
     ):
         problems.append(
-            "rust-supply-chain.yml: Docker cargo-deny must expose an optional "
+            "rust-supply-chain.yml: cargo-deny must retain its optional "
             "deny_runner while audit and machete retain the ordinary runner"
         )
 
@@ -201,6 +201,7 @@ printf 'GIT_CONFIG_GLOBAL=%s\\n' "$isolated_config" >> "$GITHUB_ENV"
                 step.get("if") == "${{ steps.scan.outcome == 'failure' }}"
                 and step.get("run") == "exit 1" for step in steps):
             problems.append(f"{filename}: deferred scanner failure must still be enforced")
+    problems.extend(_probe_native_deny(rust_jobs.get("deny", {})))
     problems.extend(_probe_security_evidence(workflow_root.parents[1]))
     problems.extend(_probe_security_bundle_source(workflow_root.parents[1]))
     problems.extend(_probe_gitleaks_history(workflow_root.parents[1]))
@@ -806,6 +807,58 @@ def _probe_gitleaks_history(root: Path) -> list[str]:
                     problems.append("gitleaks history: authorization escaped its process environment")
     except (OSError, ValueError, subprocess.TimeoutExpired) as error:
         problems.append(f"gitleaks history probe failed: {error}")
+    return problems
+
+
+def _probe_native_deny(job: dict) -> list[str]:
+    """Run the shipped argv adapter; preserve failures and literal input data."""
+    steps = job.get("steps", [])
+    step = next((s for s in steps if s.get("name") == "Run cargo-deny"), {})
+    install = next((s for s in steps if s.get("name") == "Install cargo-deny"), {})
+    if not step.get("run") or step.get("shell") != "bash":
+        return ["rust-supply-chain: cargo-deny needs a native bash adapter"]
+    if (install.get("with", {}) or {}).get("tool") != "cargo-deny@0.20.2":
+        return ["rust-supply-chain: retain the reviewed cargo-deny version"]
+    if any("cargo-deny-action" in s.get("uses", "") for s in steps):
+        return ["rust-supply-chain: cargo-deny must not require Docker pulls"]
+    problems = []
+    try:
+        with tempfile.TemporaryDirectory(prefix="native-deny-probe-") as directory:
+            root = Path(directory)
+            executable = root / "cargo"
+            executable.write_text('#!/bin/sh\nprintf "%s\\0" "$@" > "$DENY_PROBE_ARGV"\nexit "$DENY_PROBE_EXIT"\n')
+            executable.chmod(0o700)
+            recorded = root / "argv"
+            env = clean_environment({
+                "PATH": str(root) + os.pathsep + os.environ["PATH"],
+                "DENY_DIRECTORY": "workspace with spaces",
+                "DENY_ARGUMENTS": '--all-features --config "policy with spaces.toml"',
+                "DENY_COMMAND": 'check bans licenses advisories sources "$(touch injected)" "`touch injected2`"',
+                "DENY_PROBE_ARGV": str(recorded),
+            })
+            expected = ["deny", "--manifest-path", "workspace with spaces/Cargo.toml",
+                        "--all-features", "--config", "policy with spaces.toml", "check",
+                        "bans", "licenses", "advisories", "sources", "$(touch injected)",
+                        "`touch injected2`"]
+            for code in (0, 37):
+                result = subprocess.run(["bash", "-c", step["run"]], cwd=root,
+                                        env={**env, "DENY_PROBE_EXIT": str(code)},
+                                        capture_output=True, text=True, timeout=10)
+                if result.returncode != code:
+                    problems.append(f"rust-supply-chain: native deny did not preserve exit {code}")
+                actual = recorded.read_bytes().split(b"\0")[:-1] if recorded.exists() else []
+                if actual != [arg.encode() for arg in expected]:
+                    problems.append("rust-supply-chain: native deny changed argv boundaries")
+                if (root / "injected").exists() or (root / "injected2").exists():
+                    problems.append("rust-supply-chain: native deny evaluated input as shell")
+            recorded.unlink(missing_ok=True)
+            result = subprocess.run(["bash", "-c", step["run"]], cwd=root,
+                                    env={**env, "DENY_ARGUMENTS": '"unterminated', "DENY_PROBE_EXIT": "0"},
+                                    capture_output=True, text=True, timeout=10)
+            if result.returncode == 0 or recorded.exists():
+                problems.append("rust-supply-chain: malformed arguments reached cargo")
+    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+        problems.append(f"rust-supply-chain native deny probe failed: {error}")
     return problems
 
 

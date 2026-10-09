@@ -1777,6 +1777,7 @@ capabilities:
     required_settings: []
     risks:
       - "cargo-deny resolves Cargo.toml from working_directory; without a deny.toml, its default policy applies"
+      - "cargo-deny runs natively with the caller toolchain and the installer's pinned checksum manifest; no Docker daemon or registry login is required"
       - "cargo-audit reads Cargo.lock; repos without a lockfile will fail"
       - "cargo-machete output is advisory (exits 0 with warnings, not failures)"
     deprecations: null

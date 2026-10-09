@@ -7,6 +7,15 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Isolate synthetic tier-selection Git fixtures from user/system hooks and
+  make promotion-renderer fixtures resolve their real `jq`/`sha256sum`
+  prerequisites on macOS as well as Linux.
+
+- Run `cargo-deny` 0.20.2 natively through the checksum-pinned installer,
+  removing Docker Hub anonymous pull limits from dependency checks. Retain
+  runner selection, check names, permissions and caller arguments; parse
+  argument strings into argv without shell evaluation.
+
 - **Harden `private-security-bundle-free` submodule sync.** A symlink planted
   at a declared submodule path on a reused runner would have redirected the
   no-keys cleanup (`rm -rf "$path"/*` dereferences a symlinked directory)

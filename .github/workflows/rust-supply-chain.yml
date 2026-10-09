@@ -4,9 +4,9 @@ name: rust-supply-chain
 # sources), cargo-audit (RustSec advisories), and cargo-machete (dead-code
 # dependency detection). Each check is independently toggleable.
 #
-# All tool versions are caller-overridable inputs with safe defaults pinned to
-# the versions verified on the NDDev estate. The taiki-e/install-action and
-# EmbarkStudios/cargo-deny-action references are SHA-pinned.
+# Tools use the checksum manifests in the SHA-pinned taiki-e/install-action.
+# cargo-deny retains version 0.20.2 from the previous container action, without
+# making a dependency check depend on an unauthenticated Docker Hub pull.
 #
 # Usage:
 #   deny:
@@ -20,15 +20,15 @@ on:
   workflow_call:
     inputs:
       runner:
-        description: 'Runner label for shell-native cargo-audit and cargo-machete.'
+        description: 'Runner label for native Rust supply-chain tools.'
         type: string
         default: 'ubuntu-latest'
       deny_runner:
-        description: 'Optional runner label for the Docker-based cargo-deny action; empty inherits runner.'
+        description: 'Optional runner label for cargo-deny; empty inherits runner. Docker is not required.'
         type: string
         default: ''
       toolchain:
-        description: 'Rust toolchain version for cargo-audit/machete (not needed for deny which uses the action).'
+        description: 'Rust toolchain version used by all three checks.'
         type: string
         default: 'stable'
       enable_deny:
@@ -78,12 +78,34 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - name: Run cargo-deny
-        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25  # v2.1.1
+      - name: Set up Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f  # v2.0.0
         with:
-          command: ${{ inputs.deny_command }}
-          manifest-path: ${{ inputs.working_directory }}/Cargo.toml
-          arguments: ${{ inputs.deny_arguments }}
+          toolchain: ${{ inputs.toolchain }}
+          cache: false
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73  # v2.87.17
+        with:
+          tool: cargo-deny@0.20.2
+      - name: Run cargo-deny
+        shell: bash
+        env:
+          DENY_COMMAND: ${{ inputs.deny_command }}
+          DENY_DIRECTORY: ${{ inputs.working_directory }}
+          DENY_ARGUMENTS: ${{ inputs.deny_arguments }}
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY'
+          import os
+          import shlex
+          # Inputs are argv data, never a second shell program. Keep paths
+          # relative to the caller checkout, as in the previous action.
+          arguments = ["cargo", "deny", "--manifest-path",
+                       os.path.join(os.environ["DENY_DIRECTORY"], "Cargo.toml")]
+          arguments += shlex.split(os.environ["DENY_ARGUMENTS"])
+          arguments += shlex.split(os.environ["DENY_COMMAND"])
+          os.execvp(arguments[0], arguments)
+          PY
 
   audit:
     name: cargo-audit
