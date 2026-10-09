@@ -7,6 +7,22 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Select the existing checksum-verified Gitleaks binary mode for this
+  repository's own scan; history scope and scanner version remain unchanged.
+
+- Reverify GitHub larger-runner and self-hosted execution billing facts against
+  official documentation. State the larger-runner organization/enterprise
+  Team/Enterprise Cloud restriction explicitly and retain separate storage costs.
+
+- Isolate synthetic tier-selection Git fixtures from user/system hooks and
+  make promotion-renderer fixtures resolve their real `jq`/`sha256sum`
+  prerequisites on macOS as well as Linux.
+
+- Run `cargo-deny` 0.20.2 natively through the checksum-pinned installer,
+  removing Docker Hub anonymous pull limits from dependency checks. Retain
+  runner selection, check names, permissions and caller arguments; parse
+  argument strings into argv without shell evaluation.
+
 - **Harden `private-security-bundle-free` submodule sync.** A symlink planted
   at a declared submodule path on a reused runner would have redirected the
   no-keys cleanup (`rm -rf "$path"/*` dereferences a symlinked directory)

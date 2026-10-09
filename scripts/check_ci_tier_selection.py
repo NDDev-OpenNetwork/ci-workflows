@@ -28,6 +28,7 @@ step that chooses it is only pattern-matched:
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -70,7 +71,10 @@ def _embedded_resolver() -> str:
 
 def _git(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["git", *args], cwd=cwd, env=clean_environment({"PATH": "/usr/bin:/bin"}),
+        ["git", *args], cwd=cwd, env=clean_environment({
+            "PATH": "/usr/bin:/bin", "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+        }),
         capture_output=True, text=True, check=False, timeout=30)
 
 

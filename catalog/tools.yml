@@ -651,16 +651,6 @@ tools:
   # shipped without catalog entries because the pin validators check pin format,
   # never catalog membership. scripts/check_tool_registry.py now derives the
   # registry from the tree, so the omission cannot repeat.
-  - id: cargo-deny-action
-    name: EmbarkStudios/cargo-deny-action
-    homepage: "https://github.com/EmbarkStudios/cargo-deny-action"
-    kind: action
-    current_version: "v2.1.1"
-    pin: "EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25"
-    used_by:
-      - .github/workflows/rust-supply-chain.yml
-    last_verified: "2026-09-21"
-
   - id: taiki-e-install-action
     name: taiki-e/install-action
     homepage: "https://github.com/taiki-e/install-action"

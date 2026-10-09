@@ -213,7 +213,6 @@ facts:
   plans:
   - Team
   - Enterprise Cloud
-  - eligible plans
   model: paid-only
   allowance:
     value: 0
@@ -221,16 +220,19 @@ facts:
     period: month
     multipliers: {}
   conditions:
+  - Available only to organizations and enterprises on Team or Enterprise Cloud
   - Always billed, including public repositories and despite standard-runner quota
   payment_method: required
   overage: metered from first minute
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-10-09'
+  verified_at: '2026-10-09'
+  expires_after: '2026-11-07'
   source_urls:
   - https://docs.github.com/en/billing/concepts/product-billing/github-actions
-  notes: []
+  - https://docs.github.com/en/actions/concepts/runners/larger-runners
+  notes:
+  - Rechecked billing and plan eligibility; larger runners require a payment method and do not consume included standard-runner minutes.
 - id: github-actions-self-hosted-control-plane
   provider: GitHub
   product: Actions self-hosted runners
@@ -254,14 +256,16 @@ facts:
   overage: infrastructure-provider costs apply
   status: official
   source_authority: primary
-  verified_at: '2026-08-10'
-  expires_after: '2026-10-09'
+  verified_at: '2026-10-09'
+  expires_after: '2026-11-12'
   source_urls:
   - https://docs.github.com/en/billing/concepts/product-billing/github-actions
   - https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/apply-labels
   - https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/manage-access
+  - https://docs.github.com/en/actions/concepts/runners/self-hosted-runners
   notes:
-  - Current official billing documentation says Actions usage is free for self-hosted runners.
+  - Official billing and runner documentation reconfirm no Actions execution fee for self-hosted runners; operators still fund and maintain the machines.
+  - Artifact and cache storage follow their separate billing limits; this row covers runner execution.
 - id: github-attestations-public
   provider: GitHub
   product: Artifact attestations

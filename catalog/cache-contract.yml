@@ -94,9 +94,8 @@ telemetry:
 # behaviour, and nothing executed the assertion.
 #
 # `default_caches` is the effective behaviour on the runners this library targets.
-# Five of the eight cache with no input: two because a cache is what they are
-# (`actions/cache`, `hendrikmuhs/ccache-action`, added deliberately by a caller),
-# and three because their own default says so.
+# Some actions cache by construction (`actions/cache`, ccache); others enable
+# caching by default. The entries below state each pinned action's behavior.
 producers:
   - action: actions/cache
     control: null
@@ -126,6 +125,14 @@ producers:
     upstream_default: true
     default_caches: true
     note: Caches the module and build cache unless asked not to.
+  - action: actions-rust-lang/setup-rust-toolchain
+    control: cache
+    upstream_default: "true"
+    default_caches: true
+    note: >-
+      The pinned composite action enables Rust cache by default. The native
+      cargo-deny job explicitly refuses it; audit, machete and compilation
+      callers retain their existing cache policy.
   - action: actions/setup-java
     control: cache
     upstream_default: null
@@ -169,6 +176,12 @@ producers:
 # Where a cache must be refused, and why. Each rule names the exact input and
 # value the workflow has to carry; the check fails if the step is missing it.
 refusals:
+  - workflow: .github/workflows/rust-supply-chain.yml
+    job: deny
+    action: actions-rust-lang/setup-rust-toolchain
+    input: cache
+    value: false
+    reason: Metadata and policy scanning do not need a shared compilation cache.
   - workflow: .github/workflows/release.yml
     job: resolve
     action: astral-sh/setup-uv
