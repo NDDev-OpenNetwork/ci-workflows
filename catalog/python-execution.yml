@@ -784,6 +784,10 @@
       }
     },
     "check_workflow_contracts.py": {
+      "_probe_native_deny": {
+        "count": 2,
+        "profile": "shell-fixture"
+      },
       "run": {
         "count": 1,
         "profile": "shell-fixture"

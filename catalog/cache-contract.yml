@@ -94,9 +94,8 @@ telemetry:
 # behaviour, and nothing executed the assertion.
 #
 # `default_caches` is the effective behaviour on the runners this library targets.
-# Five of the eight cache with no input: two because a cache is what they are
-# (`actions/cache`, `hendrikmuhs/ccache-action`, added deliberately by a caller),
-# and three because their own default says so.
+# Some actions cache by construction (`actions/cache`, ccache); others enable
+# caching by default. The entries below state each pinned action's behavior.
 producers:
   - action: actions/cache
     control: null
