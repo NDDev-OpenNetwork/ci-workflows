@@ -7,6 +7,10 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Reverify GitHub larger-runner and self-hosted execution billing facts against
+  official documentation. State the larger-runner organization/enterprise
+  Team/Enterprise Cloud restriction explicitly and retain separate storage costs.
+
 - Isolate synthetic tier-selection Git fixtures from user/system hooks and
   make promotion-renderer fixtures resolve their real `jq`/`sha256sum`
   prerequisites on macOS as well as Linux.
