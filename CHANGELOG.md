@@ -7,6 +7,9 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+- Select the existing checksum-verified Gitleaks binary mode for this
+  repository's own scan; history scope and scanner version remain unchanged.
+
 - Reverify GitHub larger-runner and self-hosted execution billing facts against
   official documentation. State the larger-runner organization/enterprise
   Team/Enterprise Cloud restriction explicitly and retain separate storage costs.

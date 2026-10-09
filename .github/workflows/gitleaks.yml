@@ -21,3 +21,6 @@ jobs:
     uses: ./.github/workflows/secret-scan.yml
     with:
       runner: ubuntu-latest
+      # Preserve history/version while avoiding the same Docker Hub pull
+      # rate limit that can prevent dependency checks from starting.
+      execution_mode: binary
